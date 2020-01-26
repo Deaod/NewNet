@@ -44,8 +44,12 @@ simulated function Timer()
 		STM.PlayerHit(Instigator, 4, bDirect);		// 4 = Bio.
 	if (bbP != None && bbP.bNewNet)
 	{
-		if (Level.NetMode == NM_Client && !bOwnerNoSee)
-			bbP.NN_HurtRadius(self, class'UT_BioRifle', damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex);
+		if (Level.NetMode == NM_Client && !bOwnerNoSee) {
+			if (IsA('BioGlob'))
+				bbP.NN_HurtRadius(self, 6, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
+			else
+				bbP.NN_HurtRadius(self, 5, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
+		}
 	}
 	else
 	{
@@ -110,7 +114,7 @@ auto state Flying
 	
 			if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client)
 			{
-				//bbP.xxNN_TakeDamage(Other, class'UT_BioRifle', Damage, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex);
+				bbP.xxNN_TakeDamage(Other, 5, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex);
 				bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, Normal(HitLocation - Other.Location));
 			}
 		}
@@ -130,4 +134,5 @@ state OnSurface
 }
 
 defaultproperties {
+	Damage=0
 }

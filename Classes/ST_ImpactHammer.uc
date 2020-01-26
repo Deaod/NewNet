@@ -114,7 +114,6 @@ simulated function bool ClientFire( float Value )
 		bCanClientFire = true;
 		Pawn(Owner).PlayRecoil(FiringSpeed);
 		GoToState('ClientFiring');
-		ServerFiring();
 	}
 	
 	return Super.ClientFire(Value);
@@ -122,6 +121,8 @@ simulated function bool ClientFire( float Value )
 
 function ServerFiring()
 {
+	if (bbPlayer(Owner) != None)
+		bbPlayer(Owner).xxAddFired(1);
 	bPointing=True;
 	bCanClientFire = true;
 	GoToState('Firing');
@@ -162,7 +163,10 @@ function Fire( float Value )
 	bPointing=True;
 	bCanClientFire = true;
 	ClientFire(Value);
-	if (!bNewNet)
+	if (bNewNet)
+	{
+	}
+	else
 	{
 		Pawn(Owner).PlayRecoil(FiringSpeed);
 	}
@@ -179,7 +183,12 @@ function AltFire( float Value )
 	bPointing=True;
 	bCanClientFire = true;
 	ClientAltFire(value);
-	if (!bNewNet)
+	if (bNewNet)
+	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(2);
+	}
+	else
 	{
 		Pawn(Owner).PlayRecoil(FiringSpeed);
 	}
@@ -318,6 +327,7 @@ state ClientFiring
 			Super.BeginState();
 			return;
 		}
+		ServerFiring();
 		ChargeSize = 0.0;
 		Count = 0.0;
 	}
@@ -614,7 +624,7 @@ simulated function NN_ProcessAltTraceHit(Actor Other, Vector HitLocation, Vector
 	else
 	{
 		//if (bNewNet)
-		//	bbPlayer(Owner).xxNN_TakeDamage(Other, class'ImpactHammer', 20 * scale, Pawn(Owner), HitLocation, 30000.0 * X * scale, MyDamageType, -1);
+		//	bbPlayer(Owner).xxNN_TakeDamage(Other, 1, 20 * scale, Pawn(Owner), HitLocation, 30000.0 * X * scale, MyDamageType, -1);
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
 			spawn(class'UT_SpriteSmokePuff',,,HitLocation+HitNormal*9);
 	}
@@ -667,7 +677,7 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	if (STM != None)
 		STM.PlayerFire(PawnOwner, 1);			// 1 = Impact Hammer.
 
-	if ( (Other == None) || (Other == Owner) || (Other == self) || (Owner == None))
+	if ( (Other == None) || (Other == Owner) || (Other == self) || (Owner == None) || bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(1))
 		return;
 
 	ChargeSize = FMin(ChargeSize, 1.5);
@@ -786,7 +796,7 @@ simulated function PlaySelect()
 	bForceAltFire = false;
 	bCanClientFire = false;
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
 }
 
@@ -795,7 +805,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 state Active

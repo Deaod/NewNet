@@ -11,7 +11,7 @@ var bool bNewNet;		// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
-var bool bClientTTargetOut;
+var bool bClientTTargetOut, bPlayTeleportEffect;
 var NN_TranslocatorTarget zzClientTTarget;
 
 function PostBeginPlay()
@@ -241,7 +241,7 @@ simulated function ClientTranslocate()
 			
 			foreach VisibleCollidingActors( class 'Pawn', P, bbP.CollisionRadius * bbP.TeleRadius / 100, bbP.Location )
 				if ( P != bbP && (!bbP.GameReplicationInfo.bTeamGame || bbP.PlayerReplicationInfo.Team != P.PlayerReplicationInfo.Team) && ((VSize(P.Location - bbP.Location)) < ((P.CollisionRadius + bbP.CollisionRadius) * bbP.CollisionHeight)) )
-					bbP.xxNN_TeleFrag(P, bbP.Location);
+					bbP.xxNN_TransFrag(P);
 			
 			//ClientSpawnEffect(Start, Dest);
 		}
@@ -332,6 +332,7 @@ function ThrowTarget()
 	yModInit();
 	
 	bbP = bbPlayer(Owner);
+	//bbPlayer(Owner).xxAddFired(0);
 	
 	if (STM != None)
 		STM.PlayerFire(Pawn(Owner), 2);		// 2 = Translocator
@@ -412,6 +413,7 @@ function Fire( float Value )
 			Pawn(Owner).gibbedBy(TTarget.disruptor);
 			return;
 		}
+		//bbPlayer(Owner).xxAddFired(0);
 		if (!bNewNet)
 			Owner.PlaySound(AltFireSound, SLOT_Misc, 4 * Pawn(Owner).SoundDampening);
 		bTTargetOut = false;
@@ -437,6 +439,7 @@ function Translocate()
 		return;
 	}
 
+	//bbPlayer(Owner).xxAddFired(0);
 	if (STM != None)
 		STM.PlayerHit(Pawn(Owner), 2, False);			// 2 = Translocator
 	
@@ -495,7 +498,7 @@ function Translocate()
 			Owner.Velocity.X = 0;
 			Owner.Velocity.Y = 0;
 			
-			if (bbP != None && bNewNet)
+			if (bbP != None && bNewNet && bPlayTeleportEffect)
 				bbP.PlayTeleportEffect(true, true);
 			
 			B = Bot(Owner);
@@ -570,12 +573,12 @@ simulated function PlaySelect()
 		if ( bClientTTargetOut )
 			TweenAnim('ThrownFrame', 0.27);
 		else
-			PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
+			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
 	} else {
 		if ( bTTargetOut )
 			TweenAnim('ThrownFrame', 0.27);
 		else
-			PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
+			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
 	}
 	PlaySound(SelectSound, SLOT_Misc,Pawn(Owner).SoundDampening);		
 }
@@ -714,12 +717,12 @@ simulated function TweenDown()
 	else if (bNewNet)
 	{
 		if ( bClientTTargetOut ) PlayAnim('Down2', 1.1, 0.05);
-		else PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		else PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 	}
 	else
 	{
 		if ( bTTargetOut ) PlayAnim('Down2', 1.1, 0.05);
-		else PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		else PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 	}
 }
 
@@ -749,4 +752,5 @@ state Active
 
 defaultproperties {
 	bNewNet=True
+	bPlayTeleportEffect=True
 }

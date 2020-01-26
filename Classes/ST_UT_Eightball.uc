@@ -397,6 +397,7 @@ state NN_FireRockets
 		if (bTightWad || !bFireLoad) RocketRad=7;
 		bMultiRockets = ( RocketsLoaded > 1 );
 		
+		//bbP.ClientMessage("Client ("$(Level.NetMode==NM_Client)$"):"@RocketsLoaded);
 		While ( RocketsLoaded > 0 )
 		{
 			R2 = NN_GetFRV();
@@ -1029,9 +1030,15 @@ state FireRockets
 		}
 
 		if ( bFireLoad ) 		
+		{
+			bbPlayer(Owner).xxAddFired(22);
 			AdjustedAim = PawnOwner.AdjustAim(ProjectileSpeed, StartLoc, AimError, True, bWarnTarget);
+		}
 		else 
+		{
+			bbPlayer(Owner).xxAddFired(23);
 			AdjustedAim = PawnOwner.AdjustToss(AltProjectileSpeed, StartLoc, AimError, True, bAltWarnTarget);	
+		}
 			
 		if (bbP == None || !bNewNet)
 			AdjustedAim = Pawn(Owner).ViewRotation;
@@ -1064,6 +1071,8 @@ state FireRockets
 		RocketRad = 4;
 		if (bTightWad || !bFireLoad) RocketRad=7;
 		bMultiRockets = ( RocketsLoaded > 1 );
+		
+		//bbP.ClientMessage("Server ("$(Level.NetMode!=NM_Client)$"):"@RocketsLoaded);
 		While ( RocketsLoaded > 0 )
 		{
 			R2 = GetFRV();
@@ -1194,7 +1203,7 @@ simulated function PlaySelect()
 	ServerForceFire(false);
 	ServerForceAltFire(false);
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
 }
 
@@ -1203,7 +1212,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 state Active

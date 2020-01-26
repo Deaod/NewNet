@@ -59,6 +59,7 @@ function NewExplode(vector HitLocation, vector HitNormal, bool bDirect)
 	local int ProjIndex;
 	
 	bbP = bbPlayer(Owner);
+	bbP.xxAddFired(20);
 	
 	if (STM != None)
 		STM.PlayerHit(Instigator, 15, bDirect);		// 15 = Flak Slug

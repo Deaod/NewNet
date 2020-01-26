@@ -369,7 +369,10 @@ function string GetReplacementWeapon(Weapon W, bool bDamnEpic)
 	}
 	else if (W.IsA('Translocator') && !W.IsA('ST_Translocator'))
 	{
-		WStr = "ST_Translocator";
+		if (class'UTPure'.default.zzbH4x)
+			WStr = "h4x_Xloc";
+		else
+			WStr = "ST_Translocator";
 		BitMap = (1 << 2);				// TLoc = 02
 	}
 	else if ((W.IsA('enforcer') && !W.IsA('ST_enforcer')) || W.IsA('AutoMag'))
@@ -602,7 +605,10 @@ function SwitchWeaponsInventory(Pawn Other)
 
 	if (bTranslocatorGame)
 	{	// EPIC adds Translocator *AFTER* ModifyPlayer! NUMBNUTS! This adds the translocator first to avoid issues. DMP.bUseTranslocator is forced false :/
-		GiveGoodWeapon(Other, PreFix$"ST_Translocator", None);
+		if (class'UTPure'.default.zzbH4x)
+			GiveGoodWeapon(Other, PreFix$"h4x_Xloc", None);
+		else
+			GiveGoodWeapon(Other, PreFix$"ST_Translocator", None);
 		DMP.bUseTranslocator = False;
 	}
 	

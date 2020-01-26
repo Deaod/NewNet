@@ -47,6 +47,7 @@ auto state Flying
 			NumSplash = int(2 * DrawScale) - 1;
 		SpawnPoint = Location + 5 * HitNormal;
 		DrawScale= FMin(DrawScale, 3.0);
+		//bbPlayer(Owner).xxAddFired(5);
 		if ( NumSplash > 0 )
 		{
 			SpawnSplash();

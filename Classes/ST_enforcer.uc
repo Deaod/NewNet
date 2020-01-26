@@ -103,6 +103,34 @@ simulated function bool ClientFire(float Value)
 	return Super.ClientFire(Value);
 }
 
+function Fire(float Value)
+{
+	if ( AmmoType == None )
+	{
+		// ammocheck
+		GiveAmmo(Pawn(Owner));
+	}
+	if ( AmmoType.UseAmmo(1) )
+	{
+		if (bbPlayer(Owner) != None)
+		{
+			if (bIsSlave)
+				bbPlayer(Owner).xxAddFired(33);
+			else
+				bbPlayer(Owner).xxAddFired(3);
+		}
+		GotoState('NormalFire');
+		bCanClientFire = true;
+		bPointing=True;
+		ClientFire(value);
+		if ( SlaveEnforcer != None )
+			Pawn(Owner).PlayRecoil(2 * FiringSpeed);
+		else if ( !bIsSlave )
+			Pawn(Owner).PlayRecoil(FiringSpeed);
+		TraceFire(0.2);
+	}
+}
+
 simulated function bool ClientAltFire(float Value)
 {
 	local bbPlayer bbP;
@@ -237,8 +265,15 @@ Begin:
 		SetTimer(0.20, false);
 	FinishAnim();
 Repeater:	
-	if (AmmoType.UseAmmo(1)) 
+	if (AmmoType.UseAmmo(1))
 	{
+		if (bbPlayer(Owner) != None)
+		{
+			if (bIsSlave)
+				bbPlayer(Owner).xxAddFired(44);
+			else
+				bbPlayer(Owner).xxAddFired(4);
+		}
 		FlashCount++;
 		if (!bNewNet || Owner.IsA('Bot'))
 		{
@@ -350,7 +385,10 @@ simulated function NN_TraceFire(float Accuracy)
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	NN_ProcessTraceHit(Other, HitLocation, HitNormal, vector(GV),Y,Z);
 	
-	bbP.xxNN_TakeDamage(Other, class'Enforcer', Hitdamage, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
+	if (PawnOwner.bFire != 0)
+		bbP.xxNN_TakeDamage(Other, -3, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
+	else
+		bbP.xxNN_TakeDamage(Other, -4, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
 	/*
 	if (PawnOwner.bFire != 0)
 		bbP.xxNN_Fire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), bIsSlave, ClientFRVI, Accuracy);
@@ -508,8 +546,12 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 			X *= 5;
 		if (STM != None)
 			STM.PlayerHit(PawnOwner, 3, False);	// 3 = Enforcer
-		if (!bNewNet)
-			Other.TakeDamage(HitDamage, PawnOwner, HitLocation, 3000.0*X, MyDamageType);
+		if (!bNewNet) {
+			if (HitDamage > 0)
+				Other.TakeDamage(HitDamage, PawnOwner, HitLocation, 3000.0*X, MyDamageType);
+			else
+				Other.TakeDamage(class'UTPure'.default.EnforcerDamagePri, PawnOwner, HitLocation, 3000.0*X, MyDamageType);
+		}
 		if (STM != None)
 			STM.PlayerClear();
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
@@ -589,7 +631,7 @@ simulated function PlaySelect()
 	bForceAltFire = false;
 	bCanClientFire = false;
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
 }	
 
@@ -598,7 +640,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 function DropFrom(vector StartLocation)
@@ -721,5 +763,5 @@ state Active
 
 defaultproperties {
 	bNewNet=True
-	Hitdamage=14
+	Hitdamage=0
 }

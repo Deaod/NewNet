@@ -48,7 +48,7 @@ auto state Flying
 		NN_HitOther = Other;
 		if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client && !bOwnerNoSee)
 		{
-			//bbP.xxNN_TakeDamage(Other, class'UT_BioRifle', damage * Drawscale, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex);
+			bbP.xxNN_TakeDamage(Other, 6, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex, class'UTPure'.default.BioDamagePri * Drawscale);
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, Normal(HitLocation - Other.Location));
 		}
 	}
@@ -64,6 +64,7 @@ auto state Flying
 			NumSplash = int(2 * DrawScale) - 1;
 		SpawnPoint = Location + 5 * HitNormal;
 		DrawScale= FMin(DrawScale, 3.0);
+		//bbPlayer(Owner).xxAddFired(5);
 		if ( NumSplash > 0 )
 		{
 			SpawnSplash();
@@ -122,6 +123,6 @@ state OnSurface
 defaultproperties
 {
      speed=700.000000
-     Damage=75.000000
+     Damage=0.000000
      MomentumTransfer=30000
 }

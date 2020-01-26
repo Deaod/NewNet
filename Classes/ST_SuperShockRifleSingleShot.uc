@@ -14,6 +14,9 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X, Y, Z);
 		return;
 	}
+	
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(7))
+		return;
 		
 	yModInit();
 

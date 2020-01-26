@@ -14,9 +14,14 @@ var float EndGameTime;
 static simulated function xxDrawXHair(Canvas zzCanvas, PlayerPawn zzP)
 {
 	local Weapon zzW;
-
+	
+	if (zzCanvas == None || zzP == None)
+		return;
+	
 	zzW = zzP.Weapon;
-
+	if (zzW == None)
+		return;
+	
 	if (zzW.IsA('SniperRifle') || zzW.IsA('AssaultRifle'))
 		xxSniperPostRender(zzCanvas, zzP);
 	else if (zzW.IsA('UT_Eightball'))

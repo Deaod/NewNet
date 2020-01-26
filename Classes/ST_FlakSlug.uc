@@ -49,7 +49,7 @@ simulated function NewExplode(vector HitLocation, vector HitNormal, bool bDirect
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_FlakSlugOwnerHidden'))
 		{
-			bbP.NN_HurtRadius(self, class'UT_FlakCannon', damage, 150, 'FlakDeath', MomentumTransfer, HitLocation, zzNN_ProjIndex);
+			bbP.NN_HurtRadius(self, 21, 150, 'FlakDeath', MomentumTransfer, HitLocation, zzNN_ProjIndex);
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, HitNormal);
 		}
 	}

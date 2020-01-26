@@ -11,8 +11,11 @@ var bool bNewNet;		// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
-var int HitDamage, HeadDamage;
+var float HitDamage;
+var float HeadDamage;
 var float BodyHeight;
+var float SniperSpeed;
+var int zzWin;
 
 function PostBeginPlay()
 {
@@ -38,7 +41,7 @@ simulated function RenderOverlays(Canvas Canvas)
 	{
 		if (bbP.bFire != 0 && !IsInState('ClientFiring'))
 			ClientFire(1);
-		else if (bbP.bAltFire != 0 && !IsInState('ClientAltFiring'))
+		else if (bbP.bAltFire != 0 && !IsInState('Zooming'))
 			ClientAltFire(1);
 	}
 }
@@ -117,6 +120,7 @@ function Fire ( float Value )
 	bbP = bbPlayer(Owner);
 	if (bbP != None && bNewNet && Value < 1)
 		return;
+	bbPlayer(Owner).xxAddFired(zzWin);
 	Super.Fire(Value);
 }
 
@@ -258,8 +262,12 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 		Spawn(class'UT_HeavyWallHitEffect',,, HitLocation+HitNormal, Rotator(HitNormal));
 		if (bbPlayer(Owner) != None)
 			bbPlayer(Owner).xxClientDemoFix(None, class'UT_HeavyWallHitEffect', HitLocation+HitNormal,,, Rotator(HitNormal));
-		//if (Other.IsA('Mover'))
-		//	bbPlayer(Owner).xxMover_TakeDamage(Mover(Other), HitDamage, Pawn(Owner), HitLocation, 30000.0 * X, MyDamageType);
+		//if (Other.IsA('Mover')) {
+		//	if (HitDamage > 0)
+		//		bbPlayer(Owner).xxMover_TakeDamage(Mover(Other), HitDamage, Pawn(Owner), HitLocation, 30000.0 * X, MyDamageType);
+		//	else
+		//		bbPlayer(Owner).xxMover_TakeDamage(Mover(Other), class'UTPure'.default.SniperDamagePri, Pawn(Owner), HitLocation, 30000.0 * X, MyDamageType);
+		//}
 	}
 	else if ( (Other != self) && (Other != Owner) && (Other != None) )
 	{
@@ -303,6 +311,9 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X,Y,Z);
 		return;
 	}
+	
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(24))
+		return;
 
 	PawnOwner = Pawn(Owner);
 	POther = Pawn(Other);
@@ -338,7 +349,10 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		{
 			if (STM != None)
 				STM.PlayerHit(PawnOwner, 18, True);		// 18 = Sniper, Headshot
-			Other.TakeDamage(HeadDamage, PawnOwner, HitLocation, 35000 * X, AltDamageType); // was 100 (150) dmg
+			if (HeadDamage > 0)
+				Other.TakeDamage(HeadDamage, PawnOwner, HitLocation, 35000 * X, AltDamageType); // was 100 (150) dmg
+			else
+				Other.TakeDamage(class'UTPure'.default.HeadshotDamage, PawnOwner, HitLocation, 35000 * X, AltDamageType);
 			if (STM != None)
 				STM.PlayerClear();
 		}
@@ -346,7 +360,10 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		{
 			if (STM != None)
 				STM.PlayerHit(PawnOwner, 18, False);		// 18 = Sniper
-			Other.TakeDamage(HitDamage,  PawnOwner, HitLocation, 30000.0*X, MyDamageType);	 // was 45 (67) dmg
+			if (HitDamage > 0)
+				Other.TakeDamage(HitDamage,  PawnOwner, HitLocation, 30000.0*X, MyDamageType);	 // was 45 (67) dmg
+			else
+				Other.TakeDamage(class'UTPure'.default.SniperDamagePri,  PawnOwner, HitLocation, 30000.0*X, MyDamageType);
 			if (STM != None)
 				STM.PlayerClear();
 		}
@@ -445,7 +462,7 @@ simulated function PlaySelect()
 	bForceAltFire = false;
 	bCanClientFire = false;
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
 }
 
@@ -454,7 +471,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 simulated function PlayFiring()
@@ -462,7 +479,10 @@ simulated function PlayFiring()
 	local int r;
 
 	PlayOwnedSound(FireSound, SLOT_None, Pawn(Owner).SoundDampening*3.0);
-	PlayAnim(FireAnims[Rand(5)], 0.35 + 0.5 * FireAdjust, 0.05);
+	if (SniperSpeed > 0)
+		PlayAnim(FireAnims[Rand(5)], 0.5 * SniperSpeed + 0.5 * FireAdjust, 0.05);
+	else
+		PlayAnim(FireAnims[Rand(5)], 0.5 * class'UTPure'.default.SniperSpeed + 0.5 * FireAdjust, 0.05);
 
 	if ( (PlayerPawn(Owner) != None) 
 		&& (PlayerPawn(Owner).DesiredFOV == PlayerPawn(Owner).DefaultFOV) )
@@ -494,8 +514,7 @@ state Active
 }
 
 defaultproperties {
-	HitDamage=40
-	HeadDamage=90
 	bNewNet=True
 	BodyHeight=0.66
+	zzWin=24
 }

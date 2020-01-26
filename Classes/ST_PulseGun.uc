@@ -70,6 +70,8 @@ function Fire( float Value )
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(13);
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -110,6 +112,8 @@ function AltFire( float Value )
 		}
 		if ( PlasmaBeam == None )
 		{
+			if (bbPlayer(Owner) != None)
+				bbPlayer(Owner).xxAddFired(14);
 			if (bNewNet)
 				PlasmaBeam = PBolt(ProjectileFire(Class'NN_StarterBoltOwnerHidden', AltProjectileSpeed, bAltWarnTarget));
 			else
@@ -579,7 +583,7 @@ simulated function PlaySelect()
 	bForceAltFire = false;
 	bCanClientFire = false;
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
 }
 
@@ -588,7 +592,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 state Active

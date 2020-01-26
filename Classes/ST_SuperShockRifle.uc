@@ -127,6 +127,7 @@ function Fire( float Value )
 	bAltFired = false;
 	if (bbP != None && bNewNet && Value < 1)
 		return;
+	bbPlayer(Owner).xxAddFired(26);
 	Super.Fire(Value);
 }
 
@@ -220,11 +221,14 @@ State ClientActive
 simulated function NN_TraceFire()
 {
 	local vector HitLocation, HitDiff, HitNormal, StartTrace, EndTrace, X,Y,Z;
-	local vector zzHitLocation, zzHitDiff, zzHitNormal, zzStartTrace, zzEndTrace, zzX,zzY,zzZ;
-	local actor Other, zzOther;
+	local actor Other;
 	local bool zzbNN_Combo;
-	local bbPlayer bbP, zzbbP;
-	local float oRadius, oHeight;
+	local bbPlayer bbP;
+	local Pawn P;
+	local bbPlayer zzbbP;
+	local actor zzOther;
+	local int oRadius,oHeight;
+	local vector zzX,zzY,zzZ,zzStartTrace,zzEndTrace,zzHitLocation,zzHitNormal;
 	
 	if (Owner.IsA('Bot'))
 		return;
@@ -244,6 +248,20 @@ simulated function NN_TraceFire()
 	if (Other.IsA('Pawn'))
 	{
 		HitDiff = HitLocation - Other.Location;
+		
+		zzbbP = bbPlayer(Other);
+		if (bbP.zzbCheck && zzbbP != None)
+		{
+			GetAxes(GV,zzX,zzY,zzZ);
+			zzStartTrace = Owner.Location + CDO + yMod * zzY + FireOffset.Z * zzZ;
+			zzEndTrace = zzStartTrace + (100000 * vector(GV));
+			oRadius = zzbbP.CollisionRadius;
+			oHeight = zzbbP.CollisionHeight;
+			zzbbP.SetCollisionSize(zzbbP.CollisionRadius * 0.85, zzbbP.CollisionHeight * 0.85);
+			zzOther = bbP.NN_TraceShot(zzHitLocation,zzHitNormal,zzEndTrace,zzStartTrace,Pawn(Owner));
+			zzbbP.SetCollisionSize(oRadius, oHeight);
+			bbP.xxChecked(Other != zzOther);
+		}
 	}
 	
 	zzbNN_Combo = NN_ProcessTraceHit(Other, HitLocation, HitNormal, vector(GV),Y,Z);
@@ -399,7 +417,10 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X, Y, Z);
 		return;
 	}
-		
+	
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(7))
+		return;
+	
 	yModInit();
 
 	PawnOwner = Pawn(Owner);
@@ -535,7 +556,7 @@ simulated function PlaySelect()
 	bForceAltFire = false;
 	bCanClientFire = false;
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
 }
 
@@ -544,7 +565,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 state NormalFire

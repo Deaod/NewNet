@@ -49,7 +49,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, False);						// 10 = Pulse Shaft
 				if (!bNewNet)
-					HitActor.TakeDamage(AccumulatedDamage * damage * 0.9 + 0.050, instigator,HitLocation, // *2?...
+					HitActor.TakeDamage(AccumulatedDamage * damage * 0.5 + 0.050, instigator,HitLocation, // *2?...
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
 				if (STM != None)
 					STM.PlayerClear();
@@ -60,7 +60,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, False);						// 10 = Pulse Shaft
 				if (!bNewNet)
-					DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.9, instigator,HitLocation,
+					DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.5, instigator,HitLocation,
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
 				if (STM != None)
 					STM.PlayerClear();
@@ -76,7 +76,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, True);						// 10 = Pulse Shaft, Overload
 				if (!bNewNet)
-					DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.9, instigator,HitLocation,
+					DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.5, instigator,HitLocation,
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
 				if (STM != None)
 					STM.PlayerClear();
@@ -115,7 +115,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 		if (STM != None)
 			STM.PlayerHit(Instigator, 10, True);								// 10 = Pulse Shaft
 		if (!bNewNet)
-			DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.9, instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius,
+			DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.5, instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius,
 				(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
 		if (STM != None)
 			STM.PlayerClear();
@@ -151,6 +151,8 @@ simulated function CheckBeam(vector X, float DeltaTime)
 			GrowthAccumulator += DeltaTime;
 			if (GrowthAccumulator > 0.050)		// 1 / 20 (Tickrate 20) = 0.050
 			{
+				if (bbPlayer(Owner) != None)
+					bbPlayer(Owner).xxAddFired(14);
 				PlasmaBeam = Spawn(class'NN_PBoltOwnerHidden',Owner,, Location + BeamSize * X);
 				PlasmaBeam.Position = Position + 1;
 				ST_PBolt(PlasmaBeam).GrowthAccumulator = GrowthAccumulator; // - 0.050;		// This causing extra damage?

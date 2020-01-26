@@ -21,6 +21,7 @@ function Fire ( float Value )
 	}
 	//if ( AmmoType.UseAmmo(1) )
 	//{
+		bbPlayer(Owner).xxAddFired(7);
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -82,6 +83,7 @@ function AltFire( float Value )
 		ClientAltFire(value);
 		if (bNewNet)
 		{
+			bbPlayer(Owner).xxAddFired(8);
 			NNSP = NN_ShockProjOwnerHidden(ProjectileFire(Class'NN_ShockProjOwnerHidden', AltProjectileSpeed, bAltWarnTarget));
 			if (NNSP != None)
 			{
@@ -108,7 +110,10 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X, Y, Z);
 		return;
 	}
-
+	
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(7))
+		return;
+	
 	PawnOwner = Pawn(Owner);
 	if (STM != None)
 		STM.PlayerFire(PawnOwner, 5);		// 5 = Shock Beam.
@@ -127,6 +132,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	if ( NN_ShockProjOwnerHidden(Other)!=None )
 	{
 		//AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(11);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);		// 5 = Shock Beam
 		Other.SetOwner(Owner);
@@ -136,6 +143,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( ST_ShockProj(Other)!=None )
 	{
 		//AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(11);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);		// 5 = Shock Beam
 		ST_ShockProj(Other).SuperExplosion();

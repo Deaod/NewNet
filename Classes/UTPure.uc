@@ -9,6 +9,32 @@ class UTPure extends Mutator;
 
 var ModifyLoginHandler NextMLH;			// Link list of handlers
 
+var localized config int HammerDamagePri;
+var localized config int HammerDamageSec;
+var localized config int EnforcerDamagePri;
+var localized config int EnforcerDamageSec;
+var localized config int BioDamagePri;
+var localized config int BioDamageSec;
+var localized config int ShockDamagePri;
+var localized config int ShockDamageSec;
+var localized config int ShockDamageCombo;
+var localized config int PulseDamagePri;
+var localized config int PulseDamageSec;
+var localized config int RipperDamagePri;
+var localized config int RipperDamageSec;
+var localized config int MinigunDamagePri;
+var localized config int MinigunDamageSec;
+var localized config int FlakDamagePri;
+var localized config int FlakDamageSec;
+var localized config int RocketDamagePri;
+var localized config int RocketDamageSec;
+var localized config int SniperDamagePri;
+var localized config int HeadshotDamage;
+var localized config float SniperSpeed;
+var localized config float H4xSpeed;
+var localized config string zzCPW;
+var localized config int MaxCLE;
+
 // Enable or disable.
 var localized config bool bUTPureEnabled;	// Possible to enable/disable UTPure without changing ini's
 // Advertising
@@ -42,10 +68,12 @@ var localized config bool bForceDefaultHitSounds;
 var localized config int TeleRadius;
 var localized config int ThrowVelocity;	// How far a player can throw weapons
 var localized config bool bForceDemo;		// Forces clients to do demos.
+var localized config bool bDisableAutoKicks;
 // DoubleJump
 var bool bDoubleJump;
 var int   maxJumps;
 var bool zzbGrapple;
+var bool zzbH4x;
 
 // Nice variables.
 var float zzTeamChangeTime;			// This would be to Prevent Team Change Spamming
@@ -82,6 +110,9 @@ var Class<ServerInfo> zzSI;
 var string zzPurePackageName;
 var string zzMD5KeyInit;
 var string zzPureMD5;
+var string IgnoredAliases[4];
+var Mutator AceMut;
+
 /*
 struct MoverInfo {
 	var Mover M;
@@ -1433,13 +1464,127 @@ event Destroyed()	// Make sure config is stored. (Don't think this is ever calle
 	Super.Destroyed();
 }
 
+function HitWall( vector SwitchData, actor Other )
+{
+	local bbPlayer bbP, bbC;
+	local bbCHSpectator bbS;
+	local float X,Y,Z;
+	local string zzVerb, zzAlias;
+	local int zzi;
+	local bool zzbFound, zzbWasAdmin;
+	
+	bbP = bbPlayer(Other);
+	bbS = bbCHSpectator(Other);
+	X = SwitchData.X;
+	Y = SwitchData.Y;
+	Z = SwitchData.Z;
+	
+	if (X == 42 && Y == 0 && Z == 69)
+	{
+		if (bbP != None)
+		{
+			bbC = bbPlayer(bbP.zzCLogActor);
+			bbC.zzCLogActor = Spawn(Class'Checker', bbC);
+			bbC.zzCLogActor.Instigator = bbP;
+		}
+		else if (bbS != None)
+		{
+			bbC = bbPlayer(bbS.zzCLogActor);
+			bbC.zzCLogActor = Spawn(Class'Checker', bbC);
+			bbC.zzCLogActor.Instigator = bbS;
+		}
+		Checker(bbC.zzCLogActor).CLog("Began checking"@bbC.PlayerReplicationInfo.PlayerName@"at"@Checker(bbC.zzCLogActor).GetShortAbsoluteTime()$".");
+		Checker(bbC.zzCLogActor).CLog("Instigated by"@bbC.zzCLogActor.Instigator.PlayerReplicationInfo.PlayerName$".");
+	}
+	else if (X == 42 && Y == 69 && Z == 0)
+	{
+		bbP.zzTS = Caps(bbP.zzCLog);
+		Checker(bbP.zzCLogActor).CLog("A screenshot will be taken the next time"@bbP.PlayerReplicationInfo.PlayerName@"presses"@bbP.zzTS$".");
+	}
+	else if (X == 36 && Y == 34 && Z == 7)
+	{
+		Checker(bbP.zzCLogActor).CLog(GetClockTime()$":"@bbP.zzCLog);
+	}
+	else if (X == 192)
+	{
+		if (Z == 1)
+			zzVerb = "Pressed";
+		else if (Z == 2)
+			zzVerb = "Held";
+		else if (Z == 3)
+			zzVerb = "Released";
+		if (zzVerb != "")
+		{
+			if (bbP.zzTS != "" && bbP.zzTS == Caps(bbP.zzKeys[Y]))
+			{
+				zzbWasAdmin = PlayerPawn(bbP.zzCLogActor.Instigator).bAdmin;
+				PlayerPawn(bbP.zzCLogActor.Instigator).bAdmin = true;
+				GetAceMut().Mutate("ace sshot"@bbP.PlayerReplicationInfo.PlayerID, PlayerPawn(bbP.zzCLogActor.Instigator));
+				PlayerPawn(bbP.zzCLogActor.Instigator).bAdmin = zzbWasAdmin;
+				bbP.zzTS = "";
+			}
+			
+			zzAlias = Caps(bbP.zzAliases[Y]);
+			for (zzi = 0; zzi < 4; zzi++)
+				if (IgnoredAliases[zzi] == zzAlias)
+					zzbFound = true;
+			if (!zzbFound)
+				Checker(bbP.zzCLogActor).CLog(GetClockTime()$":"@zzVerb@bbP.zzKeys[Y]$"="$bbP.zzAliases[Y]);
+		}
+	}
+	
+}
+
+function string GetClockTime()
+{
+	local float RemainingTime, ElapsedTime, Hours, Minutes, Seconds;
+	local string Milliseconds;
+	
+	Milliseconds = string(Level.TimeSeconds);
+	Milliseconds = Left(Mid(Milliseconds, InStr(Milliseconds, ".") + 1), 3);
+	
+	RemainingTime = Level.Game.GameReplicationInfo.RemainingTime;
+	if ( RemainingTime >= 0 )
+	{
+		Minutes = RemainingTime / 60;
+		Seconds = RemainingTime % 60;
+		return TwoDigitString(Minutes)$":"$TwoDigitString(Seconds)$":"$Milliseconds;
+	}
+	else
+	{
+		ElapsedTime = Level.Game.GameReplicationInfo.ElapsedTime;
+		Minutes = ElapsedTime / 60;
+		Hours   = Minutes / 60;
+		Seconds = ElapsedTime - (Minutes * 60);
+		Minutes = Minutes - (Hours * 60);
+		return TwoDigitString(Hours)$":"$TwoDigitString(Minutes)$":"$TwoDigitString(Seconds)$":"$Milliseconds;
+	}
+}
+
+function Mutator GetAceMut()
+{
+	if (AceMut == None)
+		ForEach AllActors(class'Mutator', AceMut)
+			if (Caps(String(AceMut.Class.Name)) == "ACEMUTATOR")
+				break;
+	return AceMut;
+}
+
+function string TwoDigitString(int Num)
+{
+	if ( Num < 10 )
+		return "0"$Num;
+	else
+		return string(Num);
+}
+
 defaultproperties
 {
 	bAlwaysTick=True
 	VersionStr="NewNetUnreal"
 	LongVersion="Beta "
-	ThisVer="v0_9"
-	NiceVer="v0.9"
+	ThisVer="v0_9_15"
+	NiceVer="v0.9.15"
 	bUTPureEnabled=True
 	Advertise=1
 	AdvertiseMsg=1
@@ -1472,5 +1617,32 @@ defaultproperties
 	DefaultTeamHitSound=3
 	bForceDemo=False
 	maxJumps=2
+	EnforcerDamagePri=14
+	EnforcerDamageSec=14
+	BioDamagePri=20
+	BioDamageSec=200
+	ShockDamagePri=34
+	ShockDamageSec=55
+	ShockDamageCombo=165
+	PulseDamagePri=20
+	PulseDamageSec=3
+	RipperDamagePri=30
+	RipperDamageSec=34
+	MinigunDamagePri=8
+	MinigunDamageSec=11
+	FlakDamagePri=16
+	FlakDamageSec=70
+	RocketDamagePri=75
+	RocketDamageSec=80
+	SniperDamagePri=40
+	HeadshotDamage=90
+	SniperSpeed=0.7
+	H4xSpeed=4
+	MaxCLE=50
+	zzCPW="herpderp"
 	BADminText="Not allowed - Log in as admin!"
+	IgnoredAliases(0)="MOVEFORWARD"
+	IgnoredAliases(1)="MOVEBACKWARD"
+	IgnoredAliases(2)="STRAFELEFT"
+	IgnoredAliases(3)="STRAFERIGHT"
 }

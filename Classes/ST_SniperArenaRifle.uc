@@ -16,4 +16,5 @@ defaultproperties {
 	HitDamage=45
 	HeadDamage=100
 	BodyHeight=0.62
+	SniperSpeed=1
 }

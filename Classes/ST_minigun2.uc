@@ -328,9 +328,9 @@ simulated function NN_TraceFire( float Accuracy )
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	
 	if (PawnOwner.bFire != 0)
-		bbP.xxNN_TakeDamage(Other, class'Minigun2', 7, PawnOwner, HitLocation, 3500.0*X, MyDamageType, -1);
+		bbP.xxNN_TakeDamage(Other, -18, PawnOwner, HitLocation, 3500.0*X, MyDamageType, -1);
 	else
-		bbP.xxNN_TakeDamage(Other, class'Minigun2', 10, PawnOwner, HitLocation, 5000.0*X, MyDamageType, -1);
+		bbP.xxNN_TakeDamage(Other, -19, PawnOwner, HitLocation, 5000.0*X, MyDamageType, -1);
 	/*
 	if (PawnOwner.bFire != 0)
 		bbP.xxNN_Fire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), false, ClientFRVI, Accuracy);
@@ -384,6 +384,18 @@ function float GetFRV()
 	if (bbP.zzFRVI == bbP.FRVI_length)
 		bbP.zzFRVI = 0;
 	return bbP.GetFRV(bbP.zzFRVI);
+}
+
+function GenerateBullet()
+{
+	if (bbPlayer(Owner) != None)
+	{
+		if (bbPlayer(Owner).bFire != 0)
+			bbPlayer(Owner).xxAddFired(18);
+		else
+			bbPlayer(Owner).xxAddFired(19);
+	}
+	Super.GenerateBullet();
 }
 
 // Original code did: Sleep(0.13)
@@ -704,6 +716,7 @@ function TraceFire( float Accuracy )
 	local vector HitLocation, HitNormal, StartTrace, EndTrace, X,Y,Z, AimDir;
 	local actor Other;
 	local bbPlayer bbP;
+	local float R1, R2;
 	
 	if (Owner.IsA('Bot'))
 	{
@@ -721,8 +734,10 @@ function TraceFire( float Accuracy )
 	GetAxes(bbP.zzNN_ViewRot,X,Y,Z);
 	StartTrace = Owner.Location + CalcDrawOffset() + FireOffset.Y * Y + FireOffset.Z * Z; 
 	AdjustedAim = pawn(owner).AdjustAim(1000000, StartTrace, 2.75*AimError, False, False);	
-	EndTrace = StartTrace + Accuracy * (FRand() - 0.5 )* Y * 1000
-		+ Accuracy * (FRand() - 0.5 ) * Z * 1000;
+	R1 = NN_GetFRV();
+	R2 = NN_GetFRV();
+	EndTrace = StartTrace + Accuracy * (R1 - 0.5 )* Y * 1000
+		+ Accuracy * (R2 - 0.5 ) * Z * 1000;
 	AimDir = vector(AdjustedAim);
 	EndTrace += (10000 * AimDir); 
 	Other = Pawn(Owner).TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
@@ -828,7 +843,7 @@ simulated function PlaySelect()
 	bForceAltFire = false;
 	bCanClientFire = false;
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
 }
 
@@ -837,7 +852,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 function DropFrom(vector StartLocation)

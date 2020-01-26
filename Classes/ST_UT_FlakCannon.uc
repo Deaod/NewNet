@@ -226,6 +226,7 @@ function Fire( float Value )
 	}
 	if (AmmoType.UseAmmo(1))
 	{
+		bbPlayer(Owner).xxAddFired(20);
 		bCanClientFire = true;
 		bPointing=True;
 		
@@ -369,6 +370,8 @@ function AltFire( float Value )
 	}
 	if (AmmoType.UseAmmo(1))
 	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(21);
 		bPointing=True;
 		bCanClientFire = true;
 		PawnOwner.MakeNoise(PawnOwner.SoundDampening);
@@ -537,7 +540,7 @@ simulated function PlaySelect()
 	bForceAltFire = false;
 	bCanClientFire = false;
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
 }
 
@@ -546,7 +549,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 simulated function PlayPostSelect()

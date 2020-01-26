@@ -143,7 +143,7 @@ simulated function BlowUp(vector HitLocation)
 	if (bbP != None && bbP.bNewNet)
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_UT_Grenade'))
-			bbP.NN_HurtRadius(self, class'UT_Eightball', damage, 200, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex);
+			bbP.NN_HurtRadius(self, 23, 200, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex);
 	}
 	else
 	{
