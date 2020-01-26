@@ -106,7 +106,7 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 			if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client && !IsA('NN_UTChunkOwnerHidden'))
 			{
 				NN_HitOther = Other;
-				bbP.xxNN_TakeDamage(Other, class'UT_FlakCannon', Dmg, Instigator, HitLocation, (MomentumTransfer * Velocity/speed), MyDamageType, zzNN_ProjIndex);
+				bbP.xxNN_TakeDamage(Other, class'UT_FlakCannon', 0, Instigator, HitLocation, (MomentumTransfer * Velocity/speed), MyDamageType, zzNN_ProjIndex);
 				bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, (MomentumTransfer * Velocity/speed));
 			}
 			
@@ -185,6 +185,6 @@ simulated function HitWall( vector HitNormal, actor Wall )
 	bHitWall = true;
 }
 
-defaultproperties {
-    LifeSpan=2.900000
+defaultproperties
+{
 }

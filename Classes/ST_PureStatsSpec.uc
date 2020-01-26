@@ -113,6 +113,6 @@ function FindStatSource()
 	StatSource = None;
 }
 
-
-defaultproperties {
+defaultproperties
+{
 }

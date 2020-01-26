@@ -52,6 +52,7 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	}
 }
 
-defaultproperties {
-    PickupAmmoCount=1
+defaultproperties
+{
+     PickupAmmoCount=1
 }

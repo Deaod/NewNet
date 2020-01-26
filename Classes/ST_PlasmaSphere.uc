@@ -62,7 +62,7 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 			else
 				Which = 2;
 			
-			bbP.xxNN_TakeDamage(Other, class'PulseGun', Damage, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex, 0, Which);
+			bbP.xxNN_TakeDamage(Other, class'PulseGun', 0, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex, 0, 0, Which);
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, MomentumTransfer*Vector(Rotation));
 		}
 		Explode(HitLocation, vect(0,0,1));
@@ -77,5 +77,6 @@ simulated function HitWall (vector HitNormal, actor Wall)
 	Super.HitWall(HitNormal, Wall);
 }
 
-defaultproperties {
+defaultproperties
+{
 }

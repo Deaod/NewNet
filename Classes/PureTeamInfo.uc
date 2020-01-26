@@ -112,5 +112,6 @@ simulated function xxGetData(int Index, PlayerReplicationInfo AskingPRI,
 	Other = zzPlayerData[Index].Other;
 }
 
-defaultproperties {
+defaultproperties
+{
 }

@@ -173,14 +173,15 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		HitCounter = 0;
 }
 
-defaultproperties {
-    PickupAmmoCount=100
-	AltProjectileClass=Class'ST_ShockProjGib'
-	hitdamage=1000
-	InstFog=(X=800.000000,Z=0.000000)
-	AmmoName=Class'Botpack.SuperShockCore'
-	aimerror=650.000000
-	DeathMessage="%k gibbed %o with the %w."
-	PickupMessage="You got the ComboGib Rifle."
-	ItemName="ComboGib Rifle"
+defaultproperties
+{
+     hitdamage=1000
+     InstFog=(X=800.000000,Z=0.000000)
+     AmmoName=Class'Botpack.SuperShockCore'
+     PickupAmmoCount=100
+     AltProjectileClass=Class'ST_ShockProjGib'
+     aimerror=650.000000
+     DeathMessage="%k gibbed %o with the %w."
+     PickupMessage="You got the ComboGib Rifle."
+     ItemName="ComboGib Rifle"
 }

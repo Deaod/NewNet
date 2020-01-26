@@ -117,13 +117,12 @@ defaultproperties
      UWHit1=Sound'Botpack.UWhit01'
      UWHit2=Sound'UnrealShare.MUWHit2'
      LandGrunt=Sound'Botpack.lland1'
-     StatusDoll=Texture'Botpack.Icons.Woman'
-     StatusBelt=Texture'Botpack.Icons.WomanBelt'
+     StatusDoll=Texture'Botpack.Woman'
+     StatusBelt=Texture'Botpack.WomanBelt'
      VoicePackMetaClass="BotPack.VoiceFemale"
      CarcassType=Class'Botpack.TFemale1Carcass'
      JumpSound=Sound'Botpack.Fjump1'
      bIsFemale=True
      HitSound1=Sound'Botpack.linjur2'
      HitSound2=Sound'Botpack.linjur3'
-     Die=Sound'Botpack.FemaleSounds.(All).death1d'
 }

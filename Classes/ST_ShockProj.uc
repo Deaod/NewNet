@@ -44,7 +44,7 @@ function SuperExplosion()	// aka, combo.
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_ShockProjOwnerHidden'))
 		{
-			bbP.NN_HurtRadius(self, class'ShockRifle', Damage*3, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 2, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
@@ -77,7 +77,7 @@ function SuperDuperExplosion()	// aka, combo.
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_ShockProjOwnerHidden'))
 		{
-			bbP.NN_HurtRadius(self, class'ShockRifle', Damage*9, 750, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 3, 750, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
@@ -111,7 +111,7 @@ simulated function NN_SuperExplosion(Pawn Pwner)	// aka, combo.
 	{
 		if (Level.NetMode == NM_Client)
 		{
-			bbP.NN_HurtRadius(self, class'ShockRifle', Damage*3, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 2, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
@@ -146,7 +146,7 @@ simulated function NN_SuperDuperExplosion(Pawn Pwner)	// aka, combo.
 	{
 		if (Level.NetMode == NM_Client)
 		{
-			bbP.NN_HurtRadius(self, class'ShockRifle', Damage*9, 750, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 3, 750, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
@@ -198,7 +198,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_ShockProjOwnerHidden'))
 		{
-			bbP.NN_HurtRadius(self, class'ShockRifle', Damage, 70, MyDamageType, MomentumTransfer, Location, zzNN_ProjIndex );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 1, 70, MyDamageType, MomentumTransfer, Location, zzNN_ProjIndex );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, HitNormal);
 		}
 	}
@@ -272,7 +272,6 @@ function TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vecto
 			STM.PlayerSpecial(Instigator, 6);	// 6 = Shock Ball blocked a shot.
 	}
 }
-
 
 defaultproperties
 {

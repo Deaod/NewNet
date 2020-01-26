@@ -1225,6 +1225,7 @@ simulated function bool DrawIdentifyInfo(canvas Canvas)
 
 simulated event PreRender( canvas Canvas );
 
-defaultproperties {
-	ServerInfoClass=Class'PureServerInfo'
+defaultproperties
+{
+     ServerInfoClass=Class'PureServerInfo'
 }

@@ -328,9 +328,9 @@ simulated function NN_TraceFire( float Accuracy )
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	
 	if (PawnOwner.bFire != 0)
-		bbP.xxNN_TakeDamage(Other, class'Minigun2', 7, PawnOwner, HitLocation, 3500.0*X, MyDamageType, -1);
+		bbP.xxNN_TakeDamage(Other, class'Minigun2', 0, PawnOwner, HitLocation, 3500.0*X, MyDamageType, -1);
 	else
-		bbP.xxNN_TakeDamage(Other, class'Minigun2', 10, PawnOwner, HitLocation, 5000.0*X, MyDamageType, -1);
+		bbP.xxNN_TakeDamage(Other, class'Minigun2', 1, PawnOwner, HitLocation, 5000.0*X, MyDamageType, -1);
 	/*
 	if (PawnOwner.bFire != 0)
 		bbP.xxNN_Fire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), false, ClientFRVI, Accuracy);
@@ -828,7 +828,7 @@ simulated function PlaySelect()
 	bForceAltFire = false;
 	bCanClientFire = false;
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
 }
 
@@ -837,7 +837,7 @@ simulated function TweenDown()
 	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
 		TweenAnim( AnimSequence, AnimFrame * 0.4 );
 	else
-		PlayAnim('Down', 1.15 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 }
 
 function DropFrom(vector StartLocation)
@@ -901,8 +901,9 @@ state Active
 	}
 }
 
-defaultproperties {
-	FireInterval=0.120
-	NextFireInterval=0.111
-	bNewNet=True
+defaultproperties
+{
+     bNewNet=True
+     FireInterval=0.120000
+     NextFireInterval=0.111000
 }

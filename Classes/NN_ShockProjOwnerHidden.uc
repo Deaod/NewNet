@@ -163,6 +163,7 @@ simulated function DoSuperDuperExplosion()
 	}
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

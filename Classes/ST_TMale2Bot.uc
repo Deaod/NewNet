@@ -14,13 +14,14 @@ function ForceMeshToExist()
 defaultproperties
 {
      CarcassType=Class'Botpack.TMale2Carcass'
-     LandGrunt=Sound'Botpack.MaleSounds.(All).land10'
      FaceSkin=3
      FixedSkin=2
      TeamSkin2=1
      DefaultSkinName="SoldierSkins.blkt"
      DefaultPackage="SoldierSkins."
+     LandGrunt=Sound'Botpack.land10'
      SelectionMesh="Botpack.SelectionMale2"
      MenuName="Male Soldier"
+     VoiceType="BotPack.VoiceMaleTwo"
      Mesh=LodMesh'Botpack.Soldier'
 }

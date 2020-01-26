@@ -27,6 +27,5 @@ state OnSurface
 
 defaultproperties
 {
-	speed=300.000000
-	bOwnerNoSee=True
+     speed=300.000000
 }

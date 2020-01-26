@@ -47,10 +47,7 @@ static function ClientReceive(
 
 	Super.ClientReceive(P, Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject);
 }
-defaultproperties {
-	bIsSpecial=False
-	bIsUnique=False
-	bFadeMessage=False
-	bIsConsoleMessage=True
-	bBeep=False
+
+defaultproperties
+{
 }

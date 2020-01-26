@@ -181,5 +181,6 @@ function Died(pawn Killer, name damageType, vector HitLocation)
 	GotoState('Dying');
 }
 
-defaultproperties {
+defaultproperties
+{
 }

@@ -137,13 +137,13 @@ defaultproperties
      LandGrunt=Sound'Botpack.Boss.Bland01'
      JumpSound=Sound'Botpack.Boss.BJump1'
      DefaultSkinName="BossSkins.Boss"
-     StatusDoll=Texture'Botpack.Icons.BossDoll'
-     StatusBelt=Texture'Botpack.Icons.BossBelt'
+     StatusDoll=Texture'Botpack.BossDoll'
+     StatusBelt=Texture'Botpack.BossBelt'
      VoicePackMetaClass="BotPack.VoiceBoss"
      SelectionMesh="Botpack.SelectionBoss"
      HitSound1=Sound'Botpack.Boss.BInjur1'
      HitSound2=Sound'Botpack.Boss.BInjur2'
-     Die=Sound'Botpack.Boss.BDeath1'
+     Die=Sound'Botpack.BDeath1'
      MenuName="Boss"
      VoiceType="BotPack.VoiceBotBoss"
      Mesh=LodMesh'Botpack.Boss'

@@ -821,9 +821,8 @@ state Active
 	}
 }
 
-defaultproperties {
-	HitDamage=34
-    PickupAmmoCount=16
+defaultproperties
+{
 	AltProjectileClass=Class'ST_ShockProj'
 	bNewNet=True
 }

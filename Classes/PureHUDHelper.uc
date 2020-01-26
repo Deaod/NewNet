@@ -257,5 +257,6 @@ static simulated function TimeFont(Canvas Canvas, float Scale, FontInfo MyFonts)
 		Canvas.Font = MyFonts.GetSmallestFont(Canvas.ClipX);
 }
 
-defaultproperties {
+defaultproperties
+{
 }

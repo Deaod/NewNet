@@ -49,7 +49,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, False);						// 10 = Pulse Shaft
 				if (bNewNet)
-					bbP.xxNN_TakeDamage(HitActor, class'PulseGun', AccumulatedDamage * damage * 0.9 + 0.050, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, HitNormal, true);
+					bbP.xxNN_TakeDamage(HitActor, class'PulseGun', 1, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
 				else
 					HitActor.TakeDamage(AccumulatedDamage * damage + 0.050, instigator,HitLocation, // *2?...
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
@@ -62,7 +62,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, False);						// 10 = Pulse Shaft
 				if (bNewNet)
-					bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', damage * AccumulatedDamage * 0.9, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, HitNormal, true);
+					bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', 1, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
 				else
 					DamagedActor.TakeDamage(damage * AccumulatedDamage, instigator,HitLocation,
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
@@ -80,7 +80,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, True);						// 10 = Pulse Shaft, Overload
 				if (bNewNet)
-					bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', damage * AccumulatedDamage * 0.9, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, HitNormal, true);
+					bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', 1, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
 				else
 					DamagedActor.TakeDamage(damage * AccumulatedDamage, instigator,HitLocation,
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
@@ -121,7 +121,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 		if (STM != None)
 			STM.PlayerHit(Instigator, 10, True);								// 10 = Pulse Shaft
 		if (bNewNet)
-			bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', damage * AccumulatedDamage * 0.9, Instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, HitNormal, true);
+			bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', 1, Instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
 		else
 			DamagedActor.TakeDamage(damage * AccumulatedDamage, instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius,
 				(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
@@ -172,5 +172,6 @@ simulated function CheckBeam(vector X, float DeltaTime)
 	
 }
 
-defaultproperties {
+defaultproperties
+{
 }

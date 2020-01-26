@@ -42,6 +42,6 @@ function CreateMessage();
 function ShowMessage();
 function HideMessage();
 
-
-defaultproperties {
+defaultproperties
+{
 }

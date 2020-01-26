@@ -89,6 +89,6 @@ simulated function Timer()
 	OldShockDistance = ShockSize*29;	
 }
 
-
-defaultproperties {
+defaultproperties
+{
 }

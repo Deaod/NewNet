@@ -87,5 +87,6 @@ function DrawLeaderBoard( canvas C, GameReplicationInfo GRI )
 {
 }
 
-defaultproperties {
+defaultproperties
+{
 }

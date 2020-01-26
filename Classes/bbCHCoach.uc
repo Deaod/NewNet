@@ -228,9 +228,10 @@ state Coaching extends CheatFlying
 	}
 }
 
-defaultproperties {
-	bChaseCam=False
-	CoachHelpText="Type 'coach 0' to coach red team, and 'coach 1' to coach blue team."
-	CoachHelpText2="Logging in as admin will give you normal spectator abilities."
-	CoachHelpText3="Select a player to view from."
+defaultproperties
+{
+     CoachHelpText="Type 'coach 0' to coach red team, and 'coach 1' to coach blue team."
+     CoachHelpText2="Logging in as admin will give you normal spectator abilities."
+     CoachHelpText3="Select a player to view from."
+     bChaseCam=False
 }

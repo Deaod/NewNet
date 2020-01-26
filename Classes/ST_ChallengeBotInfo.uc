@@ -25,6 +25,6 @@ function class<bot> CHGetBotClass(int n)
 	return BotClass;
 }
 
-
-defaultproperties {
+defaultproperties
+{
 }

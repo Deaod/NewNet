@@ -182,6 +182,7 @@ simulated function DoWallHit(PlayerPawn Pwner, vector HitNormal)
 	}
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

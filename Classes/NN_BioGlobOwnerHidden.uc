@@ -114,6 +114,7 @@ function SpawnSplash()
 	BS.zzNN_ProjIndex = bbP.xxNN_AddProj(BS);
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

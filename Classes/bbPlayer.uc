@@ -2,7 +2,8 @@ class bbPlayer extends TournamentPlayer
 	config(User) abstract;
 
 // Client Config
-var globalconfig bool bNewNet;	// if Client wants new or old netcode. (default true)
+//var globalconfig bool bNewNet;	// if Client wants new or old netcode. (default true)
+var bool bNewNet;	// if Client wants new or old netcode. (default true)
 var globalconfig bool bNoRevert;	// if Client does not want the Revert to Previous Weapon option on Translocator. (default true)
 var globalconfig bool bForceModels;	// if Client wishes models forced to his own. (default false)
 var globalconfig int HitSound;	// if Client wishes hitsounds (default 2, must be enabled on server)
@@ -26,7 +27,6 @@ var bool	zzbForcedTick;		// True on server if Tick was forced (Called more than 
 var bool	zzbBadCanvas;		// True on server if Canvas is NOT engine.canvas
 var bool	zzbVRChanged;		// True on server if client changed viewrotation at wrong time.
 var bool	zzbDemoRecording;	// True if client is recording demos.
-var bool	zzbBadLighting;		// True if Lighting is not good on client (HAX!)
 var float	zzClientTD;		// Client TimeDilation (Should always be same as server or HAX!)
 
 // Replicated settings Server -> Client
@@ -286,7 +286,7 @@ replication
 	reliable if ( Role == ROLE_Authority )
 		zzbIsWarmingUp, zzFRandVals, zzVRandVals,
 		xxNN_MoveClientTTarget, xxSetPendingWeapon, //xxReceiveNextStartSpot,
-		xxSetTeleRadius, xxSetDefaultWeapon, xxSetHitSounds, xxSetDoubleJump, xxSetTimes,	// xxReceivePosition,
+		xxSetTeleRadius, xxSetDefaultWeapon, xxSetSniperSpeed, xxSetHitSounds, xxSetDoubleJump, xxSetTimes,	// xxReceivePosition,
 		xxClientKicker, xxClientSetVelocity; //, xxClientTrigger, xxClientActivateMover;
 
 	//Server->Client function reliable.. no demo propogate! .. bNetOwner? ...
@@ -306,7 +306,7 @@ replication
 	unreliable if ( Role < ROLE_Authority )
 		xxServerMove, xxServerCheater,
 		zzbConsoleInvalid, zzFalse, zzTrue, zzNetspeed, zzbBadConsole, zzbBadCanvas, zzbVRChanged,
-		zzbStoppingTraceBot, zzbForcedTick, zzbDemoRecording, zzbBadLighting, zzClientTD;
+		zzbStoppingTraceBot, zzbForcedTick, zzbDemoRecording, zzClientTD;
 
 	// Client->Server
 	reliable if ( Role < ROLE_Authority )
@@ -318,7 +318,7 @@ replication
 		xxExplodeOther, xxServerSetVelocity; //, xxServerActivateMover;
 	
 	reliable if ((Role < ROLE_Authority) && !bClientDemoRecording)
-		xxNN_ProjExplode, xxNN_ServerTakeDamage, xxNN_RadiusDamage, xxNN_TeleFrag,
+		xxNN_ProjExplode, xxNN_ServerTakeDamage, xxNN_RadiusDamage, xxNN_TeleFrag, xxNN_TransFrag,
 		xxNN_Fire, xxNN_AltFire, xxNN_ReleaseFire, xxNN_ReleaseAltFire, xxNN_MoveTTarget, xxServerPreTeleport;
 }
 
@@ -420,7 +420,7 @@ function xxServerPreTeleport(NN_Teleporter Other, NN_Teleporter Dest, vector Cli
 {
 	local bool bUnblocked;
 	
-	if (Other == None || Level.NetMode == NM_Client || IsInState('Dying') || Mesh == None)
+	if (Other == None || Dest == None || VSize(Dest.Location - ClientLoc) > TeleRadius || Level.NetMode == NM_Client || IsInState('Dying') || Mesh == None)
 		return;
 	
 	if (bBlockPlayers)
@@ -575,7 +575,7 @@ event Possess()
 	{	// Only do this for clients.
 		zzTrue = !zzFalse;
 		zzInfoThing = Spawn(Class'PureInfo');
-		xxServerSetNetCode(bNewNet);
+		//xxServerSetNetCode(bNewNet);
 		xxServerSetNoRevert(bNoRevert);
 		xxServerSetForceModels(bForceModels);
 		xxServerSetHitSounds(HitSound);
@@ -655,6 +655,7 @@ event Possess()
 		maxJumps = zzUTPure.Default.maxJumps;
 		xxSetDoubleJump(bDoubleJump, maxJumps);
 		
+		xxSetSniperSpeed(class'UTPure'.default.SniperSpeed);
 		xxSetDefaultWeapon(Level.Game.BaseMutator.MutatedDefaultWeapon().name);
 		
 		GameReplicationInfo.RemainingTime = DeathMatchPlus(Level.Game).RemainingTime;
@@ -1027,7 +1028,7 @@ simulated function bool TeleporterAccept( NN_Teleporter T, NN_Teleporter Source 
 	
 	foreach VisibleCollidingActors( class 'Pawn', P, CollisionRadius * TeleRadius / 100, Location )
 		if ( P != Self && (!GameReplicationInfo.bTeamGame || PlayerReplicationInfo.Team != P.PlayerReplicationInfo.Team) && ((VSize(P.Location - Location)) < ((P.CollisionRadius + CollisionRadius) * CollisionHeight)) )
-			xxNN_TeleFrag(P, Location);
+			xxNN_TeleFrag(T, P);
 	
 	return true;
 }
@@ -1512,7 +1513,7 @@ function xxServerReceiveStuff( float VelX, float VelY, float VelZ, bool bOnMover
 	
 	zzbOnMover = bOnMover;
 	
-	if ((TeleLoc dot TeleLoc) > 0 && TTarget != None)
+	if ((TeleLoc dot TeleLoc) > 0 && TTarget != None && VSize(TeleLoc - TTarget.Location) < class'UTPure'.default.MaxPosError)
 	{
 		TLoc = Translocator(Weapon);
 		if (TLoc == None)
@@ -1642,9 +1643,6 @@ function xxServerMove
 
 	if (zzbVRChanged)			// View rotation changed on client at wrong time!
 		xxServerCheater("VR");
-
-	if (zzbBadLighting)
-		xxServerCheater("BL");
 
 	zzKickReady = Max(zzKickReady - 1,0);
 
@@ -2369,16 +2367,16 @@ simulated function vector GetVector( BetterVector SomeVector )
 	return Vec;
 }
 
-simulated function xxNN_TakeDamage( actor Other, class<Weapon> WeapClass, int Damage, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType, int ProjIndex, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
+simulated function xxNN_TakeDamage( actor Other, class<Weapon> WeapClass, byte Type, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType, int ProjIndex, optional int DamageAmount, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
 {
 	//if (Other.IsA('Mover'))
 	//	xxMover_TakeDamage(Mover(Other), Damage, Self, HitLocation, Momentum, DamageType);
 	xxEnableCarcasses();
-	xxNN_ServerTakeDamage( Other, WeapClass, Damage, InstigatedBy, HitLocation, GetBetterVector(Momentum), DamageType, ProjIndex, DamageRadius, Which, HitNormal, bSpecial);
+	xxNN_ServerTakeDamage( Other, WeapClass, Type, InstigatedBy, HitLocation, GetBetterVector(Momentum), DamageType, ProjIndex, DamageAmount, DamageRadius, Which, HitNormal, bSpecial);
 	xxDisableCarcasses();
 }
 
-function xxNN_ServerTakeDamage( actor Other, class<Weapon> WeapClass, int Damage, Pawn InstigatedBy, Vector HitLocation, BetterVector BetterMomentum, name DamageType, int ProjIndex, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
+function xxNN_ServerTakeDamage( Actor Other, class<Weapon> WeapClass, byte Type, Pawn InstigatedBy, Vector HitLocation, BetterVector BetterMomentum, name DamageType, int ProjIndex, optional int ClientDamage, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
 {
 	local bbPlayer bbP, bbK;
 	local Weapon W;
@@ -2387,9 +2385,13 @@ function xxNN_ServerTakeDamage( actor Other, class<Weapon> WeapClass, int Damage
 	local vector ProjLocation;
 	local int MaxHitError;
 	local vector Momentum;
+	local float Damage;
 	
 	bbP = bbPlayer(Other);
-	if (Other == None || InstigatedBy == None || xxGarbageLocation(Other) || bbP != None && !bbP.xxCloseEnough(HitLocation))
+	Damage = NN_GetDamageAmount(WeapClass, Type);
+	if (Damage > ClientDamage && ClientDamage > 0)
+		Damage = ClientDamage;
+	if (Damage == 0 || Other == None || InstigatedBy == None || xxGarbageLocation(Other) || bbP != None && !bbP.xxCloseEnough(HitLocation))
 		return;
 	
 	xxEnableCarcasses();
@@ -2448,10 +2450,10 @@ function xxNN_ServerTakeDamage( actor Other, class<Weapon> WeapClass, int Damage
 	
 }
 
-function xxNN_RadiusDamage( actor Other, class<Weapon> WeapClass, int Damage, float DamageRadius, Pawn InstigatedBy, Vector HitLocation, Vector HitDiff, float MomentumXfer, name damageType, int ProjIndex, optional int Which)
+function xxNN_RadiusDamage( actor Other, class<Weapon> WeapClass, byte Type, int ClientDamage, float DamageRadius, Pawn InstigatedBy, Vector HitLocation, Vector HitDiff, float MomentumXfer, name damageType, int ProjIndex, optional int Which)
 {
 	local bbPlayer bbP, bbK;
-	local float damageScale, dist;
+	local float damageScale, Damage, dist, maxRadius;
 	local vector dir, momentum;
 	local Weapon W;
 	local bool bHack;
@@ -2464,6 +2466,17 @@ function xxNN_RadiusDamage( actor Other, class<Weapon> WeapClass, int Damage, fl
 	
 	xxEnableCarcasses();
 	bbP = bbPlayer(Other);
+	Damage = NN_GetDamageAmount(WeapClass, Type);
+	if (Damage > ClientDamage)
+		Damage = ClientDamage;
+	if (Damage == 0)
+		return;
+	maxRadius = NN_GetDamageRadius(WeapClass);
+	if (DamageRadius > maxRadius)
+		DamageRadius = maxRadius;
+	if (DamageRadius == 0)
+		return;
+	
 	if (bbP != None && ProjIndex > -1)
 	{
 		Proj = zzNN_Projectiles[ProjIndex];
@@ -2513,16 +2526,28 @@ function xxNN_RadiusDamage( actor Other, class<Weapon> WeapClass, int Damage, fl
 	
 }
 
-function xxNN_TeleFrag( Pawn Other, vector TeleLocation )
+// Think about what you're doing.  Look at the bigger picture of it all, if you're able to.  This is a 15+ year old video game.
+// Is this really the legacy you want to leave behind?  You'll never amount to anything if you keep this up.
+// Seriously.  Do something good with your time.  Build something that improves lives.
+// I understand that you are bitter, but you'll feel better if you listen to me.
+// Doing good things will make you feel good.
+
+function xxNN_TeleFrag( NN_Teleporter Tele, Pawn Other )
 {
-	if (!IsInState('Dying') && !Other.IsInState('Dying') && !xxGarbageLocation(Other) && (!Other.IsA('bbPlayer') || VSize(Other.Location - TeleLocation) < TeleRadius))
+	if (!IsInState('Dying') && !Other.IsInState('Dying') && !xxGarbageLocation(Other) && (!Other.IsA('bbPlayer') || VSize(Other.Location - Tele.Location) < TeleRadius))
+		Other.GibbedBy(Self);
+}
+
+function xxNN_TransFrag( Pawn Other )
+{
+	if (!IsInState('Dying') && !Other.IsInState('Dying') && !xxGarbageLocation(Other) && (!Other.IsA('bbPlayer') || VSize(Other.Location - TTarget.Location) < TeleRadius))
 		Other.GibbedBy(Self);
 }
 
 function xxNN_MoveTTarget( vector NewLoc, optional int Damage, optional Pawn EventInstigator, optional vector HitLocation, optional vector Momentum, optional name DamageType)
 {
 	local vector OldLoc;
-	if (Role < ROLE_Authority || TTarget == None || xxGarbageLocation(TTarget))
+	if (Role < ROLE_Authority || TTarget == None || xxGarbageLocation(TTarget) || VSize(NewLoc - TTarget.Location) > Class'UTPure'.Default.MaxPosError)
 		return;
 		
 	OldLoc = TTarget.Location;
@@ -2566,6 +2591,11 @@ simulated function xxSetDoubleJump(bool bDJ, int mJ)
 simulated function xxSetDefaultWeapon(name W)
 {
 	zzDefaultWeapon = W;
+}
+
+simulated function xxSetSniperSpeed(float SniperSpeed)
+{
+	class'UTPure'.default.SniperSpeed = SniperSpeed;
 }
 
 simulated function xxSetTimes(int RemainingTime, int ElapsedTime)
@@ -3127,14 +3157,141 @@ simulated function xxServerSetVelocity( vector NewVelocity )
 	}
 }
 
-function NN_HurtRadius( actor ActualSelf, class<Weapon> WeapClass, float DamageAmount, float DamageRadius, name DamageName, float MomentumXfer, vector HitLocation, int ProjIndex, optional bool bNoSelf )
+function float NN_GetDamageAmount( class<Weapon> WeapClass, byte Type )
+{
+	local float DamageAmount;
+	if (Type == 0) {
+		switch (WeapClass) {
+			case class'enforcer':
+				DamageAmount = class'UTPure'.default.EnforcerDamagePri;
+			break;
+			case class'UT_BioRifle':
+				DamageAmount = class'UTPure'.default.BioDamagePri;
+			break;
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamagePri;
+			break;
+			case class'PulseGun':
+				DamageAmount = class'UTPure'.default.PulseDamagePri;
+			break;
+			case class'ripper':
+				DamageAmount = class'UTPure'.default.RipperDamagePri;
+			break;
+			case class'minigun2':
+				DamageAmount = class'UTPure'.default.MinigunDamagePri;
+			break;
+			case class'UT_FlakCannon':
+				DamageAmount = class'UTPure'.default.FlakDamagePri;
+			break;
+			case class'UT_Eightball':
+				DamageAmount = class'UTPure'.default.RocketDamagePri;
+			break;
+/*
+			case class'SniperRifle':
+				DamageAmount = class'UTPure'.default.SniperDamagePri;
+			break;
+*/
+		}
+	} else if (Type == 1) {
+		switch (WeapClass) {
+			case class'enforcer':
+				DamageAmount = class'UTPure'.default.EnforcerDamageSec;
+			break;
+			case class'UT_BioRifle':
+				DamageAmount = class'UTPure'.default.BioDamageSec;
+			break;
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageSec;
+			break;
+			case class'PulseGun':
+				DamageAmount = class'UTPure'.default.PulseDamageSec;
+			break;
+			case class'ripper':
+				DamageAmount = class'UTPure'.default.RipperDamageSec;
+			break;
+			case class'minigun2':
+				DamageAmount = class'UTPure'.default.MinigunDamageSec;
+			break;
+			case class'UT_FlakCannon':
+				DamageAmount = class'UTPure'.default.FlakDamageSec;
+			break;
+			case class'UT_Eightball':
+				DamageAmount = class'UTPure'.default.RocketDamageSec;
+			break;
+/*
+			case class'SniperRifle':
+				DamageAmount = class'UTPure'.default.HeadshotDamage;
+			break;
+*/
+		}
+	} else if (Type == 2) {
+		switch (WeapClass) {
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageCombo;
+			break;
+			case class'ripper':
+				DamageAmount = class'UTPure'.default.RipperDamagePri * 3.5;
+			break;
+		}
+	} else if (Type == 3) {
+		switch (WeapClass) {
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageCombo * 9;
+			break;
+		}
+	} else if (Type == 4) {
+		switch (WeapClass) {
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageCombo * 3000;
+			break;
+		}
+	} else if (Type == 5) {
+		switch (WeapClass) {
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageCombo * 9000;
+			break;
+		}
+	}
+	return DamageAmount;
+}
+
+function float NN_GetDamageRadius( class<Weapon> WeapClass )
+{
+	local float DamageRadius;
+	switch (WeapClass) {
+		case class'UT_FlakCannon':
+			DamageRadius = 150;
+		break;
+		case class'UT_Eightball':
+			DamageRadius = 220;
+		break;
+		case class'ShockRifle':
+			DamageRadius = 250;
+		break;
+		case class'UT_BioRifle':
+			DamageRadius = 250;
+		break;
+		case class'ripper':
+			DamageRadius = 180;
+		break;
+	}
+	return DamageRadius;
+}
+
+function NN_HurtRadius( actor ActualSelf, class<Weapon> WeapClass, byte Type, float DamageRadius, name DamageName, float MomentumXfer, vector HitLocation, int ProjIndex, optional bool bNoSelf, optional int ClientDamage )
 {
 	local actor Victims, TracedTo;
-	local float damageScale, dist;
+	local float damageScale, Damage, dist;
 	local vector diff, dir, MoverHitLocation, MoverHitNormal;
 	local Mover M;
 	
 	if( ActualSelf == None || ActualSelf.bHurtEntry )
+		return;
+	
+	Damage = NN_GetDamageAmount(WeapClass, Type);
+	if (Damage > ClientDamage && ClientDamage > 0)
+		Damage = ClientDamage;
+	if (Damage == 0)
 		return;
 	
 	xxEnableCarcasses();
@@ -3155,7 +3312,8 @@ function NN_HurtRadius( actor ActualSelf, class<Weapon> WeapClass, float DamageA
 				(
 					Victims,
 					WeapClass,
-					damageScale * DamageAmount,
+					Type,
+					damageScale * Damage,
 					DamageRadius,
 					ActualSelf.Instigator, 
 					HitLocation,
@@ -3177,7 +3335,7 @@ function NN_HurtRadius( actor ActualSelf, class<Weapon> WeapClass, float DamageA
 			continue;
 		dir = dir/dist;
 		damageScale = 1 - FMax(0,(dist - M.CollisionRadius)/DamageRadius);
-		xxNN_ServerTakeDamage( M, WeapClass, damageScale * DamageAmount, ActualSelf.Instigator, HitLocation, GetBetterVector(damageScale * MomentumXfer * dir), DamageName, ProjIndex);
+		xxNN_ServerTakeDamage( M, WeapClass, Type, ActualSelf.Instigator, HitLocation, GetBetterVector(damageScale * MomentumXfer * dir), DamageName, ProjIndex, Damage * damageScale);
 		//xxMover_TakeDamage( M, damageScale * DamageAmount, Self, M.Location - 0.5 * (M.CollisionHeight + M.CollisionRadius) * dir, damageScale * MomentumXfer * dir, DamageName );
 	}
 	
@@ -4360,7 +4518,7 @@ function GiveMeWeapons()
 	
 	if (bNewNet)
 	{
-		PreFix = "NewNetWeapons"$class'UTPure'.default.ThisVer$".";
+		PreFix = "UltimateNewNet"$class'UTPure'.default.ThisVer$".";
 		
 		WeaponList[WeapCnt++] = PreFix$"ST_enforcer";	// If it is instagib/other the enforcer will be removed upon spawn
 
@@ -5330,14 +5488,6 @@ event PreRender( canvas zzCanvas )
 					{
 						zzP.Health = -5*zzx-4;
 						if (zzP.LightType == LT_Steady)
-						{
-							zzbBadLighting = zzbBadLighting || (zzP.AmbientGlow != 254) || (zzP.LightRadius > 10);
-						}
-						else
-						{
-							zzP.LightRadius = 0;
-							zzbBadLighting = zzbBadLighting || (zzP.AmbientGlow != 17);
-						}
 					}
 					zzPRI.PlayerLocation = PlayerReplicationInfo.PlayerLocation;
 					zzPRI.PlayerZone = None;
@@ -5694,7 +5844,7 @@ simulated function xxDrawLogo(canvas zzC, float zzx, float zzY, float zzFadeValu
 	zzC.DrawColor = ChallengeHud(MyHud).GoldColor * zzFadeValue;
 	zzC.SetPos(zzx+70,zzY+8);
 	zzC.Font = ChallengeHud(MyHud).MyFonts.GetBigFont(zzC.ClipX);
-	zzC.DrawText("NewNet");
+	zzC.DrawText("UltimateNewNet");
 	zzC.SetPos(zzx+70,zzY+35);
 	//zzC.Font = ChallengeHud(MyHud).MyFonts.GetSmallestFont(zzC.ClipX);
 	zzC.Font = ChallengeHud(MyHud).MyFonts.GetBigFont(zzC.ClipX);
@@ -6343,10 +6493,10 @@ exec function Sens(float F)
 
 exec function NewNetCode(bool bUseIt)
 {
-	bNewNet = bUseIt;
-	xxServerSetNetCode(bNewNet);
-	SaveConfig();
-	ClientMessage("NewNetCode :"@bNewNet);
+	//bNewNet = bUseIt;
+	//xxServerSetNetCode(bNewNet);
+	//SaveConfig();
+	//ClientMessage("NewNetCode :"@bNewNet);
 }
 
 exec function NoRevert(bool b)
@@ -6451,7 +6601,7 @@ exec function NoSwitchWeapon4(bool b)
 
 function xxServerSetNetCode(bool bNewCode)
 {
-	bNewNet = bNewCode;
+	//bNewNet = bNewCode;
 }
 
 function xxServerSetNoRevert(bool b)
@@ -7633,23 +7783,22 @@ function Landed(vector HitNormal)
 }
 
 // 	AmbientGlow=17
+
 defaultproperties
 {
-	bAlwaysRelevant=True
-    bNewNet=True
-    bNoRevert=True
-    HitSound=2
-    TeamHitSound=3
-    bTeamInfo=True
-	HUDInfo=1
-	bAutoDemo=False
-	DemoMask="%l_[%y_%m_%d_%t]_[%c]_%e"
-	DemoPath=""
-    TeleRadius=210
-	PortalRadius=50
-	TriggerRadius=50
-    FRVI_length=47
-    VRVI_length=17
-    NN_ProjLength=256
-	nofJumps=1
+     bNewNet=True
+     bNoRevert=True
+     HitSound=2
+     TeamHitSound=3
+     bTeamInfo=True
+     DemoMask="%l_[%y_%m_%d_%t]_[%c]_%e"
+     HUDInfo=1
+     TeleRadius=210
+     PortalRadius=50
+     TriggerRadius=50
+     FRVI_length=47
+     VRVI_length=17
+     NN_ProjLength=256
+     nofJumps=1
+     bAlwaysRelevant=True
 }

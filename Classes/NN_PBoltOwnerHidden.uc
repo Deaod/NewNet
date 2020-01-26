@@ -49,7 +49,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, False);						// 10 = Pulse Shaft
 				if (!bNewNet)
-					HitActor.TakeDamage(AccumulatedDamage * damage * 0.9 + 0.050, instigator,HitLocation, // *2?...
+					HitActor.TakeDamage(AccumulatedDamage * damage * 0.5 + 0.050, instigator,HitLocation, // *2?...
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
 				if (STM != None)
 					STM.PlayerClear();
@@ -60,7 +60,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, False);						// 10 = Pulse Shaft
 				if (!bNewNet)
-					DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.9, instigator,HitLocation,
+					DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.5, instigator,HitLocation,
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
 				if (STM != None)
 					STM.PlayerClear();
@@ -76,7 +76,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 				if (STM != None)
 					STM.PlayerHit(Instigator, 10, True);						// 10 = Pulse Shaft, Overload
 				if (!bNewNet)
-					DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.9, instigator,HitLocation,
+					DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.5, instigator,HitLocation,
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
 				if (STM != None)
 					STM.PlayerClear();
@@ -115,7 +115,7 @@ simulated function CheckBeam(vector X, float DeltaTime)
 		if (STM != None)
 			STM.PlayerHit(Instigator, 10, True);								// 10 = Pulse Shaft
 		if (!bNewNet)
-			DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.9, instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius,
+			DamagedActor.TakeDamage(damage * AccumulatedDamage * 0.5, instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius,
 				(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
 		if (STM != None)
 			STM.PlayerClear();
@@ -174,7 +174,8 @@ simulated function DoAmbientSound(PlayerPawn Pwner)
 			PlasmaBeam.AmbientSound = Sound'Botpack.PulseGun.PulseBolt';
 }
 
-defaultproperties {
-	bOwnerNoSee=True
-	AmbientSound=None
+defaultproperties
+{
+     bOwnerNoSee=True
+     AmbientSound=None
 }

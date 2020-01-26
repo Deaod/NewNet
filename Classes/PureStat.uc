@@ -37,7 +37,8 @@ function PostBeginPlay()
 	Destroy();
 }
 
-defaultproperties {
-	cM=Class'ST_Mutator'
-	bEnabled=True
+defaultproperties
+{
+     cm=Class'ST_Mutator'
+     bEnabled=True
 }

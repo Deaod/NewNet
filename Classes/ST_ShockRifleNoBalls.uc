@@ -8,7 +8,8 @@ function AltFire( float Value )
 {
 }
 
-defaultproperties {
-	HitDamage=40
-    PickupAmmoCount=20
+defaultproperties
+{
+     hitdamage=40
+     PickupAmmoCount=20
 }

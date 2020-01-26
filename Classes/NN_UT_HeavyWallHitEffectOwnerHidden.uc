@@ -6,6 +6,7 @@ simulated function SpawnEffects()
 		Super.SpawnEffects();
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

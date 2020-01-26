@@ -26,7 +26,8 @@ function SetState(byte Type)
 
 simulated function PostRender( Canvas Canvas );
 
-defaultproperties {
-	RemoteRole=ROLE_SimulatedProxy
-	NetPriority=0.500000
+defaultproperties
+{
+     RemoteRole=ROLE_SimulatedProxy
+     NetPriority=0.500000
 }

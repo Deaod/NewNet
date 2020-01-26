@@ -6,3 +6,7 @@ simulated event Actor SpawnNotification(Actor A)
 		A.SetCollision(false, false, false);
 	return A;
 }
+
+defaultproperties
+{
+}

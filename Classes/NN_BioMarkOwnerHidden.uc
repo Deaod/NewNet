@@ -10,5 +10,5 @@ simulated function BeginPlay()
 
 defaultproperties
 {
-	bOwnerNoSee=True
+     bOwnerNoSee=True
 }

@@ -46,3 +46,7 @@ static function ClientReceive(
 	else
 		Super.ClientReceive(P, Switch, RelatedPRI_1, RelatedPRI_2, OptionalObject);
 }
+
+defaultproperties
+{
+}

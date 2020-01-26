@@ -61,7 +61,7 @@ auto state Flying
 		if (bbP != None && bbP.bNewNet)
 		{
 			if (Level.NetMode == NM_Client && !IsA('NN_rocketmk2OwnerHidden'))
-				bbP.NN_HurtRadius(self, class'UT_Eightball', Damage, 220.0, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex );
+				bbP.NN_HurtRadius(self, class'UT_Eightball', 0, 220.0, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex );
 		}
 		else
 		{
@@ -124,5 +124,6 @@ auto state Flying
 	}
 }
 
-defaultproperties {
+defaultproperties
+{
 }

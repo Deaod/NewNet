@@ -147,6 +147,7 @@ simulated function NewProcessTouch (Actor Other, vector HitLocation)
 	}
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

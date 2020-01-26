@@ -1275,7 +1275,7 @@ simulated function DrawTwoColorID( canvas Canvas, string TitleString, string Val
 
 simulated event PreRender( canvas Canvas );
 
-defaultproperties {
-	ServerInfoClass=Class'PureServerInfoCTF'
-
+defaultproperties
+{
+     ServerInfoClass=Class'PureServerInfoCTF'
 }

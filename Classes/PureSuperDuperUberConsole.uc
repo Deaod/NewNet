@@ -1340,6 +1340,7 @@ exec function Version()
 		bbCHSpectator(ViewPort.Actor).ClientMessage(class'UTPure'.Default.VersionStr@class'UTPure'.Default.LongVersion$class'UTPure'.Default.NiceVer);
 }
 
-defaultProperties {
-	Ello="g0v"
+defaultproperties
+{
+     Ello="g0v"
 }

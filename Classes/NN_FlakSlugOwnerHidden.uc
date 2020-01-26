@@ -174,6 +174,7 @@ function Timer()
 		SetTimer(0.04,True);
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

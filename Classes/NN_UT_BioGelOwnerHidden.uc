@@ -120,6 +120,7 @@ simulated function SetWall(vector HitNormal, Actor Wall)
 		SetBase(Wall);
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

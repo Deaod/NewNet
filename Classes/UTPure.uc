@@ -9,6 +9,27 @@ class UTPure extends Mutator;
 
 var ModifyLoginHandler NextMLH;			// Link list of handlers
 
+var localized config int EnforcerDamagePri;
+var localized config int EnforcerDamageSec;
+var localized config int BioDamagePri;
+var localized config int BioDamageSec;
+var localized config int ShockDamagePri;
+var localized config int ShockDamageSec;
+var localized config int ShockDamageCombo;
+var localized config int PulseDamagePri;
+var localized config int PulseDamageSec;
+var localized config int RipperDamagePri;
+var localized config int RipperDamageSec;
+var localized config int MinigunDamagePri;
+var localized config int MinigunDamageSec;
+var localized config int FlakDamagePri;
+var localized config int FlakDamageSec;
+var localized config int RocketDamagePri;
+var localized config int RocketDamageSec;
+//var localized config int SniperDamagePri;
+//var localized config int HeadshotDamage;
+var localized config float SniperSpeed;
+
 // Enable or disable.
 var localized config bool bUTPureEnabled;	// Possible to enable/disable UTPure without changing ini's
 // Advertising
@@ -105,8 +126,7 @@ function PreBeginPlay()
 	zzDMP = DeathMatchPlus(Level.Game);
 	if (zzDMP == None)
 		return;
-	
-	Spawn(class'NN_SpawnNotify');
+
 	ReplaceTeleporters();
 	//DisableMovers();
 	
@@ -145,7 +165,7 @@ function PostBeginPlay()
 	Super.PostBeginPlay();
 
 	xxLog("###############################");
-	xxLog("#          "$VersionStr$"       #");
+	xxLog("#        "$VersionStr$"       #");
 	if (zzDMP == None)
 	{
 		xxLog("#          ERROR!             #");
@@ -660,7 +680,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 		if (zzDMP.bTeamGame && zzDMP.bTournament && bCoaches)	// Only allow coaches in bTournament Team games.
 			SpawnClass = class'bbCHCoach';
 		else
-			SpawnClass = class'bbCHSpectator';
+			SpawnClass = class'CHSpectator';
 	}	
 	
 	origSC = SpawnClass;
@@ -1435,42 +1455,55 @@ event Destroyed()	// Make sure config is stored. (Don't think this is ever calle
 
 defaultproperties
 {
-	bAlwaysTick=True
-	VersionStr="NewNetUnreal"
-	LongVersion="Beta "
-	ThisVer="v0_9"
-	NiceVer="v0.9"
-	bUTPureEnabled=True
-	Advertise=1
-	AdvertiseMsg=1
-	bAllowCenterView=False
-	CenterViewDelay=1.00
-	bAllowBehindView=False
-	TrackFOV=2
-	bAllowMultiWeapon=False
-	bFastTeams=True
-	bUseClickboard=True
-	MinClientRate=12000
-	bAdvancedTeamSay=True
-	ForceSettingsLevel=2
-	bNoLockdown=True
-	bWarmup=True
-	bCoaches=False
-	bAutoPause=False
-	ForceModels=1
-	ImprovedHUD=1
-	bDelayedPickupSpawn=False
-	bTellSpectators=False
-	PlayerPacks(0)=BP1
-	PlayerPacks(1)=BP4
-	MinPosError=10
-	MaxPosError=1000
-	MaxHitError=10000
-	TeleRadius=210
-	ThrowVelocity=750
-	DefaultHitSound=2
-	DefaultTeamHitSound=3
-	bForceDemo=False
-	maxJumps=2
-	BADminText="Not allowed - Log in as admin!"
+     EnforcerDamagePri=14
+     EnforcerDamageSec=14
+     BioDamagePri=20
+     BioDamageSec=200
+     ShockDamagePri=34
+     ShockDamageSec=55
+     ShockDamageCombo=165
+     PulseDamagePri=20
+     PulseDamageSec=3
+     RipperDamagePri=30
+     RipperDamageSec=34
+     MinigunDamagePri=8
+     MinigunDamageSec=11
+     FlakDamagePri=16
+     FlakDamageSec=70
+     RocketDamagePri=75
+     RocketDamageSec=80
+     //SniperDamagePri=50
+     //HeadshotDamage=100
+     SniperSpeed=0.700000
+     bUTPureEnabled=True
+     Advertise=1
+     AdvertiseMsg=1
+     CenterViewDelay=1.000000
+     TrackFOV=2
+     bFastTeams=True
+     bUseClickboard=True
+     MinClientRate=12000
+     bAdvancedTeamSay=True
+     ForceSettingsLevel=2
+     bNoLockdown=True
+     bWarmup=True
+     ForceModels=1
+     ImprovedHUD=1
+     PlayerPacks(0)="VA"
+     PlayerPacks(1)="BP1"
+     PlayerPacks(2)="BP4"
+     DefaultHitSound=2
+     DefaultTeamHitSound=3
+     TeleRadius=210
+     ThrowVelocity=750
+     maxJumps=2
+     VersionStr="UltimateNewNet"
+     LongVersion="Build "
+     ThisVer="v0_3_1"
+     NiceVer="v0.3.1"
+     BADminText="Not allowed - Log in as admin!"
+     MinPosError=10
+     MaxPosError=1000
+     MaxHitError=10000
+     bAlwaysTick=True
 }

@@ -46,12 +46,12 @@ auto state Flying
 				{
 					if ( Other.bIsPawn && (HitLocation.Z - Other.Location.Z > 0.62 * Other.CollisionHeight) )
 					{
-						bbP.xxNN_TakeDamage(Other, class'Ripper', 3.5 * damage, instigator,HitLocation,
+						bbP.xxNN_TakeDamage(Other, class'Ripper', 2, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'decapitated', zzNN_ProjIndex );
 					}
 					else			 
 					{
-						bbP.xxNN_TakeDamage(Other, class'Ripper', damage, instigator,HitLocation,
+						bbP.xxNN_TakeDamage(Other, class'Ripper', 0, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'shredded', zzNN_ProjIndex );
 					}
 					bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, (MomentumTransfer * Normal(Velocity)));

@@ -1,5 +1,6 @@
 class NN_SuperShockBeamOwnerHidden expands NN_SuperShockBeam;
 
-defaultproperties {
+defaultproperties
+{
      bOwnerNoSee=True
 }

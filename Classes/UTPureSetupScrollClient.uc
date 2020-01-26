@@ -17,5 +17,4 @@ function Created()
 
 defaultproperties
 {
-
 }

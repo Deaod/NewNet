@@ -245,12 +245,12 @@ simulated function Tick(float DeltaTime) {
 
 defaultproperties
 {
-	bAlwaysRelevant=True
-	ImpactSound=None
-	AmbientSound=None
-	bOwnerNoSee=True
-	GlowColor(0)=Class'NN_TranslocGlowOwnerHidden'
-	GlowColor(1)=Class'NN_TranslocBlueOwnerHidden'
-	GlowColor(2)=Class'NN_TranslocGreenOwnerHidden'
-	GlowColor(3)=Class'NN_TranslocGoldOwnerHidden'
+     GlowColor(0)=Class'NN_TranslocGlowOwnerHidden'
+     GlowColor(1)=Class'NN_TranslocBlueOwnerHidden'
+     GlowColor(2)=Class'NN_TranslocGreenOwnerHidden'
+     GlowColor(3)=Class'NN_TranslocGoldOwnerHidden'
+     ImpactSound=None
+     bOwnerNoSee=True
+     bAlwaysRelevant=True
+     AmbientSound=None
 }

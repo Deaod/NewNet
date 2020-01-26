@@ -95,3 +95,7 @@ simulated function xxFixActor(class<Actor> C, Vector L, Vector V, Vector A, Rota
 		zzActorIndex = 0;
 	zzActorCount++;
 }
+
+defaultproperties
+{
+}

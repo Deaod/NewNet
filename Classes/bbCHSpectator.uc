@@ -736,7 +736,8 @@ exec function ShowStats()
 	//	Stat.SetState(0);
 }
 
-defaultproperties {
-    HitSound=2
-    TeamHitSound=3
+defaultproperties
+{
+     HitSound=2
+     TeamHitSound=3
 }

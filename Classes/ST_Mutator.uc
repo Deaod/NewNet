@@ -417,15 +417,10 @@ function string GetReplacementWeapon(Weapon W, bool bDamnEpic)
 		WStr = "ST_UT_Eightball";
 		BitMap = (1 << 16) | (1 << 17);			// Rocket Launcher = 16, 17
 	}
-	else if ((W.IsA('SniperRifle') && !W.IsA('ST_SniperRifle')) || W.IsA('Rifle'))
-	{
-		WStr = "ST_SniperRifle";
-		BitMap = (1 << 18);				// Sniper = 18
-	}
 	else if (W.IsA('WarheadLauncher') && !W.IsA('ST_WarheadLauncher'))
 	{
 		WStr = "ST_WarheadLauncher";
-		BitMap = (1 << 19);				// Redeemer = 19
+		BitMap = (1 << 18);				// Redeemer = 19
 	}
 
 	WeaponDisplay = WeaponDisplay | BitMap;
@@ -459,10 +454,8 @@ function FixBitMap(name WeaponName, bool bDamnEpic)
 		BitMap = (1 << 14) | (1 << 15);			// Flak Cannon = 14, 15
 	else if (WeaponName == 'ST_UT_Eightball')
 		BitMap = (1 << 16) | (1 << 17);			// Rocket Launcher = 16, 17
-	else if (WeaponName == 'ST_SniperRifle')
-		BitMap = (1 << 18);				// Sniper = 18
 	else if (WeaponName == 'ST_WarheadLauncher')
-		BitMap = (1 << 19);				// Redeemer = 19
+		BitMap = (1 << 18);				// Redeemer = 19
 
 	WeaponDisplay = WeaponDisplay | BitMap;
 }
@@ -651,7 +644,7 @@ function ModifyPlayer(Pawn Other)
 {
 	local ST_PureStats STW;
 	local bool bFound;
-
+	
 	STW = GetStats(Other);
 	if (STW == None)
 	{	// Don't add stats if not bbPlayer or ST_HumanBotPlus
@@ -692,6 +685,7 @@ function ModifyPlayer(Pawn Other)
 }
 
 function bool AlwaysKeep(Actor Other) {
+
     if (
 		Level.Game.IsA('Assault') && Other.IsA('ST_enforcer') ||
 		(
@@ -710,6 +704,7 @@ function bool AlwaysKeep(Actor Other) {
 }
 
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
+
     if ( Level.Game.IsA('Assault') && Other.IsA('Weapon') ) {
         if ( Other.IsA('Enforcer') ) {
             ReplaceWith( Other, Prefix$"ST_enforcer" );
@@ -732,12 +727,11 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 		if (Other.IsA('ShockCore') || Other.IsA('BulletBox'))
 		{
 			if (TournamentAmmo(Other).AmmoAmount == 10)
-				TournamentAmmo(Other).AmmoAmount = 8;
+				TournamentAmmo(Other).AmmoAmount = 10;
 			if (TournamentAmmo(Other).MaxAmmo == 50)
-				TournamentAmmo(Other).MaxAmmo = 40;
+				TournamentAmmo(Other).MaxAmmo = 50;
 		}
 	}
-	
     return true;
 }
 
@@ -836,10 +830,10 @@ function Mutate(string MutateString, PlayerPawn Sender)
 		NextMutator.Mutate(MutateString, Sender);
 }
 
-defaultproperties {
-	DefaultWeapon=class'ST_ImpactHammer'
-	ST_Log=PureStats
-	PreFix="NewNetWeapons"
-	WelcomeMessage="This server is using Pure Stats! Type 'showstats' into console to view!"
-	VecNull=(0,0,0)
+defaultproperties
+{
+     ST_Log=PureStats
+     Prefix="UltimateNewNet"
+     WelcomeMessage="This server is using Pure Stats! Type 'showstats' into console to view!"
+     DefaultWeapon=Class'UltimateNewNetv0_3_1.ST_ImpactHammer'
 }

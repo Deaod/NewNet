@@ -10,5 +10,6 @@ var Object zzCanvas;
 var PureSystem zzInput;
 var Object zzRenDev;
 
-defaultproperties {
+defaultproperties
+{
 }
