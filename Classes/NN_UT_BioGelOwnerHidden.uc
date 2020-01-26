@@ -2,17 +2,24 @@ class NN_UT_BioGelOwnerHidden extends ST_UT_BioGel;
 
 var bool bAlreadyHidden;
 
-simulated function Tick(float DeltaTime) {
-	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+simulated function Tick(float DeltaTime)
+{
+	Super(UT_BioGel).Tick(DeltaTime);
+
+	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None)
+	{
 		LightType = LT_None;
-		SetCollisionSize(0, 0);
+		DrawType = DT_None;
+		//SetCollisionSize(0.0, 0.0);
 		bAlreadyHidden = True;
 	}
 }
 
-function Timer()
+simulated function Timer()
 {
-	DoPuff(PlayerPawn(Owner));
+	if(PlayerPawn(Owner) != None)
+		DoPuff(PlayerPawn(Owner));
+
 	PlayOwnedSound (MiscSound,,3.0*DrawScale);	
 	if ( (Mover(Base) != None) && Mover(Base).bDamageTriggered )
 		Base.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
@@ -27,7 +34,8 @@ simulated function DoPuff(PlayerPawn Pwner)
 	local ut_GreenGelPuff f;
 	local Pawn P;
 
-	if (RemoteRole < ROLE_Authority) {
+	if (RemoteRole < ROLE_Authority)
+	{
 		for (P = Level.PawnList; P != None; P = P.NextPawn)
 			if (P != Pwner) {
 				f = spawn(class'ut_GreenGelPuff',P,,Location + SurfaceNormal*8); 

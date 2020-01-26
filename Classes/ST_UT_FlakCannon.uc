@@ -536,17 +536,25 @@ simulated function PlaySelect()
 	bForceFire = false;
 	bForceAltFire = false;
 	bCanClientFire = false;
-	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+	if(Pawn(Owner) != None)
+	{
+		if(Class'IndiaSettings'.default.bFWS)
+			PlayAnim('Still',1000.00);
+		else	
+			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+	}
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
 }
 
 simulated function TweenDown()
 {
-	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
-		TweenAnim( AnimSequence, AnimFrame * 0.4 );
-	else
-		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+	if(Pawn(Owner) != None)
+	{
+		if(Class'IndiaSettings'.default.bFWS)
+			PlayAnim('Still',1000.00);
+		else	
+			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
+	}
 }
 
 simulated function PlayPostSelect()

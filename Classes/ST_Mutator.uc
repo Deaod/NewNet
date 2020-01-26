@@ -1,15 +1,9 @@
-// ===============================================================
-// Stats.ST_Mutator: put your comment here
-
-// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
-// ===============================================================
-
 class ST_Mutator extends PureStatMutator;
 
 // Good to have Variables
 var name ST_Log;
 var string PreFix;
-var string WelcomeMessage;
+var string WelcomeMessage, MutateUltimateMessage;
 var DeathMatchPlus DMP;
 var vector VecNull;
 var bool bFixedWeapons, bStarted, bEnded;
@@ -417,10 +411,15 @@ function string GetReplacementWeapon(Weapon W, bool bDamnEpic)
 		WStr = "ST_UT_Eightball";
 		BitMap = (1 << 16) | (1 << 17);			// Rocket Launcher = 16, 17
 	}
+	else if ((W.IsA('SniperRifle') && !W.IsA('ST_SniperRifle')) || W.IsA('Rifle'))
+	{
+		WStr = "ST_SniperRifle";
+		BitMap = (1 << 18);				// Sniper = 18
+	}
 	else if (W.IsA('WarheadLauncher') && !W.IsA('ST_WarheadLauncher'))
 	{
 		WStr = "ST_WarheadLauncher";
-		BitMap = (1 << 18);				// Redeemer = 19
+		BitMap = (1 << 19);				// Redeemer = 19
 	}
 
 	WeaponDisplay = WeaponDisplay | BitMap;
@@ -454,8 +453,10 @@ function FixBitMap(name WeaponName, bool bDamnEpic)
 		BitMap = (1 << 14) | (1 << 15);			// Flak Cannon = 14, 15
 	else if (WeaponName == 'ST_UT_Eightball')
 		BitMap = (1 << 16) | (1 << 17);			// Rocket Launcher = 16, 17
+	else if (WeaponName == 'ST_SniperRifle')
+		BitMap = (1 << 18);				// Sniper = 18
 	else if (WeaponName == 'ST_WarheadLauncher')
-		BitMap = (1 << 18);				// Redeemer = 19
+		BitMap = (1 << 19);				// Redeemer = 19
 
 	WeaponDisplay = WeaponDisplay | BitMap;
 }
@@ -644,7 +645,7 @@ function ModifyPlayer(Pawn Other)
 {
 	local ST_PureStats STW;
 	local bool bFound;
-	
+
 	STW = GetStats(Other);
 	if (STW == None)
 	{	// Don't add stats if not bbPlayer or ST_HumanBotPlus
@@ -664,8 +665,12 @@ function ModifyPlayer(Pawn Other)
 				STW = Spawn(Class'ST_PureStats', Other);
 				STW.PlayerName = Other.PlayerReplicationInfo.PlayerName;
 			}
-			bbPlayer(Other).AttachStats(STW, Self);
-			bbPlayer(Other).ClientMessage(WelcomeMessage);
+			if(bbPlayer(Other) != None)
+			{
+				bbPlayer(Other).AttachStats(STW, Self);
+				bbPlayer(Other).ClientMessage(WelcomeMessage);
+				bbPlayer(Other).ClientMessage(MutateUltimateMessage);
+			}
 		}
 		else if (Other.IsA('ST_HumanBotPlus'))
 		{
@@ -685,7 +690,6 @@ function ModifyPlayer(Pawn Other)
 }
 
 function bool AlwaysKeep(Actor Other) {
-
     if (
 		Level.Game.IsA('Assault') && Other.IsA('ST_enforcer') ||
 		(
@@ -704,7 +708,6 @@ function bool AlwaysKeep(Actor Other) {
 }
 
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
-
     if ( Level.Game.IsA('Assault') && Other.IsA('Weapon') ) {
         if ( Other.IsA('Enforcer') ) {
             ReplaceWith( Other, Prefix$"ST_enforcer" );
@@ -732,6 +735,7 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 				TournamentAmmo(Other).MaxAmmo = 50;
 		}
 	}
+	
     return true;
 }
 
@@ -818,6 +822,7 @@ function Mutate(string MutateString, PlayerPawn Sender)
 	else if (MutateString ~= "CheatInfo")
 	{
 		Sender.ClientMessage(WelcomeMessage);
+		Sender.ClientMessage(MutateUltimateMessage);
 		Sender.ClientMessage("PureStats Settings:");
 		bbP = bbPlayer(Sender);
 		if (bbP != None)
@@ -835,5 +840,6 @@ defaultproperties
      ST_Log=PureStats
      Prefix="UltimateNewNet"
      WelcomeMessage="This server is using Pure Stats! Type 'showstats' into console to view!"
-     DefaultWeapon=Class'UltimateNewNetv0_3_1.ST_ImpactHammer'
+     MutateUltimateMessage="Type 'mutate ultimatenn client' to open client window!"
+     DefaultWeapon=Class'ST_ImpactHammer'
 }

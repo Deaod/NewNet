@@ -1,9 +1,3 @@
-// ===============================================================
-// Stats.ST_Translocator: put your comment here
-
-// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
-// ===============================================================
-
 class ST_Translocator extends Translocator;
 
 var ST_Mutator STM;
@@ -278,7 +272,8 @@ simulated function ClientThrowTarget()
 	GV = Pawn(Owner).AdjustToss(TossForce, Start, 0, true, true); 
 	GetAxes(GV,X,Y,Z);
 	zzClientTTarget = Spawn(class'NN_TranslocatorTarget',Owner,, Start);
-	bbPlayer(Owner).zzClientTTarget = zzClientTTarget;
+	if(bbPlayer(Owner) != None)
+		bbPlayer(Owner).zzClientTTarget = zzClientTTarget;
 	if (zzClientTTarget!=None)
 	{
 		bClientTTargetOut = true;
@@ -288,7 +283,8 @@ simulated function ClientThrowTarget()
 		zzClientTTarget.Throw(Pawn(Owner), MaxTossForce, Start);
 	}
 	else GotoState('Idle');
-    bbPlayer(Owner).xxClientDemoFix(zzClientTTarget, Class'TranslocatorTarget', Start, zzClientTTarget.Velocity, zzClientTTarget.Acceleration, zzClientTTarget.Rotation);
+	if(bbPlayer(Owner) != None)
+    	bbPlayer(Owner).xxClientDemoFix(zzClientTTarget, Class'TranslocatorTarget', Start, zzClientTTarget.Velocity, zzClientTTarget.Acceleration, zzClientTTarget.Rotation);
 }
 
 simulated function bool ClientAltFire( float Value )
@@ -570,12 +566,16 @@ simulated function PlaySelect()
 		if ( bClientTTargetOut )
 			TweenAnim('ThrownFrame', 0.27);
 		else
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
+		{
+			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		}
 	} else {
 		if ( bTTargetOut )
 			TweenAnim('ThrownFrame', 0.27);
 		else
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
+		{
+			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+		}
 	}
 	PlaySound(SelectSound, SLOT_Misc,Pawn(Owner).SoundDampening);		
 }

@@ -12,7 +12,7 @@ replication
 simulated function Tick(float DeltaTime)
 {
 	local Pawn P;
-	
+
 	if (Level.NetMode == NM_Client) {
 	
 		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
@@ -47,13 +47,15 @@ simulated function Tick(float DeltaTime)
 simulated function Explode(vector HitLocation,vector HitNormal)
 {
 	local bbPlayer bbP;
+
+	bbP = bbPlayer(Instigator);
 	
 	if (bDeleteMe)
 		return;
 	if (STM != None)
 		STM.PlayerHit(Instigator, 6, False);	// 6 = Shock Ball
 	//Log(Class.Name$" (Explode) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
-	if (!bbPlayer(Owner).bNewNet)
+	if (bbPlayer(Owner) != None && !bbP.bNewNet)
 		HurtRadius(Damage, 70, MyDamageType, MomentumTransfer, Location );
 	if (STM != None)
 		STM.PlayerClear();
@@ -61,7 +63,6 @@ simulated function Explode(vector HitLocation,vector HitNormal)
 	DoExplode(Damage, HitLocation, HitNormal);
 	PlayOwnedSound(ImpactSound, SLOT_Misc, 0.5,,, 0.5+FRand());
 	
-	bbP = bbPlayer(Instigator);
 	if (bbP != None && Level.NetMode != NM_Client)
 	{
 		bbP.xxNN_ClientProjExplode(zzNN_ProjIndex, HitLocation, HitNormal);
@@ -116,12 +117,16 @@ simulated function DoSuperExplosion()
 	local Pawn P;
 	local Actor CR;
 
-	if (RemoteRole < ROLE_Authority) {
+	if (RemoteRole < ROLE_Authority)
+	{
 		for (P = Level.PawnList; P != None; P = P.NextPawn)
-			if (P != Owner) {
-				CR = P.Spawn(Class'ut_ComboRing',P,'',Location, Pawn(Owner).ViewRotation);
+		{
+			if (P != Owner)
+			{
+				CR = P.Spawn(Class'UT_ComboRing',P,'',Location, Pawn(Owner).ViewRotation);
 				CR.bOnlyOwnerSee = True;
 			}
+		}
 	}
 }
 
@@ -156,10 +161,13 @@ simulated function DoSuperDuperExplosion()
 
 	if (RemoteRole < ROLE_Authority) {
 		for (P = Level.PawnList; P != None; P = P.NextPawn)
-			if (P != Owner) {
+		{
+			if (P != Owner)
+			{
 				CR = P.Spawn(Class'UT_SuperComboRing',P,'',Location, Pawn(Owner).ViewRotation);
 				CR.bOnlyOwnerSee = True;
 			}
+		}
 	}
 }
 

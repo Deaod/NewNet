@@ -52,6 +52,7 @@ var Rotator GV;
 var Vector CDO;
 var float yMod;
 var float FireInterval, NextFireInterval;
+var int count;
 
 // For Special minigun
 var int HitCounter;
@@ -338,7 +339,11 @@ simulated function NN_TraceFire( float Accuracy )
 		bbP.xxNN_AltFire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), false, ClientFRVI, Accuracy);
 	*/
 	
-	MT = Spawn(class'MTracer',,, StartTrace + 96 * AimDir,rotator(EndTrace - StartTrace));
+
+	if(Pawn(Owner) != None)
+	{
+		MT = Spawn(class'MTracer',Owner,, StartTrace + 96 * AimDir,rotator(EndTrace - StartTrace));
+	}
 	bbP.xxClientDemoFix(MT, class'MTracer', StartTrace + 96 * AimDir, MT.Velocity, MT.Acceleration, rotator(EndTrace - StartTrace));
 	NN_ProcessTraceHit(Other, HitLocation, HitNormal, vector(GV),Y,Z);
 }
@@ -729,7 +734,11 @@ function TraceFire( float Accuracy )
 	Other = bbP.zzNN_HitActor;
 	if (Pawn(Other) != None && FastTrace(Other.Location))
 		HitLocation += (bbP.zzNN_HitLoc - Other.Location);
-	Spawn(class'NN_MTracerOwnerHidden',Owner,, StartTrace + 96 * AimDir,rotator(EndTrace - StartTrace));
+
+	if(Pawn(Owner) != None)
+	{
+		Spawn(class'NN_MTracerOwnerHidden',Owner,, StartTrace + 96 * AimDir,rotator(EndTrace - StartTrace));
+	}
 	
 	ProcessTraceHit(Other, HitLocation, HitNormal, vector(AdjustedAim),Y,Z);
 }
@@ -827,17 +836,25 @@ simulated function PlaySelect()
 	bForceFire = false;
 	bForceAltFire = false;
 	bCanClientFire = false;
-	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
+	if(Pawn(Owner) != None)
+	{
+		if(Class'IndiaSettings'.default.bFWS)
+			PlayAnim('Select',1000.00);
+		else	
+			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+	}
+	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
 }
 
 simulated function TweenDown()
 {
-	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
-		TweenAnim( AnimSequence, AnimFrame * 0.4 );
-	else
-		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+	if(Pawn(Owner) != None)
+	{
+		if(Class'IndiaSettings'.default.bFWS)
+			PlayAnim('Down',1000.00);
+		else	
+			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
+	}
 }
 
 function DropFrom(vector StartLocation)

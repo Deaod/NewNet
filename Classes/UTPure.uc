@@ -1,9 +1,5 @@
 class UTPure extends Mutator;
 
-#exec Texture Import File=Textures\NewNetLogo.bmp Name=NewNetLogo Mips=Off
-#exec Texture Import File=Textures\bootbit.bmp Name=PureBoots Mips=Off
-#exec Texture Import File=Textures\hudbgplain.bmp Name=PureTimeBG Mips=Off
-#exec Texture Import File=Textures\smallwhitething.bmp Name=PureSWT Mips=Off
 #exec Audio Import FILE=Sounds\HitSound.wav Name=HitSound
 #exec Audio Import FILE=Sounds\HitSoundFriendly.wav Name=HitSoundFriendly
 
@@ -26,8 +22,8 @@ var localized config int FlakDamagePri;
 var localized config int FlakDamageSec;
 var localized config int RocketDamagePri;
 var localized config int RocketDamageSec;
-//var localized config int SniperDamagePri;
-//var localized config int HeadshotDamage;
+var localized config int SniperDamagePri;
+var localized config int HeadshotDamage;
 var localized config float SniperSpeed;
 
 // Enable or disable.
@@ -1472,8 +1468,8 @@ defaultproperties
      FlakDamageSec=70
      RocketDamagePri=75
      RocketDamageSec=80
-     //SniperDamagePri=50
-     //HeadshotDamage=100
+     SniperDamagePri=50
+     HeadshotDamage=100
      SniperSpeed=0.700000
      bUTPureEnabled=True
      Advertise=1
@@ -1499,8 +1495,8 @@ defaultproperties
      maxJumps=2
      VersionStr="UltimateNewNet"
      LongVersion="Build "
-     ThisVer="v0_3_1"
-     NiceVer="v0.3.1"
+     ThisVer="v0_6"
+     NiceVer="v0.6"
      BADminText="Not allowed - Log in as admin!"
      MinPosError=10
      MaxPosError=1000

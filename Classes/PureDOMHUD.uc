@@ -1,12 +1,12 @@
-// ============================================================
-// UTPureRC56.PureDOMHUD: put your comment here
-
-// Created by UClasses - (C) 2000 by meltdown@thirdtower.com
-// ============================================================
-
 class PureDOMHUD expands ChallengeDominationHUD;
 
 var ServerInfo zzServerInfo;
+var color DamageFlash[4];
+var float DamageTime[4];
+var() byte Emphasized[4];
+var Texture TeamBeaconIcon;
+var color BeaconColor[4];
+var bool bHideSpectatorBeacons;
 
 simulated function PostBeginPlay()
 {
@@ -15,6 +15,249 @@ simulated function PostBeginPlay()
 		zzServerInfo = Spawn(bbPlayer(Owner).zzSIType, Owner);
 	else
 		zzServerInfo = Spawn(ServerInfoClass, Owner);
+}
+
+simulated function ShowLowAmmoWarning(Canvas Canvas)
+{
+	if(!PawnOwner.Weapon.bMeleeWeapon && (PawnOwner.Weapon != None) && (PawnOwner.Weapon.AmmoType != None) && PawnOwner != None)
+	{
+		if(PawnOwner.Weapon.AmmoType.AmmoAmount <= 3)
+		{
+			Canvas.bCenter = True;
+			Canvas.Font = MyFonts.GetBigFont(Canvas.ClipX);
+			Canvas.Style = ERenderStyle.STY_Translucent;
+			Canvas.SetPos(0.0 * Canvas.ClipX, 0.3 * Canvas.ClipY);
+			Canvas.DrawText("LOW AMMO WARNING!");
+			Canvas.bCenter = False;
+		}
+	}
+}
+
+simulated function ShowTeamMateLocation(Canvas C)
+{
+	local Pawn thisPawn;
+	local vector X, Y, Z, CamLoc, TargetDir, Dir, XY;
+	local rotator CamRot;
+	local Actor Camera;
+	local float BaseBeaconScale, BeaconScale, Dist, DistScale;
+	local float TanFOVx, TanFOVy;
+	local float TanX, TanY;
+	local float dx, dy, FontY;
+	local string BeaconText;
+	
+	C.Style = ERenderStyle.STY_Masked;
+		if (C.ClipX > 1024)
+			C.Font = Font'BeaconNameFontLarge';
+		else if (C.ClipX > 640)
+			C.Font = Font'BeaconNameFontMedium';
+		else
+			C.Font = Font'BeaconNameFontSmall';
+		C.SetPos(0, 0);
+		C.TextSize("X", dx, FontY);
+		BaseBeaconScale = 1.5 * FontY / Texture'TeamBeacon2'.VSize; 
+		
+		C.ViewPort.Actor.PlayerCalcView(Camera, CamLoc, CamRot);
+		
+		TanFOVx = Tan(C.ViewPort.Actor.FOVAngle / 114.591559); // 360/Pi = 114.5915590...
+		TanFOVy = (C.ClipY / C.ClipX) * TanFOVx;
+		GetAxes(CamRot, X, Y, Z);
+		
+		// iterate through all visible pawns in range and draw the beacon background
+		C.bNoSmooth = False;
+		C.Style = ERenderStyle.STY_Masked;
+		foreach AllActors(class'Pawn', thisPawn) 
+		{
+			if (thisPawn != Camera && thisPawn.Health > 0 && !thisPawn.bHidden && thisPawn.PlayerReplicationInfo != None && thisPawn.PlayerReplicationInfo.Team < 4 && (C.Viewport.Actor.PlayerReplicationInfo.bIsSpectator && !bHideSpectatorBeacons || !C.Viewport.Actor.PlayerReplicationInfo.bIsSpectator && thisPawn.PlayerReplicationInfo.Team == C.Viewport.Actor.PlayerReplicationInfo.Team)) 
+			{
+				TargetDir = thisPawn.Location - CamLoc;
+				Dist = VSize(TargetDir) * FMin(TanFOVx, 1.0);
+				TargetDir = Normal(TargetDir + vect(0,0,1) * thisPawn.CollisionHeight);
+				DistScale = FMin(100.0 * thisPawn.CollisionRadius / Dist, 1.0);
+				
+				if (DistScale > 0.0 && TargetDir dot X > 0 /*&& (FastTrace(thisPawn.Location, CamLoc) || FastTrace(thisPawn.Location + vect(0,0,0.8) * thisPawn.CollisionHeight, CamLoc))*/) 
+				{
+					BeaconScale = BaseBeaconScale * DistScale;
+					Dir = X * (X dot TargetDir);
+					XY = TargetDir - Dir;
+					
+					dx = C.ClipX * 0.5 * (1.0 + (XY dot Y) / (VSize(Dir) * TanFOVx));
+					dy = C.ClipY * 0.5 * (1.0 - (XY dot Z) / (VSize(Dir) * TanFOVy));
+					
+					C.DrawColor = BeaconColor[thisPawn.PlayerReplicationInfo.Team];
+					C.SetPos(dx - 0.5 * BeaconScale * TeamBeaconIcon.USize, dy - 2 * FontY * DistScale);
+					C.DrawIcon(TeamBeaconIcon, BeaconScale);
+					
+					// only draw name if close enough
+					if (DistScale == 1.0) 
+					{
+						BeaconText = thisPawn.PlayerReplicationInfo.PlayerName;
+						if (C.ClipX > 600)
+							BeaconText = BeaconText @ "(" $ thisPawn.Health $ ")";
+						
+						// shadow
+						C.SetPos(dx + 0.6 * BeaconScale * TeamBeaconIcon.USize + 1, dy - 1.75 * FontY + 1);
+						C.DrawColor = BeaconColor[thisPawn.PlayerReplicationInfo.Team] * 0.125;
+						C.DrawTextClipped(BeaconText, False);
+						
+						// color
+						C.SetPos(dx + 0.6 * BeaconScale * TeamBeaconIcon.USize, dy - 1.75 * FontY);
+						C.DrawColor = BeaconColor[thisPawn.PlayerReplicationInfo.Team];
+						C.DrawTextClipped(BeaconText, False);
+					}
+				}
+			}
+		}
+}
+
+simulated function Tick(float DeltaTime)
+{
+	local int i;
+
+	Super.Tick(DeltaTime);
+
+	for ( i=0; i<4; i++ )
+	{
+		if ( DamageTime[i] > 0 )
+		{
+			DamageTime[i] -= DeltaTime * 120;
+			if ( DamageTime[i] < 1.0 )
+				DamageTime[i] = 0.0;
+		}
+	}
+}
+
+function SetDamage(vector HitLoc, float damage)
+{
+	local int i;
+	local vector X,Y,Z;
+	local byte Ignore[4];
+	local rotator LookDir;
+	local float NewDamageTime,Forward,Left;
+
+	Super.SetDamage(HitLoc,damage);
+
+	LookDir = PawnOwner.Rotation;
+	LookDir.Pitch = 0;
+	GetAxes(LookDir, X,Y,Z);
+	HitLoc.Z = 0;
+	HitLoc = Normal(HitLoc);
+
+	Forward = HitLoc Dot X;
+	Left = HitLoc Dot Y;
+
+	if ( Forward > 0 )
+	{
+		if ( Forward > 0.7 )
+			Emphasized[0] = 1;
+		Ignore[1] = 1;
+	}
+	else
+	{
+		if ( Forward < -0.7 )
+			Emphasized[1] = 1;
+		Ignore[0] = 1;
+	}
+	if ( Left > 0 )
+	{
+		if ( Left > 0.7 )
+			Emphasized[3] = 1;
+		Ignore[2] = 1;
+	}
+	else
+	{
+		if ( Left < -0.7 )
+			Emphasized[2] = 1;
+		Ignore[3] = 1;
+	}
+
+	NewDamageTime = 10 * Clamp(Damage,20,30);
+	for ( i=0; i<4; i++ )
+	{
+		if ( Ignore[i] != 1 )
+		{
+			DamageFlash[i].R = 255;
+			DamageTime[i] = NewDamageTime;
+		}
+	}
+}
+
+simulated function DrawDamageArrows(Canvas C)
+{
+	local float X, Y;
+	local int i;
+	local float Scaler;
+
+	C.Style = ERenderStyle.STY_Translucent;
+	Scaler = C.ClipX/1024;
+
+	if(class'IndiaSettings'.Default.bDamageIndicator)
+	{
+		if ( DamageTime[0] > 0 )
+		{
+			C.SetPos(0.435 * C.ClipX,0.35 * C.ClipY);
+			C.DrawColor.R = DamageTime[0];
+			C.DrawColor.G = DamageTime[0];
+			C.DrawColor.B = DamageTime[0];
+			if ( Emphasized[0] == 1 )
+			{
+				C.DrawIcon(Texture'Fw',Scaler);
+				//C.DrawTile( Texture'Fw', 0.435 * C.ClipX, 0.35*C.ClipY, 128, 32, 128, 32);
+			}
+		}
+		else
+			Emphasized[0] = 0;
+
+		if(DamageTime[1] > 0)
+		{
+			C.DrawColor.R = DamageTime[1];
+			C.DrawColor.G = DamageTime[1];
+			C.DrawColor.B = DamageTime[1];
+			if ( Emphasized[1] == 1 )
+			{
+				C.SetPos(0.435 * C.ClipX,0.65 * C.ClipY);
+				C.DrawIcon(Texture'Bw',Scaler);
+				//C.SetPos(0,0.85*C.ClipY);
+				//C.DrawTile( Texture'Bw', 0.435 * C.ClipX, 0.65 * C.ClipY, 128, 32, 128, 32);
+			}
+		}
+		else
+			Emphasized[1] = 0;
+
+		if(DamageTime[2] > 0)
+		{
+			C.DrawColor.R = DamageTime[2];
+			C.DrawColor.G = DamageTime[2];
+			C.DrawColor.B = DamageTime[2];
+			if ( Emphasized[2] == 1 )
+			{
+				C.SetPos(0.3 * C.ClipX,0.425 * C.ClipY);
+				C.DrawIcon(Texture'Lt',Scaler);
+				//C.DrawTile( Texture'Lt', 0.3 * C.ClipX, 0.425 * C.ClipY, 32, 128, 32, 128);
+			}
+		}
+		else
+			Emphasized[2] = 0;
+
+		if(DamageTime[3] > 0)
+		{
+			C.DrawColor.R = DamageTime[3];
+			C.DrawColor.G = DamageTime[3];
+			C.DrawColor.B = DamageTime[3];
+			if ( Emphasized[3] == 1 )
+			{
+				C.SetPos(0.65 * C.ClipX,0.425 * C.ClipY);
+				C.DrawIcon(Texture'Rt',Scaler);
+				//C.SetPos(0.85*C.ClipX,0);
+				//C.DrawTile( Texture'Rt', 0.65 * C.ClipX, 0.425 * C.ClipY, 32, 128, 32, 128);
+			}
+		}
+		else
+			Emphasized[3] = 0;
+	}
+	else
+	{
+		return;
+	}
 }
 
 //========================================
@@ -51,15 +294,18 @@ simulated function PostRender( canvas Canvas )
 	Canvas.StrLen("TEST", XL, YL);
 	Canvas.SetClip(768*Scale - 10, Canvas.ClipY);
 	bDrawFaceArea = false;
-	if ( !bHideFaces && !PlayerOwner.bShowScores && !bForceScores && !bHideHUD 
-			&& !PawnOwner.PlayerReplicationInfo.bIsSpectator && (Scale >= 0.4) )
+	if(Class'IndiaSettings'.default.ChatAreaPosition == 0)
 	{
-		DrawSpeechArea(Canvas, XL, YL);
-		bDrawFaceArea = (FaceTexture != None) && (FaceTime > Level.TimeSeconds);
-		if ( bDrawFaceArea )
+		if ( !bHideFaces && !PlayerOwner.bShowScores && !bForceScores && !bHideHUD 
+				&& !PawnOwner.PlayerReplicationInfo.bIsSpectator && (Scale >= 0.4) )
 		{
-			if ( !bHideHUD && ((PawnOwner.PlayerReplicationInfo == None) || !PawnOwner.PlayerReplicationInfo.bIsSpectator) )
-				Canvas.SetOrigin( FMax(YL*4 + 8, 70*Scale) + 7*Scale + 6 + FaceAreaOffset, Canvas.OrgY );
+			DrawSpeechArea(Canvas, XL, YL);
+			bDrawFaceArea = (FaceTexture != None) && (FaceTime > Level.TimeSeconds);
+			if ( bDrawFaceArea )
+			{
+				if ( !bHideHUD && ((PawnOwner.PlayerReplicationInfo == None) || !PawnOwner.PlayerReplicationInfo.bIsSpectator) )
+					Canvas.SetOrigin( FMax(YL*4 + 8, 70*Scale) + 7*Scale + 6 + FaceAreaOffset, Canvas.OrgY );
+			}
 		}
 	}
 
@@ -94,7 +340,10 @@ simulated function PostRender( canvas Canvas )
 			}
 
 			// Keep track of the amount of lines a message overflows, to offset the next message with.
-			Canvas.SetPos(6, 2 + YL * YPos);
+			if(Class'IndiaSettings'.default.ChatAreaPosition == 0)
+				Canvas.SetPos(6, 2 + YL * YPos);
+			else if(Class'IndiaSettings'.default.ChatAreaPosition == 1)
+				Canvas.SetPos(0, 0.8 * Canvas.ClipY - YL * YPos);
 			YPos += ShortMessageQueue[i].numLines;
 			if ( YPos > 4 )
 				break; 
@@ -140,7 +389,8 @@ simulated function PostRender( canvas Canvas )
 
 	YPos = FMax(YL*4 + 8, 70*Scale);
 	if ( bDrawFaceArea )
-		DrawTalkFace( Canvas,0, YPos );
+		if(Class'IndiaSettings'.default.ChatAreaPosition == 0)
+			DrawTalkFace( Canvas,0, YPos );
 	if (j > 0) 
 	{
 		bDrawMessageArea = True;
@@ -234,6 +484,8 @@ simulated function PostRender( canvas Canvas )
 	// Display MOTD
 	if ( MOTDFadeOutTime > 0.0 )
 		DrawMOTD(Canvas);
+
+	DrawDamageArrows(Canvas);
 		 
 	if( !bHideHUD )
 	{
@@ -247,6 +499,12 @@ simulated function PostRender( canvas Canvas )
 			
 			// Draw Health/Armor status
 			DrawStatus(Canvas);
+
+			if(Class'IndiaSettings'.default.bShowTeamMatesLocation)
+				ShowTeamMateLocation(Canvas);
+
+			if(Class'IndiaSettings'.default.bShowLowAmmoWarning)
+				ShowLowAmmoWarning(Canvas);
 
 			// Display Weapons
 			if ( !bHideAllWeapons )
@@ -1315,4 +1573,10 @@ simulated event PreRender( canvas Canvas );
 defaultproperties
 {
      ServerInfoClass=Class'PureServerInfoDOM'
+     bHideSpectatorBeacons=True
+	 TeamBeaconIcon=Texture'UltimateNewNetv0_6_Database.HUD.TeamBeacon2'
+     BeaconColor(0)=(R=255,G=0,B=0,A=0),
+     BeaconColor(1)=(R=32,G=64,B=255,A=0),
+     BeaconColor(2)=(R=0,G=255,B=0,A=0),
+     BeaconColor(3)=(R=255,G=255,B=0,A=0),
 }

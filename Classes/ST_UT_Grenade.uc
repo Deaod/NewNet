@@ -134,27 +134,87 @@ simulated function Explosion(vector HitLocation)
 }
 
 simulated function BlowUp(vector HitLocation)
-{
-	local bbPlayer bbP;
-	
-	bbP = bbPlayer(Owner);
-	if (STM != None)
-		STM.PlayerHit(Instigator, 17, !bCanHitOwner);	// bCanHitOwner is set to True after the Grenade has bounced once. Neat hax
-	if (bbP != None && bbP.bNewNet)
 	{
-		if (Level.NetMode == NM_Client && !IsA('NN_UT_Grenade'))
-			bbP.NN_HurtRadius(self, class'UT_Eightball', 1, 200, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex);
-	}
-	else
-	{
-		HurtRadius(damage, 200, MyDamageType, MomentumTransfer, HitLocation);
-	}
-	NN_Momentum(200, MomentumTransfer, HitLocation);
-	if (STM != None)
-		STM.PlayerClear();
-	MakeNoise(1.0);
-}
+		local actor Victims, TracedTo;
+		local int DamageRadius;
+		local float damageScale, dist;
+		local vector dir, VictimHitLocation, VictimMomentum, MoverHitLocation, MoverHitNormal;
+		local bbPlayer bbP;
+		local Mover M;
+		
+		bbP = bbPlayer(Owner);
 
+		if( bHurtEntry )
+			return;
+		
+		DamageRadius = 180;
+		bHurtEntry = true;
+		foreach VisibleCollidingActors( class 'Actor', Victims, DamageRadius, HitLocation )
+		{
+			if( Victims != self )
+			{
+				dir = Victims.Location - HitLocation;
+				dist = FMax(1,VSize(dir));
+				dir = dir/dist;
+				dir.Z = FMin(0.45, dir.Z); 
+				damageScale = 1 - FMax(0,(dist - Victims.CollisionRadius)/DamageRadius);
+				VictimHitLocation = Victims.Location - 0.5 * (Victims.CollisionHeight + Victims.CollisionRadius) * dir;
+				VictimMomentum = damageScale * MomentumTransfer * dir;
+				if (bbP != None && bbP.bNewNet)
+				{
+					if (Level.NetMode == NM_Client && !IsA('NN_RocketMk2OwnerHidden'))
+					{
+						bbP.xxNN_TakeDamage
+						(
+							Victims,
+							class'UT_Eightball',
+							1,
+							Instigator, 
+							VictimHitLocation,
+							VictimMomentum,
+							MyDamageType,
+							zzNN_ProjIndex,
+							damageScale * Damage,
+							DamageRadius
+						);
+					}
+				}
+				else
+				{
+					Victims.TakeDamage
+					(
+						damageScale * Damage,
+						Instigator, 
+						VictimHitLocation,
+						VictimMomentum,
+						MyDamageType
+					);
+				}
+				if (Victims == Owner)
+					NN_Momentum(DamageRadius,MomentumTransfer, VictimHitLocation);
+			} 
+		}
+		
+		if (bbP != None && bbP.bNewNet)
+		{
+			foreach RadiusActors( class 'Mover', M, DamageRadius, HitLocation )
+			{
+				TracedTo = Trace(MoverHitLocation, MoverHitNormal, M.Location, HitLocation, True);
+				dir = MoverHitLocation - HitLocation;
+				dist = FMax(1,VSize(dir));
+				if (TracedTo != M || dist > DamageRadius)
+					continue;
+				dir = dir/dist; 
+				damageScale = 1 - FMax(0,(dist - M.CollisionRadius)/DamageRadius);
+				bbP.xxNN_ServerTakeDamage( M, class'UT_Eightball', 1, Instigator, HitLocation, bbP.GetBetterVector(damageScale * MomentumTransfer * dir), MyDamageType, zzNN_ProjIndex, damageScale * Damage);
+				//bbP.xxMover_TakeDamage( M, damageScale * Damage, bbP, M.Location - 0.5 * (M.CollisionHeight + M.CollisionRadius) * dir, damageScale * MomentumTransfer * dir, MyDamageType );
+			}
+		}
+		
+		bHurtEntry = false;
+		MakeNoise(1.0);
+	}
+	
 simulated function NN_Momentum( float DamageRadius, float Momentum, vector HitLocation )
 {
 	local actor Victims;

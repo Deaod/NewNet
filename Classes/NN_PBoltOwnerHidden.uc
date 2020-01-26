@@ -3,7 +3,8 @@ class NN_PBoltOwnerHidden extends ST_PBolt;
 var bool bAlreadyHidden;
 
 simulated function Tick(float DeltaTime) {
-	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None && Instigator != None)
+	{
 		LightType = LT_None;
 		SetCollisionSize(0, 0);
 		bAlreadyHidden = True;

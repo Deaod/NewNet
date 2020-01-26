@@ -1,16 +1,8 @@
-// ===============================================================
-// UTPureRC7A.PureHUDHelper: put your comment here
-
-// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
-// ===============================================================
-
 class PureHUDHelper extends Actor
 	abstract;
 
 var float EndGameTime;
-
 // Contains functions that are similar in all HUDs to reduce the size of them.
-
 static simulated function xxDrawXHair(Canvas zzCanvas, PlayerPawn zzP)
 {
 	local Weapon zzW;
@@ -36,11 +28,15 @@ static simulated function xxSniperPostRender(Canvas zzCanvas, PlayerPawn zzP)
 		zzW.bOwnsCrossHair = true;
 		zzScale = zzCanvas.ClipX/640;
 		zzCanvas.SetPos(0.5 * zzCanvas.ClipX - 128 * zzScale, 0.5 * zzCanvas.ClipY - 128 * zzScale );
-		if ( zzP.Level.bHighDetailMode )
-			zzCanvas.Style = ERenderStyle.STY_Translucent;
-		else
-			zzCanvas.Style = ERenderStyle.STY_Normal;
-		zzCanvas.DrawIcon(Texture'RReticle', zzScale);
+		zzCanvas.Style = ERenderStyle.STY_Translucent;
+		if(class'IndiaSettings'.default.SniperScopeStyle == 0)
+			zzCanvas.DrawIcon(Texture'RReticle', zzScale);
+		else if(class'IndiaSettings'.default.SniperScopeStyle == 1)
+			zzCanvas.DrawIcon(Texture'Scope1', zzScale);
+		else if(class'IndiaSettings'.default.SniperScopeStyle == 2)
+			zzCanvas.DrawIcon(Texture'Scope2', zzScale);
+		else if(class'IndiaSettings'.default.SniperScopeStyle == 3)
+			zzW.bOwnsCrossHair = false;	
 		zzCanvas.SetPos(0.5 * zzCanvas.ClipX + 64 * zzScale, 0.5 * zzCanvas.ClipY + 96 * zzScale);
 		zzCanvas.DrawColor.R = 0;
 		zzCanvas.DrawColor.G = 255;
@@ -55,9 +51,9 @@ static simulated function xxSniperPostRender(Canvas zzCanvas, PlayerPawn zzP)
 static simulated function xxRocketPostRender( canvas zzCanvas, PlayerPawn zzP )
 {
 	local float zzXScale;
-	local Weapon zzW;
+	local UT_Eightball zzW;
 
-	zzW = zzP.Weapon;
+	zzW = UT_Eightball(zzP.Weapon);
 
 	zzW.bOwnsCrossHair = zzW.bLockedOn;
 	if ( zzW.bOwnsCrossHair )

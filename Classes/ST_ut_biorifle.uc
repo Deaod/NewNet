@@ -1,9 +1,3 @@
-// ===============================================================
-// UTPureStats7A.ST_ut_biorifle: put your comment here
-
-// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
-// ===============================================================
-
 class ST_ut_biorifle extends ut_biorifle;
 
 var ST_Mutator STM;
@@ -34,6 +28,20 @@ function PostBeginPlay()
 			AltProjectileClass = Class'NN_BioGlobOwnerHidden';
 		}
 	}
+}
+
+function float RateSelf( out int bUseAltMode )
+{
+	local float EnemyDist;
+	local bool bRetreating;
+	local vector EnemyDir;
+
+	if ( AmmoType.AmmoAmount <=0 )
+		return -2;
+
+	bUseAltMode = 0;
+
+	return -2;
 }
 
 simulated function RenderOverlays(Canvas Canvas)
@@ -690,17 +698,25 @@ simulated function PlaySelect()
 	bForceFire = false;
 	bForceAltFire = false;
 	bCanClientFire = false;
-	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+	if(Pawn(Owner) != None)
+	{
+		if(Class'IndiaSettings'.default.bFWS)
+			PlayAnim('Select',1000.00);
+		else	
+			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+	}
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
 }
 
 simulated function TweenDown()
 {
-	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
-		TweenAnim( AnimSequence, AnimFrame * 0.4 );
-	else
-		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+	if(Pawn(Owner) != None)
+	{
+		if(Class'IndiaSettings'.default.bFWS)
+			PlayAnim('Down',1000.00);
+		else	
+			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
+	}
 }
 
 state Active

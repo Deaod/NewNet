@@ -24,6 +24,20 @@ function PostBeginPlay()
 	}
 }
 
+function float RateSelf( out int bUseAltMode )
+{
+	local float EnemyDist;
+	local bool bRetreating;
+	local vector EnemyDir;
+
+	if ( AmmoType.AmmoAmount <=0 )
+		return -2;
+
+	bUseAltMode = 0;
+
+	return -2;
+}
+
 simulated function RenderOverlays(Canvas Canvas)
 {
 	local bbPlayer bbP;
@@ -578,17 +592,25 @@ simulated function PlaySelect()
 	bForceFire = false;
 	bForceAltFire = false;
 	bCanClientFire = false;
-	if ( !IsAnimating() || (AnimSequence != 'Select') )
-		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
+	if(Pawn(Owner) != None)
+	{
+		if(Class'IndiaSettings'.default.bFWS)
+			PlayAnim('Still',1000.00);
+		else	
+			PlayAnim('Still',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
+	}
+	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
 }
 
 simulated function TweenDown()
 {
-	if ( IsAnimating() && (AnimSequence != '') && (GetAnimGroup(AnimSequence) == 'Select') )
-		TweenAnim( AnimSequence, AnimFrame * 0.4 );
-	else
-		PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+	if(Pawn(Owner) != None)
+	{
+		if(Class'IndiaSettings'.default.bFWS)
+			PlayAnim('Down',1000.00);
+		else	
+			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
+	}
 }
 
 state Active

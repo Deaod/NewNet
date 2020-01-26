@@ -15,7 +15,8 @@ simulated function Tick(float DeltaTime)
 	
 	if (Level.NetMode == NM_Client) {
 	
-		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None && Instigator != None)
+		{
 			LightType = LT_None;
 			SetCollisionSize(0, 0);
 			bAlreadyHidden = True;

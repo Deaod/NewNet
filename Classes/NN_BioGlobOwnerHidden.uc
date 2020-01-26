@@ -2,10 +2,15 @@ class NN_BioGlobOwnerHidden extends ST_BioGlob;
 
 var bool bAlreadyHidden;
 
-simulated function Tick(float DeltaTime) {
-	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+simulated function Tick(float DeltaTime)
+{
+	Super(BioGlob).Tick(DeltaTime);
+
+	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None && Instigator != None)
+	{
 		LightType = LT_None;
-		SetCollisionSize(0, 0);
+		DrawType = DT_None;
+		//SetCollisionSize(0.0, 0.0);
 		bAlreadyHidden = True;
 	}
 }
@@ -95,7 +100,7 @@ state OnSurface
 	}
 }
 
-function SpawnSplash()
+simulated function SpawnSplash()
 {
 	local vector Start, V1;
 	local NN_BioSplashOwnerHidden BS;
@@ -109,9 +114,12 @@ function SpawnSplash()
 		V1 = VRand();
 
 	NumSplash--;
-	Start = SpawnPoint + 4 * V1; 
-	BS = Spawn(class'NN_BioSplashOwnerHidden',Owner,,Start,Rotator(Start - Location));
-	BS.zzNN_ProjIndex = bbP.xxNN_AddProj(BS);
+	Start = SpawnPoint + 4 * V1;
+	if(Owner != None)
+	{ 
+		BS = Spawn(class'NN_BioSplashOwnerHidden',Owner,,Start,Rotator(Start - Location));
+		BS.zzNN_ProjIndex = bbP.xxNN_AddProj(BS);
+	}
 }
 
 defaultproperties

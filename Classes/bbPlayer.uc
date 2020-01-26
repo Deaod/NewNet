@@ -1,6 +1,8 @@
 class bbPlayer extends TournamentPlayer
 	config(User) abstract;
 
+#exec AUDIO IMPORT FILE="Sounds\talk.WAV" NAME="Talk" GROUP="ChatSounc"
+
 // Client Config
 //var globalconfig bool bNewNet;	// if Client wants new or old netcode. (default true)
 var bool bNewNet;	// if Client wants new or old netcode. (default true)
@@ -397,6 +399,14 @@ simulated function Touch( actor Other )
 	
 	Super.Touch(Other);
 	
+}
+
+simulated function PlayBeepSound()
+{
+	if(Class'IndiaSettings'.default.BeepSoundType == 0)
+		PlaySound(sound'NewBeep',SLOT_Interface, 2.0);
+	else if(Class'IndiaSettings'.default.BeepSoundType == 1)
+		PlaySound(sound'Talk',SLOT_Interface, 2.0);
 }
 
 simulated function bool xxNewSetLocation(vector NewLoc, vector NewVel, optional EPhysics EndPhysics)
@@ -1545,7 +1555,7 @@ function TakeFallingDamage()
 					TakeDamage(1000, None, Location, vect(0,0,0), 'Fell');
 				else if ( Role == ROLE_Authority )
 					TakeDamage(-0.15 * (zzLastFallVelZ + 700 + JumpZ), None, Location, vect(0,0,0), 'Fell');
-				ShakeView(0.175 - 0.00007 * zzLastFallVelZ, -0.85 * zzLastFallVelZ, -0.002 * zzLastFallVelZ);
+				//ShakeView(0.175 - 0.00007 * zzLastFallVelZ, -0.85 * zzLastFallVelZ, -0.002 * zzLastFallVelZ);
 			}
 		}
 	}
@@ -2954,29 +2964,29 @@ function ViewShake(float DeltaTime)
 {
 	if (shaketimer > 0.0) //shake view
 	{
-		shaketimer -= DeltaTime;
+		shaketimer = 0.0;
 		if ( verttimer == 0 )
 		{
-			verttimer = 0.1;
-			ShakeVert = -1.1 * maxshake;
+			verttimer = 0.0;
+			ShakeVert = 0.0 * maxshake;
 		}
 		else
 		{
 			verttimer -= DeltaTime;
 			if ( verttimer < 0 )
 			{
-				verttimer = 0.2 * FRand();
-				shakeVert = (2 * FRand() - 1) * maxshake;  
+				verttimer = 0.0 * FRand();
+				shakeVert = (0 * FRand() - 0) * maxshake * 0;  
 			}
 		}
 		zzViewRotation.Roll = zzViewRotation.Roll & 65535;
 		if (bShakeDir)
 		{
-			zzViewRotation.Roll += Int( 10 * shakemag * FMin(0.1, DeltaTime));
+			zzViewRotation.Roll += Int( 0 * shakemag * FMin(0.0, DeltaTime));
 			bShakeDir = (zzViewRotation.Roll > 32768) || (zzViewRotation.Roll < (0.5 + FRand()) * shakemag);
 			if ( (zzViewRotation.Roll < 32768) && (zzViewRotation.Roll > 1.3 * shakemag) )
 			{
-				zzViewRotation.Roll = 1.3 * shakemag;
+				zzViewRotation.Roll = 0.0 * shakemag;
 				bShakeDir = false;
 			}
 			else if (FRand() < 3 * DeltaTime)
@@ -2984,11 +2994,11 @@ function ViewShake(float DeltaTime)
 		}
 		else
 		{
-			zzViewRotation.Roll -= Int( 10 * shakemag * FMin(0.1, DeltaTime));
-			bShakeDir = (zzViewRotation.Roll > 32768) && (zzViewRotation.Roll < 65535 - (0.5 + FRand()) * shakemag);
-			if ( (zzViewRotation.Roll > 32768) && (zzViewRotation.Roll < 65535 - 1.3 * shakemag) )
+			zzViewRotation.Roll -= Int( 0 * shakemag * FMin(0.0, DeltaTime));
+			bShakeDir = (zzViewRotation.Roll > 32768) && (zzViewRotation.Roll < 65535 - (0.0 + FRand()) * shakemag * 0);
+			if ( (zzViewRotation.Roll > 32768) && (zzViewRotation.Roll < 65535 - 0.0 * shakemag) )
 			{
-				zzViewRotation.Roll = 65535 - 1.3 * shakemag;
+				zzViewRotation.Roll = 65535 - 0.0 * shakemag * 0.0;
 				bShakeDir = true;
 			}
 			else if (FRand() < 3 * DeltaTime)
@@ -3186,11 +3196,9 @@ function float NN_GetDamageAmount( class<Weapon> WeapClass, byte Type )
 			case class'UT_Eightball':
 				DamageAmount = class'UTPure'.default.RocketDamagePri;
 			break;
-/*
 			case class'SniperRifle':
 				DamageAmount = class'UTPure'.default.SniperDamagePri;
 			break;
-*/
 		}
 	} else if (Type == 1) {
 		switch (WeapClass) {
@@ -3218,11 +3226,9 @@ function float NN_GetDamageAmount( class<Weapon> WeapClass, byte Type )
 			case class'UT_Eightball':
 				DamageAmount = class'UTPure'.default.RocketDamageSec;
 			break;
-/*
 			case class'SniperRifle':
 				DamageAmount = class'UTPure'.default.HeadshotDamage;
 			break;
-*/
 		}
 	} else if (Type == 2) {
 		switch (WeapClass) {
@@ -3845,7 +3851,8 @@ simulated function PlayHitSound(int Dmg)
 		else
 			SoundPlayer = Self;
 			
-		Pitch = FClamp(42/zzRecentDmgGiven, 0.22, 3.2);
+		//Pitch = FClamp(42/zzRecentDmgGiven, 0.22, 3.2);
+		pitch = (Clamp(zzRecentDmgGiven, 0, 100) / 100.00 * (1.3 - 0.70)) + 0.70;
 		zzRecentDmgGiven = 0;
 		
 		if (bForceDefaultHitSounds && !bDisableForceHitSounds)
@@ -3884,7 +3891,8 @@ simulated function PlayTeamHitSound(int Dmg)
 		else
 			SoundPlayer = Self;
 			
-		Pitch = FClamp(42/zzRecentTeamDmgGiven, 0.22, 3.2);
+		//Pitch = FClamp(42/zzRecentTeamDmgGiven, 0.22, 3.2);
+		pitch = (Clamp(zzRecentDmgGiven, 0, 100) / 100.00 * (1.3 - 0.70)) + 0.70;
 		zzRecentTeamDmgGiven = 0;
 		
 		if (bForceDefaultHitSounds && !bDisableForceHitSounds)
@@ -4518,7 +4526,7 @@ function GiveMeWeapons()
 	
 	if (bNewNet)
 	{
-		PreFix = "UltimateNewNet"$class'UTPure'.default.ThisVer$".";
+		PreFix = "Ultimate NewNet"$class'UTPure'.default.ThisVer$".";
 		
 		WeaponList[WeapCnt++] = PreFix$"ST_enforcer";	// If it is instagib/other the enforcer will be removed upon spawn
 
@@ -5171,7 +5179,7 @@ function PlayHit(float Damage, vector HitLocation, name damageType, vector Momen
 	else 
 		ClientFlash( -0.019 * rnd, rnd * vect(26.5, 4.5, 4.5));
 
-	ShakeView(0.15 + 0.005 * Damage, Damage * 30, 0.3 * Damage); 
+	//ShakeView(0.15 + 0.005 * Damage, Damage * 30, 0.3 * Damage); 
 	PlayTakeHitSound(Damage, damageType, 1);
 	bServerGuessWeapon = ( ((Weapon != None) && Weapon.bPointing) || (GetAnimGroup(AnimSequence) == 'Dodge') );
 	iDam = Clamp(Damage,0,200);
@@ -5844,7 +5852,7 @@ simulated function xxDrawLogo(canvas zzC, float zzx, float zzY, float zzFadeValu
 	zzC.DrawColor = ChallengeHud(MyHud).GoldColor * zzFadeValue;
 	zzC.SetPos(zzx+70,zzY+8);
 	zzC.Font = ChallengeHud(MyHud).MyFonts.GetBigFont(zzC.ClipX);
-	zzC.DrawText("UltimateNewNet");
+	zzC.DrawText("Ultimate NewNet");
 	zzC.SetPos(zzx+70,zzY+35);
 	//zzC.Font = ChallengeHud(MyHud).MyFonts.GetSmallestFont(zzC.ClipX);
 	zzC.Font = ChallengeHud(MyHud).MyFonts.GetBigFont(zzC.ClipX);

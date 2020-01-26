@@ -1,9 +1,3 @@
-// ===============================================================
-// Stats.ST_ShockProj: put your comment here
-
-// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
-// ===============================================================
-
 class ST_ShockProj extends ShockProj;
 
 var ST_Mutator STM;
@@ -17,8 +11,8 @@ simulated function PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	
-	if (Instigator != None)
-		StartLocation = Instigator.Location;
+	if (Pawn(Owner) != None)
+		StartLocation = Pawn(Owner).Location;
 	else if (Owner != None)
 		StartLocation = Owner.Location;
 	if (ROLE == ROLE_Authority)
@@ -36,9 +30,9 @@ function SuperExplosion()	// aka, combo.
 	bbP = bbPlayer(Owner);
 	if (STM != None)
 	{
-		STM.PlayerUnfire(Instigator, 6);			// 6 = Shock Ball -> remove this
-		STM.PlayerFire(Instigator, 7);				// 7 = Shock Combo -> Instigator gets +1 Combo
-		STM.PlayerHit(Instigator, 7, Instigator.Location == StartLocation);	// 7 = Shock Combo, bSpecial if Standstill.
+		STM.PlayerUnfire(Pawn(Owner), 6);			// 6 = Shock Ball -> remove this
+		STM.PlayerFire(Pawn(Owner), 7);				// 7 = Shock Combo -> Pawn(Owner) gets +1 Combo
+		STM.PlayerHit(Pawn(Owner), 7, Pawn(Owner).Location == StartLocation);	// 7 = Shock Combo, bSpecial if Standstill.
 	}
 	if (bbP != None && bbP.bNewNet)
 	{
@@ -55,7 +49,10 @@ function SuperExplosion()	// aka, combo.
 	if (STM != None)
 		STM.PlayerClear();
 	
-	Spawn(Class'ut_ComboRing',,'',Location, Instigator.ViewRotation);
+	if(Pawn(Owner) != None)
+	{
+		Spawn(Class'UT_ComboRing',,'',Location, Pawn(Owner).ViewRotation);
+	}
 	PlayOwnedSound(ExploSound,,20.0,,2000,0.6);
 	
 	Destroy(); 
@@ -69,26 +66,29 @@ function SuperDuperExplosion()	// aka, combo.
 	bbP = bbPlayer(Owner);
 	if (STM != None)
 	{
-		STM.PlayerUnfire(Instigator, 6);			// 6 = Shock Ball -> remove this
-		STM.PlayerFire(Instigator, 7);				// 7 = Shock Combo -> Instigator gets +1 Combo
-		STM.PlayerHit(Instigator, 7, Instigator.Location == StartLocation);	// 7 = Shock Combo, bSpecial if Standstill.
+		STM.PlayerUnfire(Pawn(Owner), 6);			// 6 = Shock Ball -> remove this
+		STM.PlayerFire(Pawn(Owner), 7);				// 7 = Shock Combo -> Pawn(Owner) gets +1 Combo
+		STM.PlayerHit(Pawn(Owner), 7, Pawn(Owner).Location == StartLocation);	// 7 = Shock Combo, bSpecial if Standstill.
 	}
 	if (bbP != None && bbP.bNewNet)
 	{
-		if (Level.NetMode == NM_Client && !IsA('NN_ShockProjOwnerHidden'))
+		if (Level.NetMode == NM_Client)
 		{
-			bbP.NN_HurtRadius(self, class'ShockRifle', 3, 750, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 2, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
 	else
 	{
-		HurtRadius(Damage*9, 750, MyDamageType, MomentumTransfer*6, Location );
+		HurtRadius(Damage*3, 250, MyDamageType, MomentumTransfer*2, Location );
 	}
 	if (STM != None)
 		STM.PlayerClear();
 	
-	Ring = Spawn(Class'UT_SuperComboRing',,'',Location, Instigator.ViewRotation);
+	if(bbP != none && Pawn(Owner) != None)
+    {
+    	Ring = Spawn(Class'UT_SuperComboRing',,'',Location, Pawn(Owner).ViewRotation);
+	}
 	PlayOwnedSound(ExploSound,,20.0,,2000,0.6);
 	
 	Destroy(); 
@@ -119,11 +119,14 @@ simulated function NN_SuperExplosion(Pawn Pwner)	// aka, combo.
 	{
 		HurtRadius(Damage*3, 250, MyDamageType, MomentumTransfer*2, Location );
 	}
-	Ring = Spawn(Class'ut_ComboRing',Pwner,'',Location, Tater);
+	if(Pawn(Owner) != None && Pwner != None)
+	{
+		Ring = Spawn(Class'UT_ComboRing',Pawn(Owner),'',Location, Tater);
+	}
 	PlaySound(ExploSound,,20.0,,2000,0.6);
-    if(bbP != none)
+    if(bbP != none && Pawn(Owner) != None)
     {
-        bbP.xxClientDemoFix(Ring, class'ut_ComboRing', Location, Ring.Velocity, Ring.Acceleration, Tater);
+    	bbP.xxClientDemoFix(Ring, class'ut_ComboRing', Location, Ring.Velocity, Ring.Acceleration, Tater);
     }
 	
 	Destroy();
@@ -134,6 +137,10 @@ simulated function NN_SuperDuperExplosion(Pawn Pwner)	// aka, combo.
 	local rotator Tater;
 	local bbPlayer bbP;
     local UT_SuperComboRing Ring;
+    local Red_SuperComboRing RRing;
+    local Blue_SuperComboRing BRing;
+    local Green_SuperComboRing GRing;
+    local Gold_SuperComboRing GoRing;
 	
 	bbP = bbPlayer(Pwner);
 		
@@ -146,18 +153,24 @@ simulated function NN_SuperDuperExplosion(Pawn Pwner)	// aka, combo.
 	{
 		if (Level.NetMode == NM_Client)
 		{
-			bbP.NN_HurtRadius(self, class'ShockRifle', 3, 750, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 3, 250, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
 	else
 	{
-		HurtRadius(Damage*9, 750, MyDamageType, MomentumTransfer*6, Location );
+		HurtRadius(Damage*2, 250, MyDamageType, MomentumTransfer*6, Location );
 	}
-	Ring = Spawn(Class'UT_SuperComboRing',Pwner,'',Location, Tater);
+
+	if(bbP != none && Pawn(Owner) != None)
+    {
+    	Ring = Spawn(Class'UT_SuperComboRing',Pawn(Owner),'',Location, Tater);
+	}
 	PlaySound(ExploSound,,20.0,,2000,0.6);
-    if(bbP != none)
-        bbP.xxClientDemoFix(Ring, Class'UT_SuperComboRing', Location, Ring.Velocity, Ring.Acceleration, Tater);
+    if(bbP != none && Pawn(Owner) != None)
+    {
+    	bbP.xxClientDemoFix(Ring, Class'UT_SuperComboRing', Location, Ring.Velocity, Ring.Acceleration, Tater);
+    }
 	
 	Destroy();
 }
@@ -168,7 +181,7 @@ auto state Flying
 	{
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
-		If ( Level.NetMode == NM_Client && Other!=Owner && Other!=Instigator && Other.Owner != Owner && (!Other.IsA('Projectile') || (Other.CollisionRadius > 0)) && NN_HitOther != Other )
+		If ( Level.NetMode == NM_Client && Other!=Owner && Other!=Pawn(Owner) && Other.Owner != Owner && (!Other.IsA('Projectile') || (Other.CollisionRadius > 0)) && NN_HitOther != Other )
 		{
 			if (Other.IsA('Projectile') && Other.bOwnerNoSee)
 				bbPlayer(Owner).xxExplodeOther(Projectile(Other));
@@ -186,6 +199,7 @@ auto state Flying
 simulated function Explode(vector HitLocation, vector HitNormal)
 {
 	local bbPlayer bbP;
+	local Pawn P;
 	
 	bbP = bbPlayer(Owner);
 	
@@ -193,7 +207,8 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 		return;
 	
 	if (STM != None)
-		STM.PlayerHit(Instigator, 6, False);	// 6 = Shock Ball
+		STM.PlayerHit(Pawn(Owner), 6, False);	// 6 = Shock Ball
+
 	if (bbP != None && bbP.bNewNet)
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_ShockProjOwnerHidden'))
@@ -212,15 +227,27 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 
 	if (Damage > 60)
 	{
-		Spawn(class'ut_RingExplosion3',,, HitLocation+HitNormal*8,rotator(HitNormal));
-		if (bbP != None)
-			bbP.xxClientDemoFix(None, class'ut_RingExplosion3',HitLocation+HitNormal*8,,, rotator(HitNormal));
+		if(Pawn(Owner) != None)
+		{
+			Spawn(class'ut_RingExplosion3',,, HitLocation+HitNormal*8,rotator(HitNormal));
+		}
+
+		if (bbP != None && Pawn(Owner) != None)
+		{
+			bbP.xxClientDemoFix(None, class'ut_RingExplosion5',HitLocation+HitNormal*8,,, rotator(HitNormal));
+		}
 	}
 	else
 	{
-		Spawn(class'ut_RingExplosion',,, HitLocation+HitNormal*8,rotator(Velocity));
-		if (bbP != None)
-			bbP.xxClientDemoFix(None, class'ut_RingExplosion',HitLocation+HitNormal*8,,, rotator(Velocity));
+		if(Pawn(Owner) != None)
+		{
+			Spawn(class'ut_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+		}
+
+		if (bbP != None && Pawn(Owner) != None)
+		{
+			bbP.xxClientDemoFix(None, class'ut_RingExplosion',HitLocation+HitNormal*8,,, rotator(HitNormal));
+		}
 	}
 		
 	PlayOwnedSound(ImpactSound, SLOT_Misc, 0.5,,, 0.5+FRand());
@@ -269,7 +296,7 @@ function TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vecto
 	{
 		if (DamageType == 'shot') // || DamageType == 'Pulsed' ||		// Enforcer/Minigun/Sniper, Pulse Sphere
 	//		DamageType == 'Corroded' || DamageType == 'jolted')	// Bio and Shock Ball.
-			STM.PlayerSpecial(Instigator, 6);	// 6 = Shock Ball blocked a shot.
+			STM.PlayerSpecial(Pawn(Owner), 6);	// 6 = Shock Ball blocked a shot.
 	}
 }
 

@@ -3,7 +3,7 @@ class NN_FlakSlugOwnerHidden extends ST_FlakSlug;
 var bool bAlreadyHidden;
 
 simulated function Tick(float DeltaTime) {
-	if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None)
+	if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None && Instigator != None)
 	{	
 		if (Level.NetMode == NM_Client) {
 			SpawnSound = None;
@@ -47,10 +47,10 @@ function ProcessTouch (Actor Other, vector HitLocation)
 	if (bDeleteMe || Other == None || Other.bDeleteMe)
 		return;
 	if ( Other != instigator && Other.Owner != Owner ) 
-		NewExplode(HitLocation,Normal(HitLocation-Other.Location), Other.IsA('Pawn'));
+		NewExplode(HitLocation,Normal(HitLocation-Other.Location));
 }
 
-function NewExplode(vector HitLocation, vector HitNormal, bool bDirect)
+/*function NewExplode(vector HitLocation, vector HitNormal, bool bDirect)
 {
 	local vector start;
 	local bbPlayer bbP;
@@ -113,13 +113,40 @@ function NewExplode(vector HitLocation, vector HitNormal, bool bDirect)
 	CI.AddChunk(Proj);
 	
  	Destroy();
+}*/
+
+function NewExplode (Vector HitLocation, Vector HitNormal)
+{
+	  local Vector Start;
+	  local ST_UTChunkInfo CI;
+
+	  if ( Role == ROLE_Authority )
+	  {
+	    //if ( bClientHitScanOnly && bool(GetItemName("get bNNExp")) ||  !bClientHitScanOnly )
+	    //{
+	      if (STM != None)
+			STM.PlayerHit(Instigator, 15, bDirect);
+	      //Class'NN_FlakSlugOwnerHidden'.Default.nnPF.NewHurtRadius(self,Damage,150.0,'FlakDeath',MomentumTransfer,HitLocation);
+	      if (STM != None)
+			STM.PlayerClear();
+	    //}
+	  }
+	  Start = Location + 10 * HitNormal;
+	  CI = Spawn(Class'ST_UTChunkInfo',Instigator);
+	  Spawn(Class'NN_ut_FlameExplosionOwnerHidden',Owner,,Start);
+	  CI.AddChunk(Spawn(Class'NN_UTChunk2OwnerHidden',Owner,'None',Start));
+	  CI.AddChunk(Spawn(Class'NN_UTChunk3OwnerHidden',Owner,'None',Start));
+	  CI.AddChunk(Spawn(Class'NN_UTChunk4OwnerHidden',Owner,'None',Start));
+	  CI.AddChunk(Spawn(Class'NN_UTChunk1OwnerHidden',Owner,'None',Start));
+	  CI.AddChunk(Spawn(Class'NN_UTChunk2OwnerHidden',Owner,'None',Start));
+	  Destroy();
 }
 
 function Explode(vector HitLocation, vector HitNormal)
 {
 	if (bDeleteMe)
 		return;
-	NewExplode(HitLocation, HitNormal, False);
+	NewExplode(HitLocation, HitNormal);
 }
 
 function Landed( vector HitNormal )

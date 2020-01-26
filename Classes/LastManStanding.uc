@@ -356,21 +356,21 @@ function AddDefaultInventory( pawn PlayerPawn )
 	if (bAddNwZpWeapons) //Fix zp nw weapons
 		GiveWeapon(PlayerPawn, ZpPackageName$".zp_ShockRifle");
 	else
-		GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_ShockRifle");
+		GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_ShockRifle");
 		
-	GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_UT_BioRifle");
-    GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_Ripper");
-    GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_UT_FlakCannon");
+	GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_BioRifle");
+    GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Ripper");
+    GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_FlakCannon");
 
     if ( PlayerPawn.IsA('PlayerPawn') )
     {
 		if (bAddNwZpWeapons) //Fix zp nw weapons
 			GiveWeapon(PlayerPawn, ZpPackageName$".zp_SniperRifle");
 		else
-			GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_SniperRifle");
-        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_PulseGun");
-        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_Minigun2");
-        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_UT_Eightball");
+			GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_SniperRifle");
+        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_PulseGun");
+        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Minigun2");
+        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_Eightball");
         PlayerPawn.SwitchToBestWeapon();
     }
     else
@@ -382,38 +382,38 @@ function AddDefaultInventory( pawn PlayerPawn )
 			if (bAddNwZpWeapons) //Fix zp nw weapons
 				GiveWeapon(PlayerPawn, ZpPackageName$".zp_SniperRifle");
 			else
-				GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_SniperRifle");
-            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_PulseGun");
+				GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_SniperRifle");
+            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_PulseGun");
             if ( F < 0.4 )
             {
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_Minigun2");
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_UT_Eightball");
+                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Minigun2");
+                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_Eightball");
             }
             else
             {
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_UT_Eightball");
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_Minigun2");
+                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_Eightball");
+                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Minigun2");
             }
         }
         else
         {
-            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_Minigun2");
-            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_UT_Eightball");
+            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Minigun2");
+            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_Eightball");
             if ( F < 0.88 )
             {
 				if (bAddNwZpWeapons) //Fix zp nw weapons
 					GiveWeapon(PlayerPawn, ZpPackageName$".zp_SniperRifle");
 				else
-					GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_SniperRifle");
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_PulseGun");
+					GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_SniperRifle");
+                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_PulseGun");
             }
             else
             {
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_PulseGun");
+                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_PulseGun");
 				if (bAddNwZpWeapons) //Fix zp nw weapons
 					GiveWeapon(PlayerPawn, ZpPackageName$".zp_SniperRifle");
 				else
-					GiveWeapon(PlayerPawn, "UltimateNewNetv0_3_1.ST_SniperRifle");
+					GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_SniperRifle");
             }
         }
     }
