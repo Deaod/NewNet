@@ -24,5 +24,5 @@ function DrawNameAndPing(Canvas Canvas, PlayerReplicationInfo PRI, float XOffset
 
 defaultproperties
 {
-     PureFlagIcon=Texture'Botpack.GreenFlag'
+     PureFlagIcon=Texture'Botpack.Icons.GreenFlag'
 }

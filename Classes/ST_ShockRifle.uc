@@ -6,13 +6,23 @@ var Rotator GV;
 var Vector CDO;
 var float yMod;
 var float LastFiredTime;
+var Class<NN_WeaponFunctions> nnWF;
 
 // For Special Shock Beam
 var int HitCounter;
 
+var bool TeamShockEffects;
+
+replication
+{
+	reliable if( Role==ROLE_Authority )
+		TeamShockEffects;
+}
+
 function PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	TeamShockEffects = class'UTPure'.Default.TeamShockEffects;
 
 	if (ROLE == ROLE_Authority)
 	{
@@ -26,7 +36,9 @@ simulated function RenderOverlays(Canvas Canvas)
 {
 	local bbPlayer bbP;
 	
+	MultiSkins[1] = none;
 	Super.RenderOverlays(Canvas);
+	MultiSkins[1] = MultiSkins[7];
 	yModInit();
 	
 	bbP = bbPlayer(Owner);
@@ -120,7 +132,7 @@ simulated function NN_TraceFire()
 	zzbNN_Combo = NN_ProcessTraceHit(Other, HitLocation, HitNormal, vector(GV),Y,Z);
 	if(bbP != None && (bbP.PlayerReplicationInfo != None))
 	{
-		if(Class'IndiaSettings'.default.bTeamShockBeams)
+		if(TeamShockEffects)
 		{
 			Switch(bbP.PlayerReplicationInfo.Team)
 			{
@@ -150,7 +162,7 @@ simulated function NN_TraceFire()
 					break;
 				default:
 					if (zzbNN_Combo)
-						bbP.xxNN_Fire(ST_ShockProj(Other).zzNN_ProjIndex, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, HitDiff, true);
+						bbP.xxNN_Fire(ST_ShockProjBlue(Other).zzNN_ProjIndex, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, HitDiff, true);
 					else
 						bbP.xxNN_Fire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, HitDiff, false);
 					break;
@@ -177,14 +189,14 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 	
 	//if (Owner.IsA('Bot'))
 		//return false;
-
-	NN_SpawnEffect(HitLocation, Owner.Location + CDO + (FireOffset.X + 20) * X + Y * yMod + FireOffset.Z * Z, HitNormal);
 	
 	if (Other==None)
 	{
 		HitNormal = -X;
 		HitLocation = Owner.Location + X*100000.0;
 	}
+
+	NN_SpawnEffect(HitLocation, Owner.Location + CDO + (FireOffset.X + 20) * X + Y * yMod + FireOffset.Z * Z, HitNormal);
 
 	//if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
 	//{
@@ -217,59 +229,57 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 		{
 			if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
 			{
-				if(class'IndiaSettings'.default.bTeamShockBeams)
+				if(TeamShockEffects)
 				{
 					Switch(Pawn(Owner).PlayerReplicationInfo.Team)
 					{
 						Case 0:
-							Spawn(class'Red_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+							Spawn(class'UT_RedRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 							break;
 						Case 1:
-							Spawn(class'Blue_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+							Spawn(class'UT_BlueRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 							break;
 						Case 2:
-							Spawn(class'Green_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+							Spawn(class'UT_GreenRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 							break;
 						Case 3:
-							Spawn(class'Gold_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+							Spawn(class'UT_GoldRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 							break;
 						default:
-							Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
+							Spawn(class'UT_BlueRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 							break;
 					}
 				}
 				else
-					Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
-			}
-			else
-				Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
+					Spawn(class'UT_RingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 
 			if (bbPlayer(Owner) != None && (Pawn(Owner) != None) && (Pawn(Owner).PlayerReplicationInfo != None))
 			{
-				if(class'IndiaSettings'.default.bTeamShockBeams)
+				if(TeamShockEffects)
 				{
 					Switch(Pawn(Owner).PlayerReplicationInfo.Team)
 					{
 						case 0:
-							bbPlayer(Owner).xxClientDemoFix(None, class'Red_RingExplosion',HitLocation+HitNormal*8,,, rotator(HitNormal));
+							bbPlayer(Owner).xxClientDemoFix(None, class'UT_RedRingExplosion2',HitLocation+HitNormal*8,,, rotator(HitNormal));
 							break;
 						case 1:
-							bbPlayer(Owner).xxClientDemoFix(None, class'Blue_RingExplosion',HitLocation+HitNormal*8,,, rotator(HitNormal));
+							bbPlayer(Owner).xxClientDemoFix(None, class'UT_BlueRingExplosion2',HitLocation+HitNormal*8,,, rotator(HitNormal));
 							break;
 						case 2:
-							bbPlayer(Owner).xxClientDemoFix(None, class'Green_RingExplosion',HitLocation+HitNormal*8,,, rotator(HitNormal));
+							bbPlayer(Owner).xxClientDemoFix(None, class'UT_GreenRingExplosion2',HitLocation+HitNormal*8,,, rotator(HitNormal));
 							break;
 						case 3:
-							bbPlayer(Owner).xxClientDemoFix(None, class'Gold_RingExplosion',HitLocation+HitNormal*8,,, rotator(HitNormal));
+							bbPlayer(Owner).xxClientDemoFix(None, class'UT_GoldRingExplosion2',HitLocation+HitNormal*8,,, rotator(HitNormal));
 							break;
 						default:
-							bbPlayer(Owner).xxClientDemoFix(None, class'ut_RingExplosion5',HitLocation+HitNormal*8,,, rotator(HitNormal));
+							bbPlayer(Owner).xxClientDemoFix(None, class'UT_BlueRingExplosion2',HitLocation+HitNormal*8,,, rotator(HitNormal));
 							break;
 					}
 				}
 				else
-					bbPlayer(Owner).xxClientDemoFix(None, class'ut_RingExplosion5',HitLocation+HitNormal*8,,, rotator(HitNormal));
+					bbPlayer(Owner).xxClientDemoFix(None, class'UT_RingExplosion2',HitLocation+HitNormal*8,,, rotator(HitNormal));
 			}
+		}
 	}
 	
 	//if (Other.IsA('Mover'))
@@ -303,39 +313,45 @@ simulated function NN_SpawnEffect(vector HitLocation, vector SmokeLocation, vect
 	
 	if(Pawn(Owner) != None && (Owner != None) && (Pawn(Owner).PlayerReplicationInfo != None))
 	{
-		if(class'IndiaSettings'.default.bTeamShockBeams)
+		if(TeamShockEffects)
 		{
 			Switch(Pawn(Owner).PlayerReplicationInfo.Team)
 			{
 				Case 0:
 					RedBeam = Spawn(class'NN_RedShockBeam',Owner,,SmokeLocation,SmokeRotation);
+					RedBeam = Spawn(class'RedShockBeamEffect',Owner,,SmokeLocation,SmokeRotation);
 					RedBeam.MoveAmount = DVector/NumPoints;
 					RedBeam.NumPuffs = NumPoints - 1;
 					break;
 				Case 1:
 					BlueBeam = Spawn(class'NN_BlueShockBeam',Owner,,SmokeLocation,SmokeRotation);
+					BlueBeam = Spawn(class'BlueShockBeamEffect',Owner,,SmokeLocation,SmokeRotation);
 					BlueBeam.MoveAmount = DVector/NumPoints;
 					BlueBeam.NumPuffs = NumPoints - 1;
 					break;
 				Case 2:
 					GreenBeam = Spawn(class'NN_GreenShockBeam',Owner,,SmokeLocation,SmokeRotation);
+					GreenBeam = Spawn(class'GreenShockBeamEffect',Owner,,SmokeLocation,SmokeRotation);
 					GreenBeam.MoveAmount = DVector/NumPoints;
 					GreenBeam.NumPuffs = NumPoints - 1;
 					break;
 				Case 3:
 					GoldBeam = Spawn(class'NN_GoldShockBeam',Owner,,SmokeLocation,SmokeRotation);
+					GoldBeam = Spawn(class'GoldShockBeamEffect',Owner,,SmokeLocation,SmokeRotation);
 					GoldBeam.MoveAmount = DVector/NumPoints;
 					GoldBeam.NumPuffs = NumPoints - 1;
 					break;
 				Case 4:
-					Smoke = Spawn(class'NN_ShockBeam',Owner,,SmokeLocation,SmokeRotation);
-					Smoke.MoveAmount = DVector/NumPoints;
-					Smoke.NumPuffs = NumPoints - 1;
+					BlueBeam = Spawn(class'NN_BlueShockBeam',Owner,,SmokeLocation,SmokeRotation);
+					BlueBeam = Spawn(class'BlueShockBeamEffect',Owner,,SmokeLocation,SmokeRotation);
+					BlueBeam.MoveAmount = DVector/NumPoints;
+					BlueBeam.NumPuffs = NumPoints - 1;
 					break;
 				default:
-					Smoke = Spawn(class'NN_ShockBeam',Owner,,SmokeLocation,SmokeRotation);
-					Smoke.MoveAmount = DVector/NumPoints;
-					Smoke.NumPuffs = NumPoints - 1;
+					BlueBeam = Spawn(class'NN_BlueShockBeam',Owner,,SmokeLocation,SmokeRotation);
+					BlueBeam = Spawn(class'BlueShockBeamEffect',Owner,,SmokeLocation,SmokeRotation);
+					BlueBeam.MoveAmount = DVector/NumPoints;
+					BlueBeam.NumPuffs = NumPoints - 1;
 					break;
 			}
 		}
@@ -349,27 +365,33 @@ simulated function NN_SpawnEffect(vector HitLocation, vector SmokeLocation, vect
 
 	if (bbPlayer(Owner) != None && (bbPlayer(Owner).PlayerReplicationInfo != None))
 	{
-		if(class'IndiaSettings'.default.bTeamShockBeams)
+		if(TeamShockEffects)
 		{
 			Switch(bbPlayer(Owner).PlayerReplicationInfo.Team)
 			{
 				Case 0:
 					bbPlayer(Owner).xxClientDemoFix(None, class'NN_RedShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'RedShockBeamEffect',SmokeLocation,,,SmokeRotation);
 					break;
 				Case 1:
 					bbPlayer(Owner).xxClientDemoFix(None, class'NN_BlueShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'BlueShockBeamEffect',SmokeLocation,,,SmokeRotation);
 					break;
 				Case 2:
-					bbPlayer(Owner).xxClientDemoFix(None, class'NN_GoldShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'NN_GreenShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'GreenShockBeamEffect',SmokeLocation,,,SmokeRotation);
 					break;
 				Case 3:
 					bbPlayer(Owner).xxClientDemoFix(None, class'NN_GoldShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'GoldShockBeamEffect',SmokeLocation,,,SmokeRotation);
 					break;
 				Case 4:
-					bbPlayer(Owner).xxClientDemoFix(None, class'NN_ShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'NN_BlueShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'BlueShockBeamEffect',SmokeLocation,,,SmokeRotation);
 					break;
 				default:
-					bbPlayer(Owner).xxClientDemoFix(None, class'NN_ShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'NN_BlueShockBeam',SmokeLocation,,,SmokeRotation);
+					bbPlayer(Owner).xxClientDemoFix(None, class'BlueShockBeamEffect',SmokeLocation,,,SmokeRotation);
 					break;
 
 			}
@@ -377,17 +399,13 @@ simulated function NN_SpawnEffect(vector HitLocation, vector SmokeLocation, vect
 		else
 			bbPlayer(Owner).xxClientDemoFix(None, class'NN_ShockBeam',SmokeLocation,,,SmokeRotation);
 	}
-	else
-		return;
-	//if (bbPlayer(Owner) != None)
-		//bbPlayer(Owner).xxClientDemoFix(None, class'NN_ShockBeam',SmokeLocation,,,SmokeRotation);
 }
 
 function Fire ( float Value )
 {
 	local bbPlayer bbP;
 	
-	if (Owner.IsA('Bot'))
+ 	if (Owner.IsA('Bot'))
 	{
 		Super.Fire(Value);
 		return;
@@ -396,6 +414,10 @@ function Fire ( float Value )
 	bbP = bbPlayer(Owner);
 	if (bbP != None && bNewNet && Value < 1)
 		return;
+	if ( bbP != None )
+	{
+		bbPlayer(Owner).xxAddFired(8);
+	}
 	Super.Fire(Value);
 }
 
@@ -438,6 +460,10 @@ function AltFire( float Value )
 	}	
 	if ( AmmoType != None && AmmoType.UseAmmo(1) )
 	{
+		if ( bbP != None )
+		{
+			bbPlayer(Owner).xxAddFired(8);
+		}
 		GotoState('AltFiring');
 		bCanClientFire = true;
 		if ( Owner.IsA('Bot') )
@@ -453,7 +479,7 @@ function AltFire( float Value )
 		{
 			if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
 			{
-				if(class'IndiaSettings'.default.bTeamShockBeams)
+				if(TeamShockEffects)
 				{
 					Switch(Pawn(Owner).PlayerReplicationInfo.Team)
 					{
@@ -494,12 +520,12 @@ function AltFire( float Value )
 							}
 							break;
 						default:
-							NNSP = NN_ShockProjOwnerHidden(ProjectileFire(Class'NN_ShockProjOwnerHidden', AltProjectileSpeed, bAltWarnTarget));
-							if (NNSP != None)
+							BNNSP = NN_ShockProjBlueOwnerHidden(ProjectileFire(Class'NN_ShockProjBlueOwnerHidden', AltProjectileSpeed, bAltWarnTarget));
+							if (BNNSP != None)
 							{
-								NNSP.NN_OwnerPing = float(Owner.ConsoleCommand("GETPING"));
+								BNNSP.NN_OwnerPing = float(Owner.ConsoleCommand("GETPING"));
 								if (bbP != None)
-									NNSP.zzNN_ProjIndex = bbP.xxNN_AddProj(NNSP);
+									BNNSP.zzNN_ProjIndex = bbP.xxNN_AddProj(BNNSP);
 							}
 							break;
 					}
@@ -520,7 +546,7 @@ function AltFire( float Value )
 		{
 			if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
 			{
-				if(class'IndiaSettings'.default.bTeamShockBeams)
+				if(TeamShockEffects)
 				{
 					Switch(Pawn(Owner).PlayerReplicationInfo.Team)
 					{
@@ -542,7 +568,7 @@ function AltFire( float Value )
 							break;
 						default:
 							Pawn(Owner).PlayRecoil(FiringSpeed);
-							ProjectileFire(AltProjectileClass, AltProjectileSpeed, bAltWarnTarget);
+							ProjectileFire(Class'ST_ShockProjBlue', AltProjectileSpeed, bAltWarnTarget);
 							break;
 					}
 				}
@@ -755,7 +781,7 @@ simulated function Projectile NN_ProjectileFire(class<projectile> ProjClass, flo
 	Proj = Spawn(ProjClass,Owner,, Start,GV);
 	if(bbP != None && bbP.PlayerReplicationInfo != None)
 	{
-		if(Class'IndiaSettings'.default.bTeamShockBeams)
+		if(TeamShockEffects)
 		{
 			Switch(bbP.PlayerReplicationInfo.Team)
 			{
@@ -792,12 +818,12 @@ simulated function Projectile NN_ProjectileFire(class<projectile> ProjClass, flo
 					bbP.xxClientDemoFix(ST_ProjGold, Class'ShockProj', Start, ST_ProjGold.Velocity, Proj.Acceleration, GV);
 					break;
 				default:
-					ST_Proj = ST_ShockProj(Proj);
+					ST_ProjBlue = ST_ShockProjBlue(Proj);
 					ProjIndex = bbP.xxNN_AddProj(Proj);
-					if (ST_Proj != None)
-						ST_Proj.zzNN_ProjIndex = ProjIndex;
+					if (ST_ProjBlue != None)
+						ST_ProjBlue.zzNN_ProjIndex = ProjIndex;
 					bbP.xxNN_AltFire(ProjIndex, bbP.Location, bbP.Velocity, bbP.zzViewRotation);
-					bbP.xxClientDemoFix(ST_Proj, Class'ShockProj', Start, ST_Proj.Velocity, Proj.Acceleration, GV);
+					bbP.xxClientDemoFix(ST_ProjBlue, Class'ShockProj', Start, ST_ProjBlue.Velocity, Proj.Acceleration, GV);
 					break;
 			}
 		}
@@ -834,7 +860,7 @@ simulated function bool ClientAltFire(float Value)
 			bPointing=True;
 			if(bbP != None && bbP.PlayerReplicationInfo != None)
 			{
-				if(Class'IndiaSettings'.default.bTeamShockBeams)
+				if(TeamShockEffects)
 				{
 					Switch(bbP.PlayerReplicationInfo.Team)
 					{
@@ -851,7 +877,7 @@ simulated function bool ClientAltFire(float Value)
 							NN_ProjectileFire(Class'ST_ShockProjGold', AltProjectileSpeed, bAltWarnTarget);
 							break;
 						default:
-							NN_ProjectileFire(AltProjectileClass, AltProjectileSpeed, bAltWarnTarget);
+							NN_ProjectileFire(Class'ST_ShockProjBlue', AltProjectileSpeed, bAltWarnTarget);
 							break;
 					}
 				}
@@ -993,6 +1019,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	if ( NN_ShockProjOwnerHidden(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		Other.SetOwner(Owner);
@@ -1002,6 +1030,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( NN_ShockProjRedOwnerHidden(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		Other.SetOwner(Owner);
@@ -1011,6 +1041,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( NN_ShockProjBlueOwnerHidden(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		Other.SetOwner(Owner);
@@ -1020,6 +1052,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( NN_ShockProjGreenOwnerHidden(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		Other.SetOwner(Owner);
@@ -1029,6 +1063,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( NN_ShockProjGoldOwnerHidden(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		Other.SetOwner(Owner);
@@ -1038,6 +1074,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( ST_ShockProj(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		ST_ShockProj(Other).SuperExplosion();
@@ -1046,6 +1084,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( ST_ShockProjRed(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		ST_ShockProjRed(Other).SuperExplosion();
@@ -1054,6 +1094,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( ST_ShockProjBlue(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		ST_ShockProjBlue(Other).SuperExplosion();
@@ -1062,6 +1104,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( ST_ShockProjGreen(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		ST_ShockProjGreen(Other).SuperExplosion();
@@ -1070,6 +1114,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( ST_ShockProjGold(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(9);
 		if (STM != None)
 			STM.PlayerUnfire(PawnOwner, 5);
 		ST_ShockProjGold(Other).SuperExplosion();
@@ -1079,7 +1125,7 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	{
 		if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
 		{
-			if(class'IndiaSettings'.default.bTeamShockBeams)
+			if(TeamShockEffects)
 			{
 				Switch(Pawn(owner).PlayerReplicationInfo.Team)
 				{
@@ -1096,49 +1142,48 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 						DoRingExplosion_GOLD(PlayerPawn(Owner), HitLocation, HitNormal);
 						break;
 					case 4:
-						DoRingExplosion5(PlayerPawn(Owner), HitLocation, HitNormal);
+						DoRingExplosion_BLUE(PlayerPawn(Owner), HitLocation, HitNormal);
 						break;
 					default:
-						DoRingExplosion5(PlayerPawn(Owner), HitLocation, HitNormal);
+						DoRingExplosion_BLUE(PlayerPawn(Owner), HitLocation, HitNormal);
 						break;
 				}
 			}
 			else
-				DoRingExplosion5(PlayerPawn(Owner), HitLocation, HitNormal);
+				DoRingExplosion2(PlayerPawn(Owner), HitLocation, HitNormal);
 		}	
 	}
 	else
 	{
 		if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
 		{
-			if(class'IndiaSettings'.default.bTeamShockBeams)
+			if(TeamShockEffects)
 			{
 				Switch(Pawn(Owner).PlayerReplicationInfo.Team)
 				{
 					case 0:
-						Spawn(class'Red_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						Spawn(class'UT_RedRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 						break;
 					case 1:
-						Spawn(class'Blue_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						Spawn(class'UT_BlueRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 						break;
 					case 2:
-						Spawn(class'Green_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						Spawn(class'UT_GreenRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 						break;
 					case 3:
-						Spawn(class'Gold_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						Spawn(class'UT_GoldRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 						break;
 					case 4:
-						Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						Spawn(class'UT_BlueRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 						break;
 					default:
-						Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						Spawn(class'UT_BlueRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 						break;
 				}
 			}
 			else
-				Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
+				Spawn(class'UT_RingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
 		}
-		Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
 	}
 
 	if ( (Other != self) && (Other != Owner) && (Other != None) ) 
@@ -1164,18 +1209,19 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		HitCounter = 0;
 }
 
-simulated function DoRingExplosion5(PlayerPawn Pwner, vector HitLocation, vector HitNormal)
+simulated function DoRingExplosion2(PlayerPawn Pwner, vector HitLocation, vector HitNormal)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 	
 	//if (Owner.IsA('Bot'))
 		//return;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Pwner) {
-				CR = P.Spawn(class'ut_RingExplosion5',P,, HitLocation+HitNormal*8,rotator(HitNormal));
+				CR = P.Spawn(class'UT_RingExplosion2',P,, HitLocation+HitNormal*8,rotator(HitNormal));
 				CR.bOnlyOwnerSee = True;
 			}
 	}
@@ -1183,16 +1229,17 @@ simulated function DoRingExplosion5(PlayerPawn Pwner, vector HitLocation, vector
 
 simulated function DoRingExplosion_RED(PlayerPawn Pwner, vector HitLocation, vector HitNormal)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 	
 	//if (Owner.IsA('Bot'))
 		//return;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Pwner) {
-				CR = P.Spawn(class'Red_RingExplosion',P,, HitLocation+HitNormal*8,rotator(HitNormal));
+				CR = P.Spawn(class'UT_RedRingExplosion2',P,, HitLocation+HitNormal*8,rotator(HitNormal));
 				CR.bOnlyOwnerSee = True;
 			}
 	}
@@ -1200,16 +1247,17 @@ simulated function DoRingExplosion_RED(PlayerPawn Pwner, vector HitLocation, vec
 
 simulated function DoRingExplosion_BLUE(PlayerPawn Pwner, vector HitLocation, vector HitNormal)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 	
 	//if (Owner.IsA('Bot'))
 		//return;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Pwner) {
-				CR = P.Spawn(class'Blue_RingExplosion',P,, HitLocation+HitNormal*8,rotator(HitNormal));
+				CR = P.Spawn(class'UT_BlueRingExplosion2',P,, HitLocation+HitNormal*8,rotator(HitNormal));
 				CR.bOnlyOwnerSee = True;
 			}
 	}
@@ -1217,16 +1265,17 @@ simulated function DoRingExplosion_BLUE(PlayerPawn Pwner, vector HitLocation, ve
 
 simulated function DoRingExplosion_GREEN(PlayerPawn Pwner, vector HitLocation, vector HitNormal)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 	
 	//if (Owner.IsA('Bot'))
 		//return;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Pwner) {
-				CR = P.Spawn(class'Green_RingExplosion',P,, HitLocation+HitNormal*8,rotator(HitNormal));
+				CR = P.Spawn(class'UT_GreenRingExplosion2',P,, HitLocation+HitNormal*8,rotator(HitNormal));
 				CR.bOnlyOwnerSee = True;
 			}
 	}
@@ -1234,16 +1283,17 @@ simulated function DoRingExplosion_GREEN(PlayerPawn Pwner, vector HitLocation, v
 
 simulated function DoRingExplosion_GOLD(PlayerPawn Pwner, vector HitLocation, vector HitNormal)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 	
 	///if (Owner.IsA('Bot'))
 		//return;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Pwner) {
-				CR = P.Spawn(class'GOLD_RingExplosion',P,, HitLocation+HitNormal*8,rotator(HitNormal));
+				CR = P.Spawn(class'UT_GoldRingExplosion2',P,, HitLocation+HitNormal*8,rotator(HitNormal));
 				CR.bOnlyOwnerSee = True;
 			}
 	}
@@ -1277,39 +1327,45 @@ function SpawnEffect(vector HitLocation, vector SmokeLocation)
 	{
 		if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
 		{
-			if(class'IndiaSettings'.default.bTeamShockBeams)
+			if(TeamShockEffects)
 			{
 				Switch(Pawn(Owner).PlayerReplicationInfo.Team)
 				{
 					Case 0:
 						RedBeam = Spawn(class'NN_RedShockBeamOwnerHidden',Owner,,SmokeLocation,SmokeRotation);
+						RedBeam = Spawn(class'RedShockBeamEffectOH',Owner,,SmokeLocation,SmokeRotation);
 						RedBeam.MoveAmount = DVector/NumPoints;
 						RedBeam.NumPuffs = NumPoints - 1;
 						break;
 					Case 1:
 						BlueBeam = Spawn(class'NN_BlueShockBeamOwnerHidden',Owner,,SmokeLocation,SmokeRotation);
+						BlueBeam = Spawn(class'BlueShockBeamEffectOH',Owner,,SmokeLocation,SmokeRotation);
 						BlueBeam.MoveAmount = DVector/NumPoints;
 						BlueBeam.NumPuffs = NumPoints - 1;
 						break;
 					Case 2:
 						GreenBeam = Spawn(class'NN_GreenShockBeamOwnerHidden',Owner,,SmokeLocation,SmokeRotation);
+						GreenBeam = Spawn(class'GreenShockBeamEffectOH',Owner,,SmokeLocation,SmokeRotation);
 						GreenBeam.MoveAmount = DVector/NumPoints;
 						GreenBeam.NumPuffs = NumPoints - 1;
 						break;
 					Case 3:
 						GoldBeam = Spawn(class'NN_GoldShockBeamOwnerHidden',Owner,,SmokeLocation,SmokeRotation);
+						GoldBeam = Spawn(class'GoldShockBeamEffectOH',Owner,,SmokeLocation,SmokeRotation);
 						GoldBeam.MoveAmount = DVector/NumPoints;
 						GoldBeam.NumPuffs = NumPoints - 1;
 						break;
 					Case 4:
-						Smoke = Spawn(class'NN_ShockBeamOwnerHidden',Owner,,SmokeLocation,SmokeRotation);
-						Smoke.MoveAmount = DVector/NumPoints;
-						Smoke.NumPuffs = NumPoints - 1;
+						BlueBeam = Spawn(class'NN_BlueShockBeamOwnerHidden',Owner,,SmokeLocation,SmokeRotation);
+						BlueBeam = Spawn(class'BlueShockBeamEffectOH',Owner,,SmokeLocation,SmokeRotation);
+						BlueBeam.MoveAmount = DVector/NumPoints;
+						BlueBeam.NumPuffs = NumPoints - 1;
 						break;
 					default:
-						Smoke = Spawn(class'NN_ShockBeamOwnerHidden',Owner,,SmokeLocation,SmokeRotation);
-						Smoke.MoveAmount = DVector/NumPoints;
-						Smoke.NumPuffs = NumPoints - 1;
+						BlueBeam = Spawn(class'NN_BlueShockBeamOwnerHidden',Owner,,SmokeLocation,SmokeRotation);
+						BlueBeam = Spawn(class'BlueShockBeamEffectOH',Owner,,SmokeLocation,SmokeRotation);
+						BlueBeam.MoveAmount = DVector/NumPoints;
+						BlueBeam.NumPuffs = NumPoints - 1;
 						break;
 				}
 			}
@@ -1329,65 +1385,23 @@ function SpawnEffect(vector HitLocation, vector SmokeLocation)
 	}
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'ShockRifle';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'ShockRifle');
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	//if ( !IsAnimating() || (AnimSequence != 'Select') )
-	//{
-		if(Pawn(Owner) != None)
-		{
-			if(Class'IndiaSettings'.default.bFWS)
-				PlayAnim('Select',1000.00);
-			else	
-				PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-		}
-	//}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
-}
-
-simulated function TweenDown()
-{
-	if(Pawn(Owner) != None)
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
+	if(TeamShockEffects)
 	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
+		SetTeamSkins();
 	}
+}
+
+simulated function TweenDown ()
+{
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 state NormalFire
@@ -1462,8 +1476,15 @@ state Active
 	}
 }
 
+simulated function SetTeamSkins()
+{
+	Class'NNTeamShock'.static.SetTeamSkins( self);
+}
+
 defaultproperties
 {
 	AltProjectileClass=Class'ST_ShockProj'
 	bNewNet=True
+	FireOffset=(X=10.000000,Y=-7.000000,Z=-9.000000)
+	nnWF=Class'NN_WeaponFunctions'
 }

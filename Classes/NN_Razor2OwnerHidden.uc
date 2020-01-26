@@ -48,7 +48,7 @@ auto state Flying
 	simulated function SetUp()
 	{
 		local vector X;
-		local Pawn P;
+		local bbPlayer bbP;
 		
 		X = vector(Rotation);
 		
@@ -57,9 +57,12 @@ auto state Flying
 			bSpedUp = true;
 			Velocity = Speed * X * 2;     // Impart ONLY forward vel
 			NN_EndAccelTime = Level.TimeSeconds + NN_OwnerPing * Level.TimeDilation / 1000;
-			for (P = Level.PawnList; P != None; P = P.NextPawn)
-				if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None && P.PlayerReplicationInfo != None)
-					NN_EndAccelTime += P.PlayerReplicationInfo.Ping * Level.TimeDilation / 1000;
+			ForEach AllActors(class'bbPlayer', bbP)
+			{
+				if ( Viewport(bbP.Player) != None )
+				///if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
+					NN_EndAccelTime += bbP.PlayerReplicationInfo.Ping * Level.TimeDilation / 2500;
+			}
 		}
 		else
 		{
@@ -73,7 +76,7 @@ auto state Flying
 	{
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
-		if ( bCanHitInstigator || (Other != Owner && Other != Instigator) && Other.Owner != Owner )
+		if ( bCanHitInstigator || (Other != Owner && Other != Instigator)/*  && Other.Owner != Owner  */)
 		{
 			if ( Role == ROLE_Authority && !bbPlayer(Owner).bNewNet )
 			{
@@ -82,7 +85,7 @@ auto state Flying
 				{
 					if (STM != None)
 						STM.PlayerHit(Instigator, 11, True);		// 11 = Ripper Primary Headshot
-					if (bbPlayer(Owner) == None || !bbPlayer(Owner).bNewNet)
+					if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 						Other.TakeDamage(3.5 * damage, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'decapitated' );
 					if (STM != None)
@@ -92,7 +95,7 @@ auto state Flying
 				{
 					if (STM != None)
 						STM.PlayerHit(Instigator, 11, False);		// 11 = Ripper Primary
-					if (bbPlayer(Owner) == None || !bbPlayer(Owner).bNewNet)
+					if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 						Other.TakeDamage(damage, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'shredded' );
 					if (STM != None)
@@ -168,11 +171,12 @@ auto state Flying
 
 simulated function DoWallHit(PlayerPawn Pwner, vector HitNormal)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor WC;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Pwner) {
 				if (NumWallHits < 1) {
 					WC = P.Spawn(class'WallCrack',P,,Location, rotator(HitNormal));

@@ -8,33 +8,31 @@ var PlayerPawn LocalPlayer;
 //Custom variables of the new gametype
 var config bool bDynamicBots;
 var config int NumberDynamicBots;
-var config bool bAddNwZpWeapons;
-var config string ZpPackageName;
-var Pawn Ordered[32];
-var int PlayerCount;
-var int WorstLive; //the worst live that happened in the current game (min = 0)
+var config string StartWeapon;
+var PlayerReplicationInfo Ordered[32];
+var int PlayerCount; //count number of players humans + bots if DynamicBots are disabled.
+var int WorstPlayerNumberLives; //the worst player number of lives (min = 0)
+var int BestPlayerNumberLives; //the best player number of lives (min = 0)
 var bool bGameAlreadyStarted;
 
 
 event InitGame( string Options, out string Error )
 {
     local string InOpt;
-	local Mutator M;
 	
 	if(bDynamicBots)
 		MinPlayers=0; //if we are the first to enter		
     Super.InitGame(Options, Error);
 
-    if ( FragLimit == 0 )
-        Lives = 10;
-	else if( FragLimit == 1){
+    if ( FragLimit == 0 || FragLimit == 1 ){
+		log("LMS doesn't support"@FragLimit@"live only, starting the game with 10 lives...");
 		FragLimit=10;
-		Lives = Fraglimit;
 	}
-    else
-        Lives = Fraglimit;
+
+	Lives = Fraglimit;
 		
-	WorstLive=Lives; // This should fix the random spectator bug, at the begin of a new game
+	WorstPlayerNumberLives=Lives; // This should fix the random spectator bug, at the begin of a new game
+	BestPlayerNumberLives=Lives;
 }
 
 function float GameThreatAdd(Bot aBot, Pawn Other)
@@ -56,7 +54,7 @@ event playerpawn Login
     local playerpawn NewPlayer;
 
     // Players can't join if there is/was a player (this include bots, if bDynamicBots=False) with less than 2 lives.
-    if (NumPlayers!=0 && WorstLive < 2)
+    if (NumPlayers!=0 && WorstPlayerNumberLives < 2)
     {
         bDisallowOverride = true;
         SpawnClass = class'CHSpectator';
@@ -70,11 +68,11 @@ event playerpawn Login
 
 	if ((NewPlayer != None) && !NewPlayer.IsA('Spectator') && !NewPlayer.IsA('Commander')){
 	
-		if (NumPlayers!=0){
-				NewPlayer.PlayerReplicationInfo.Score = WorstLive;
-			}
+		if(WorstPlayerNumberLives!=BestPlayerNumberLives || WorstPlayerNumberLives==Lives)
+			NewPlayer.PlayerReplicationInfo.Score = WorstPlayerNumberLives;
 		else
-			NewPlayer.PlayerReplicationInfo.Score = Lives;
+			NewPlayer.PlayerReplicationInfo.Score = WorstPlayerNumberLives-1; //If the worst player have the same lives of the best, let's think
+																			//two playing with 7 lives, the the entering will start with -1, 6 lives
 	}
 	
 	return NewPlayer;
@@ -99,7 +97,7 @@ event PostLogin( playerpawn NewPlayer )
     Super.PostLogin(NewPlayer);
     GameName = Default.GameName;
 	
-	if(NumPlayers!=0 && WorstLive < 2) //if player can't enter in the current game, let's say him to wait until next match
+	if(NumPlayers!=0 && WorstPlayerNumberLives < 2) //if player can't enter in the current game, let's say him to wait until next match
 		NewPlayer.SetProgressMessage("The current match is locked, please wait until this match finishes to join.", 0);
 }
 
@@ -108,12 +106,18 @@ function Timer()
     local Pawn P;
 	
 	//
-	if (NumPlayers>1 || !bDynamicBots && NumBots>0){ //Don't do unnecessary checks.
+	if (NumPlayers>1 && WorstPlayerNumberLives>1 || !bDynamicBots && NumBots>0 && WorstPlayerNumberLives>1){ //Don't do unnecessary checks.
 		LoadScores();
 		
 		//If(Ordered[0]!=None) //should not be necessary with the player check number
-			if (Ordered[0].PlayerReplicationInfo.Score<WorstLive) // this is in case of a player left the game and re-enter don't start with worst player lives (since he probably was 0 lives when left)
-				WorstLive=Ordered[0].PlayerReplicationInfo.Score; //Let's update the worst live of the current game
+			if (Ordered[0].Score<WorstPlayerNumberLives || Ordered[PlayerCount-1].Score<BestPlayerNumberLives){ 
+			// this is in case of a player left the game and re-enter don't start with worst player
+			//lives (since he probably was 0 lives when left)
+			
+				WorstPlayerNumberLives=Ordered[0].Score; //Let's update the worst live of the current game
+				BestPlayerNumberLives=Ordered[PlayerCount-1].Score; //Let's update the best live of the current game
+		
+			}
 	}
 	//
 
@@ -166,60 +170,43 @@ function bool RestartPlayer( pawn aPlayer )
     local NavigationPoint startSpot;
     local bool foundStart;
     local Pawn P;
+    local bool bResult;
 
     if( bRestartLevel && Level.NetMode!=NM_DedicatedServer && Level.NetMode!=NM_ListenServer )
         return true;
 
-    if ( aPlayer.PlayerReplicationInfo.Score < 1 )
-    {
-        BroadcastLocalizedMessage(class'LMSOutMessage', 0, aPlayer.PlayerReplicationInfo);
-        For ( P=Level.PawnList; P!=None; P=P.NextPawn )
-            if ( P.bIsPlayer && (P.PlayerReplicationInfo.Score >= 1) )
-                P.PlayerReplicationInfo.Score += 0.00001;
-        if ( aPlayer.IsA('Bot') )
-        {
-            aPlayer.PlayerReplicationInfo.bIsSpectator = true;
-            aPlayer.PlayerReplicationInfo.bWaitingPlayer = true;
-            aPlayer.GotoState('GameEnded');
-            return false; // bots don't respawn when ghosts
-        }
-    }
-
-    startSpot = FindPlayerStart(None, 255);
-    if( startSpot == None )
-        return false;
-        
-    foundStart = aPlayer.SetLocation(startSpot.Location);
-    if( foundStart )
-    {
-        startSpot.PlayTeleportEffect(aPlayer, true);
-        aPlayer.SetRotation(startSpot.Rotation);
-        aPlayer.ViewRotation = aPlayer.Rotation;
-        aPlayer.Acceleration = vect(0,0,0);
-        aPlayer.Velocity = vect(0,0,0);
-        aPlayer.Health = aPlayer.Default.Health;
-        aPlayer.ClientSetRotation( startSpot.Rotation );
-        aPlayer.bHidden = false;
-        aPlayer.SoundDampening = aPlayer.Default.SoundDampening;
-        if ( aPlayer.PlayerReplicationInfo.Score < 1 )
-        {
-            // This guy is a ghost.  Add a visual effect.
-            if ( bHighDetailGhosts )
-            {
-                aPlayer.Style = STY_Translucent;
-                aPlayer.ScaleGlow = 0.5;
-            } 
-            else 
-                aPlayer.bHidden = true;
-            aPlayer.PlayerRestartState = 'PlayerSpectating';
-        } 
-        else
-        {
-            aPlayer.SetCollision( true, true, true );
-            AddDefaultInventory(aPlayer);
-        }
-    }
-    return foundStart;
+	if ( aPlayer.PlayerReplicationInfo.Score < 1 )
+	{
+		BroadcastLocalizedMessage(class'LMSOutMessage', 0, aPlayer.PlayerReplicationInfo);
+		aPlayer.bHidden = true;
+		if(aPlayer.IsA('bbPlayer'))
+		{
+			aPlayer.PlayerRestartState = 'PlayerSpectating';
+			aPlayer.GotoState('PlayerSpectating');
+		}
+		else if(aPlayer.IsA('TournamentPlayer'))
+		{
+			aPlayer.PlayerRestartState = 'PlayerSpectating';
+			aPlayer.GotoState('PlayerSpectating');
+		}
+		For ( P=Level.PawnList; P!=None; P=P.NextPawn )
+			if ( P.bIsPlayer && (P.PlayerReplicationInfo.Score >= 1) )
+				P.PlayerReplicationInfo.Score += 0.00001;
+		if ( aPlayer.IsA('Bot') )
+		{
+			aPlayer.PlayerReplicationInfo.bIsSpectator = true;
+			aPlayer.PlayerReplicationInfo.bWaitingPlayer = true;
+			aPlayer.GotoState('GameEnded');
+			return false; // bots don't respawn when ghosts
+		}
+	}
+	else if(aPlayer.PlayerReplicationInfo.Score > 0)
+	{
+		bResult = Super.RestartPlayer(aPlayer);
+		if ( (aPlayer.IsA('TournamentPlayer')) || (aPlayer.IsA('bbPlayer')) )
+			TournamentPlayer(aPlayer).StartSpot = LastStartSpot;
+	}
+    return bResult;
 }
 
 function Logout( pawn Exiting )
@@ -348,30 +335,56 @@ function AddDefaultInventory( pawn PlayerPawn )
     local int i;
     local inventory Inv;
     local float F;
+	local string PreFix;
+	
+	// Weapons strings
+	local String s_ShockRifle;
+	local String s_BioRifle;
+	local String s_Ripper;
+	local String s_FlakCannon;
+	local String s_SniperRifle;
+	local String s_PulseGun;
+	local String s_Minigun2;
+	local String s_Eightball;
+	
+	PreFix = "UltimateNewNet"$class'UTPure'.default.ThisVer$".";
+	
+	// Set botpack weapons strings
+	s_ShockRifle    = "Botpack.ShockRifle";
+	s_BioRifle      = "Botpack.UT_BioRifle";
+	s_Ripper        = "Botpack.Ripper";
+	s_FlakCannon    = "Botpack.UT_FlakCannon";
+	s_SniperRifle   = "Botpack.SniperRifle";
+	s_PulseGun      = "Botpack.PulseGun";
+	s_Minigun2      = "Botpack.Minigun2";
+	s_Eightball     = "Botpack.UT_Eightball";
+	
+	// Fix newnet nw weapons
+	s_ShockRifle    = PreFix$"ST_ShockRifle";
+	s_BioRifle      = PreFix$"ST_UT_BioRifle";
+	s_Ripper        = PreFix$"ST_Ripper";
+	s_FlakCannon    = PreFix$"ST_UT_FlakCannon";
+	s_SniperRifle   = PreFix$"ST_SniperRifle";
+	s_PulseGun      = PreFix$"ST_PulseGun";
+	s_Minigun2      = PreFix$"ST_Minigun2";
+	s_Eightball     = PreFix$"ST_UT_Eightball";
 
     if ( PlayerPawn.IsA('Spectator') || (bRequireReady && (CountDown > 0)) )
         return;
     Super.AddDefaultInventory(PlayerPawn);
 
-	if (bAddNwZpWeapons) //Fix zp nw weapons
-		GiveWeapon(PlayerPawn, ZpPackageName$".zp_ShockRifle");
-	else
-		GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_ShockRifle");
-		
-	GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_BioRifle");
-    GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Ripper");
-    GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_FlakCannon");
+	GiveWeapon(PlayerPawn, s_ShockRifle);
+	GiveWeapon(PlayerPawn, s_BioRifle);
+    GiveWeapon(PlayerPawn, s_Ripper);
+    GiveWeapon(PlayerPawn, s_FlakCannon);
 
     if ( PlayerPawn.IsA('PlayerPawn') )
     {
-		if (bAddNwZpWeapons) //Fix zp nw weapons
-			GiveWeapon(PlayerPawn, ZpPackageName$".zp_SniperRifle");
-		else
-			GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_SniperRifle");
-        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_PulseGun");
-        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Minigun2");
-        GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_Eightball");
-        PlayerPawn.SwitchToBestWeapon();
+		GiveWeapon(PlayerPawn, s_SniperRifle);
+        GiveWeapon(PlayerPawn, s_PulseGun);
+        GiveWeapon(PlayerPawn, s_Minigun2);
+        GiveWeapon(PlayerPawn, s_Eightball);
+		PlayerPawn.SwitchToBestWeapon();
     }
     else
     {
@@ -379,41 +392,33 @@ function AddDefaultInventory( pawn PlayerPawn )
         F = FRand();
         if ( F < 0.7 ) 
         {
-			if (bAddNwZpWeapons) //Fix zp nw weapons
-				GiveWeapon(PlayerPawn, ZpPackageName$".zp_SniperRifle");
-			else
-				GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_SniperRifle");
-            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_PulseGun");
+		
+			GiveWeapon(PlayerPawn, s_SniperRifle);
+            GiveWeapon(PlayerPawn, s_PulseGun);
             if ( F < 0.4 )
             {
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Minigun2");
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_Eightball");
+                GiveWeapon(PlayerPawn, s_Minigun2);
+                GiveWeapon(PlayerPawn, s_Eightball);
             }
             else
             {
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_Eightball");
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Minigun2");
+                GiveWeapon(PlayerPawn, s_Eightball);
+                GiveWeapon(PlayerPawn, s_Minigun2);
             }
         }
         else
         {
-            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_Minigun2");
-            GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_UT_Eightball");
+            GiveWeapon(PlayerPawn, s_Minigun2);
+            GiveWeapon(PlayerPawn, s_Eightball);
             if ( F < 0.88 )
             {
-				if (bAddNwZpWeapons) //Fix zp nw weapons
-					GiveWeapon(PlayerPawn, ZpPackageName$".zp_SniperRifle");
-				else
-					GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_SniperRifle");
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_PulseGun");
+				GiveWeapon(PlayerPawn, s_SniperRifle);
+                GiveWeapon(PlayerPawn, s_PulseGun);
             }
             else
             {
-                GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_PulseGun");
-				if (bAddNwZpWeapons) //Fix zp nw weapons
-					GiveWeapon(PlayerPawn, ZpPackageName$".zp_SniperRifle");
-				else
-					GiveWeapon(PlayerPawn, "UltimateNewNetv0_3.ST_SniperRifle");
+                GiveWeapon(PlayerPawn, s_PulseGun);
+				GiveWeapon(PlayerPawn, s_SniperRifle);
             }
         }
     }
@@ -421,8 +426,15 @@ function AddDefaultInventory( pawn PlayerPawn )
     for ( inv=PlayerPawn.inventory; inv!=None; inv=inv.inventory )
     {
         weap = Weapon(inv);
-        if ( (weap != None) && (weap.AmmoType != None) )
+        if ( (weap != None) && (weap.AmmoType != None) ){
             weap.AmmoType.AmmoAmount = weap.AmmoType.MaxAmmo;
+			
+		//we put it inside of this if, so we are sure that the current weapon is != None
+		if ( String(weap.Class)==StartWeapon &&  TournamentPlayer(PlayerPawn)!=None){ //There's a specified weapon to start with?	
+			PlayerPawn(PlayerPawn).GetWeapon(weap.Class);
+		}
+		
+		}
     }
 
     inv = Spawn(class'Armor2');
@@ -517,6 +529,7 @@ function RestorePlayerStuff()
 local Pawn NetPlayer;
 local Inventory aux;
 local KillCountLMSPRI MPRI;
+local ReplicationInfo SDM;
 
 		//log("RemainingTime="$RemainingTime@"TimeLimit="$TimeLimit@"startTimeLevel="$Level.Game.StartTime);
 		RemainingTime=TimeLimit*60; //Restore Time Left ,*60 is because the time limit is in minutes, while remainingTime is in seconds, so we must convert the mintutes to seconds. :)
@@ -533,12 +546,23 @@ local KillCountLMSPRI MPRI;
 					NetPlayer.KillCount = 0;
 					NetPlayer.PlayerReplicationInfo.Score = Lives;
 					NetPlayer.PlayerReplicationInfo.Deaths = 0;
+					NetPlayer.Spree = 0;
 					//NetPlayer.PlayerReplicationInfo.StartTime = 0; //restore also player time in game
 					TournamentPlayer(NetPlayer).GameReplicationInfo.RemainingTime=RemainingTime;
 					
 					foreach NetPlayer.PlayerReplicationInfo.ChildActors(Class'KillCountLMSPRI',MPRI)
 						MPRI.KillCounter=0; //restore kills
+					
 			}
+		}
+		
+		//Compatibility layer with SmartDM - Reset SmartDM stats if them exist
+		foreach Level.Game.AllActors(Class'ReplicationInfo',SDM){
+					
+			if(SDM.isA('SmartDMPlayerReplicationInfo')){
+				SDM.PostBeginPlay();
+			}
+							
 		}
 }
 
@@ -562,7 +586,7 @@ function LoadScores() {
    
 	for (Player = Level.PawnList; Player != None; Player = Player.NextPawn){ //Create a list with the players
 		if(Player.isA('TournamentPlayer') || Player.isA('Bot') && !bDynamicBots){ //if dynamic bots are disable we also count with them lives...
-			Ordered[PlayerCount]=Player;
+			Ordered[PlayerCount]=Player.PlayerReplicationInfo;
 			PlayerCount++;
 			if ( PlayerCount == ArrayCount(Ordered) ) break;
 		}
@@ -573,14 +597,14 @@ function LoadScores() {
 
 function SortScores(int N) {
     local int I, J, Min;
-    local Pawn TempPRI;
+    local PlayerReplicationInfo TempPRI;
     
     for ( I=0; I<N-1; I++ )
     {
         Min = I;
         for ( J=I+1; J<N; J++ )
         {
-            if ( Ordered[J].PlayerReplicationInfo.Score < Ordered[Min].PlayerReplicationInfo.Score )
+            if ( Ordered[J].Score < Ordered[Min].Score )
                 Min = J;
         }
         TempPRI = Ordered[Min];
@@ -597,80 +621,21 @@ function InitGameReplicationInfo()
 
 function StartMatch()
 {
-Super.StartMatch();
-bGameAlreadyStarted=true;
+	Super.StartMatch();
+	bGameAlreadyStarted=true;
 }
-
-// //To fix fph records. We should use player kills instead of frags/lives.
-// function CalcEndStats()
-// {
-    // local int i, j;
-    // local float FPH;
-    // local float CurrentSeconds, CurrentMinutes;
-	// local int Kills; //for store player kills
-	// local KillCountLMSPRI MPRI; //for use with foreach allactors
-
-    // for (i=0; i<3; i++)
-    // {
-        // BestPlayers[i] = EndStatsClass.Default.BestPlayers[i];
-        // BestFPHs[i] = EndStatsClass.Default.BestFPHs[i];
-        // BestRecordDate[i] = EndStatsClass.Default.BestRecordDate[i];
-    // }
-
-    // Log("!!!!!!!!!!!!!!! CALC END STATS");
-    // for (i=0; i<32; i++)
-    // {
-        // if (GameReplicationInfo.PRIArray[i] != None)
-        // {
-		
-		// //
-		// foreach GameReplicationInfo.PRIArray[i].ChildActors(Class'KillCountLMSPRI',MPRI){
-			// Kills=MPRI.KillCounter;
-		// }
-		// //
-		
-            // TotalFrags += GameReplicationInfo.PRIArray[i].Score;
-            // TotalDeaths += GameReplicationInfo.PRIArray[i].Deaths;
-            // CurrentSeconds = Level.TimeSeconds - GameReplicationInfo.PRIArray[i].StartTime;
-            // CurrentMinutes = CurrentSeconds / 60;
-            // FPH = /*GameReplicationInfo.PRIArray[i].Score*/ Kills / (CurrentMinutes / 60);
-            // for (j=2; j>=0; j--)
-            // {
-                // if (FPH > BestFPHs[j])
-                // {
-                    // EmptyBestSlot(j);
-                    // BestFPHs[j] = FPH;
-                    // BestPlayers[j] = GameReplicationInfo.PRIArray[i].PlayerName;
-                    // GetTimeStamp(BestRecordDate[j]);
-                    // j = -1; // break.
-                // }
-            // }
-        // }
-    // }
-
-    // for (i=0; i<3; i++)
-    // {
-        // EndStatsClass.Default.BestPlayers[i] = BestPlayers[i];
-        // EndStatsClass.Default.BestFPHs[i] = BestFPHs[i];
-        // EndStatsClass.Default.BestRecordDate[i] = BestRecordDate[i];
-    // }
-    // EndStatsClass.Default.TotalFrags = TotalFrags;
-    // EndStatsClass.Default.TotalDeaths = TotalDeaths;
-    // EndStatsClass.Default.TotalGames++;
-    // EndStatsClass.Static.StaticSaveConfig();
-// }
 
 defaultproperties
 {
-	bDynamicBots=False
-	NumberDynamicBots=0
+	//bDynamicBots=true
+	//NumberDynamicBots=5
 	FragLimit=30
+	TimeLimit=0
 	InitialBots=0
-    bAlwaysForceRespawn=True
-    HUDType=Class'lmsppChallengeHUD'
-    StartUpMessage="Last Man Standing.  How long can you live?"
-    ScoreBoardType=Class'lmsppScoreBoard'
-    RulesMenuType="UTMenu.UTLMSRulesSC"
-    BeaconName="LMS"
-    GameName="Last Man Standing"
+	bAlwaysForceRespawn=True
+	StartUpMessage="Last Man Standing. How long can you live?"
+	ScoreBoardType=Class'lmsppScoreBoard'
+	RulesMenuType="UTMenu.UTLMSRulesSC"
+	BeaconName="LMS"
+	GameName="Last Man Standing"
 }

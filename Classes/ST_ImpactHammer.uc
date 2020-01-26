@@ -13,6 +13,7 @@ var Vector CDO;
 var float yMod;
 var float ReleaseFireTime, ReleaseAltFireTime;
 var float ChargeModifier;
+var bool Idle;
 
 replication
 {
@@ -114,7 +115,6 @@ simulated function bool ClientFire( float Value )
 		bCanClientFire = true;
 		Pawn(Owner).PlayRecoil(FiringSpeed);
 		GoToState('ClientFiring');
-		ServerFiring();
 	}
 	
 	return Super.ClientFire(Value);
@@ -122,6 +122,8 @@ simulated function bool ClientFire( float Value )
 
 function ServerFiring()
 {
+	if (bbPlayer(Owner) != None)
+		bbPlayer(Owner).xxAddFired(1);
 	bPointing=True;
 	bCanClientFire = true;
 	GoToState('Firing');
@@ -162,7 +164,10 @@ function Fire( float Value )
 	bPointing=True;
 	bCanClientFire = true;
 	ClientFire(Value);
-	if (!bNewNet)
+	if (bNewNet)
+	{
+	}
+	else
 	{
 		Pawn(Owner).PlayRecoil(FiringSpeed);
 	}
@@ -179,14 +184,19 @@ function AltFire( float Value )
 	bPointing=True;
 	bCanClientFire = true;
 	ClientAltFire(value);
-	if (!bNewNet)
+	if (bNewNet)
+	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(2);
+	}
+	else
 	{
 		Pawn(Owner).PlayRecoil(FiringSpeed);
 	}
 	TraceAltFire();
 	GoToState('AltFiring');
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -231,7 +241,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 state ClientFiring
 {
 	simulated function bool ClientFire( float Value ){}
@@ -318,6 +328,7 @@ state ClientFiring
 			Super.BeginState();
 			return;
 		}
+		ServerFiring();
 		ChargeSize = 0.0;
 		Count = 0.0;
 	}
@@ -614,7 +625,7 @@ simulated function NN_ProcessAltTraceHit(Actor Other, Vector HitLocation, Vector
 	else
 	{
 		//if (bNewNet)
-		//	bbPlayer(Owner).xxNN_TakeDamage(Other, class'ImpactHammer', 20 * scale, Pawn(Owner), HitLocation, 30000.0 * X * scale, MyDamageType, -1);
+		//	bbPlayer(Owner).xxNN_TakeDamage(Other, 1, 20 * scale, Pawn(Owner), HitLocation, 30000.0 * X * scale, MyDamageType, -1);
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
 			spawn(class'UT_SpriteSmokePuff',,,HitLocation+HitNormal*9);
 	}
@@ -667,7 +678,7 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	if (STM != None)
 		STM.PlayerFire(PawnOwner, 1);			// 1 = Impact Hammer.
 
-	if ( (Other == None) || (Other == Owner) || (Other == self) || (Owner == None))
+	if ( (Other == None) || (Other == Owner) || (Other == self) || (Owner == None) || bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(1))
 		return;
 
 	ChargeSize = FMin(ChargeSize, 1.5);
@@ -678,7 +689,7 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 			Spawn(class'ImpactMark',,, HitLocation+HitNormal, Rotator(HitNormal));
 		if (STM != None)
 			STM.PlayerHit(PawnOwner, 1, False);	// 1 = Impact Hammer
-		Owner.TakeDamage(36.0, PawnOwner, HitLocation, -69000.0 * ChargeSize * X, MyDamageType);
+		Owner.TakeDamage(class'UTPure'.default.HammerDamageSelf * ChargeSize, PawnOwner, HitLocation, -66000.0 * ChargeSize * X, MyDamageType);
 		if (STM != None)
 			STM.PlayerClear();
 	}
@@ -689,9 +700,9 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		if (STM != None)
 			STM.PlayerHit(PawnOwner, 1, False);	// 1 = Impact Hammer
 		if (bNewNet)
-			Other.TakeDamage(60.0 * ChargeSize, PawnOwner, HitLocation, 66000.0 * ChargeModifier * ChargeSize * X, MyDamageType);
+			Other.TakeDamage(class'UTPure'.default.HammerDamagePri * ChargeSize, PawnOwner, HitLocation, 66000.0 * ChargeModifier * ChargeSize * X, MyDamageType);
 		else
-			Other.TakeDamage(60.0 * ChargeSize, PawnOwner, HitLocation, 66000.0 * ChargeSize * X, MyDamageType);
+			Other.TakeDamage(class'UTPure'.default.HammerDamagePri * ChargeSize, PawnOwner, HitLocation, 66000.0 * ChargeSize * X, MyDamageType);
 		if (STM != None)
 			STM.PlayerClear();
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
@@ -727,7 +738,7 @@ function ProcessAltTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, V
 	{
 		if (STM != None)
 			STM.PlayerHit(PawnOwner, 1, False);	// 1 = IH!
-		Owner.TakeDamage(24.0 * scale, Pawn(Owner), HitLocation, -40000.0 * X * scale, MyDamageType);
+		Owner.TakeDamage(class'UTPure'.default.HammerDamageSec * scale, Pawn(Owner), HitLocation, -40000.0 * X * scale, MyDamageType);
 		if (STM != None)
 			STM.PlayerClear();
 	}
@@ -735,7 +746,7 @@ function ProcessAltTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, V
 	{
 		if (STM != None)
 			STM.PlayerHit(PawnOwner, 1, False);	// 1 = IH!
-		Other.TakeDamage(20 * scale, Pawn(Owner), HitLocation, 30000.0 * X * scale, MyDamageType);
+		Other.TakeDamage(class'UTPure'.default.HammerDamageSec * scale, Pawn(Owner), HitLocation, 30000.0 * X * scale, MyDamageType);
 		if (STM != None)
 			STM.PlayerClear();
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
@@ -748,62 +759,19 @@ function ProcessAltTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, V
 	}
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'ImpactHammer';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'ImpactHammer');
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Select',1000.00);
-		else	
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
 }
 
-simulated function TweenDown()
+simulated function TweenDown ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 state Active
@@ -832,6 +800,6 @@ state Active
 
 defaultproperties
 {
-     bNewNet=True
-     ChargeModifier=0.700000
+    bNewNet=True
+    ChargeModifier=0.70
 }

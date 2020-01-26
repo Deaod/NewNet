@@ -1,3 +1,9 @@
+// ===============================================================
+// UTPureStats7A.ST_ut_biorifle: put your comment here
+
+// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
+// ===============================================================
+
 class ST_ut_biorifle extends ut_biorifle;
 
 var ST_Mutator STM;
@@ -6,6 +12,7 @@ var Rotator GV, LastGV;
 var Vector CDO;
 var float yMod;
 var name LastState;
+var Class<NN_WeaponFunctions> nnWF;
 
 replication
 {
@@ -28,20 +35,6 @@ function PostBeginPlay()
 			AltProjectileClass = Class'NN_BioGlobOwnerHidden';
 		}
 	}
-}
-
-function float RateSelf( out int bUseAltMode )
-{
-	local float EnemyDist;
-	local bool bRetreating;
-	local vector EnemyDir;
-
-	if ( AmmoType.AmmoAmount <=0 )
-		return -2;
-
-	bUseAltMode = 0;
-
-	return -2;
 }
 
 simulated function RenderOverlays(Canvas Canvas)
@@ -105,38 +98,6 @@ exec function ServerShootLoad( int ProjIndex, float ClientLocX, float ClientLocY
 	bbP.zzbNN_ReleasedAltFire = true;
 	
 	GotoState('ShootLoad');
-}
-
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'ut_biorifle';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
 }
 
 simulated function bool ClientFire(float Value)
@@ -229,7 +190,7 @@ simulated function bool ClientAltFire( float Value )
 	
 	return bResult;
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -274,7 +235,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 function Fire( float Value )
 {
 	local bbPlayer bbP;
@@ -293,6 +254,8 @@ function Fire( float Value )
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(5);
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -558,6 +521,7 @@ state ShootLoad
 		}
 
 		bbP = bbPlayer(Owner);
+		bbPlayer(Owner).xxAddFired(6);
 
 		BG = ST_BioGlob(ProjectileFire(AltProjectileClass, AltProjectileSpeed, bAltWarnTarget));
 		if (bbP != None)
@@ -693,30 +657,19 @@ simulated function ClientFinish()
 		GotoState('Idle');
 }
 
-simulated function PlaySelect()
+function SetSwitchPriority(pawn Other)
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Select',1000.00);
-		else	
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'ut_biorifle');
 }
 
-simulated function TweenDown()
+simulated function PlaySelect ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
+}
+
+simulated function TweenDown ()
+{
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 state Active
@@ -748,4 +701,5 @@ defaultproperties
      bNewNet=True
      ProjectileClass=Class'ST_UT_BioGel'
      AltProjectileClass=Class'ST_BioGlob'
+	 nnWF=Class'NN_WeaponFunctions'
 }

@@ -1,3 +1,9 @@
+// ===============================================================
+// UTPureRC7A.PureHitSound: put your comment here
+
+// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
+// ===============================================================
+
 class PureHitSound extends LocalMessagePlus;
 
 static function string GetString(

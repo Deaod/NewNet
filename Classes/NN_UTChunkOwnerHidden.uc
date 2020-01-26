@@ -47,7 +47,8 @@ simulated function Tick(float DeltaTime)
 simulated function PostBeginPlay()
 {
 	local rotator RandRot;
-	local Pawn P;
+	//local Pawn P;
+	local bbPlayer bbP;
 	
 	BirthTime = Level.TimeSeconds;
 	if (bbPlayer(Owner) != None)
@@ -89,9 +90,12 @@ simulated function PostBeginPlay()
 	{
 		Velocity = Vector(RandRot) * (Speed + (R5 * 200 - 100)) * 2;
 		NN_EndAccelTime = Level.TimeSeconds + NN_OwnerPing * Level.TimeDilation / 1000;
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
-			if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
-				NN_EndAccelTime += P.PlayerReplicationInfo.Ping * Level.TimeDilation / 1000;
+		ForEach AllActors(class'bbPlayer', bbP)
+		{
+			if ( Viewport(bbP.Player) != None )
+			///if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
+				NN_EndAccelTime += bbP.PlayerReplicationInfo.Ping * Level.TimeDilation / 2500;
+		}
 	}
 	else
 	{
@@ -106,7 +110,7 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 {
 	if (bDeleteMe || Other == None || Other.bDeleteMe)
 		return;
-	if ( (Chunk(Other) == None) && ((Physics == PHYS_Falling) || (Other != Instigator)) && Other.Owner != Owner)
+	if ( (Chunk(Other) == None) && ((Physics == PHYS_Falling) || (Other != Instigator)) /* && Other.Owner != Owner */)
 	{
 		speed = VSize(Velocity);
 		If ( speed > 200 )
@@ -114,7 +118,7 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 			if ( Role == ROLE_Authority )
 			{
 				Chunkie.HitSomething(Self, Other);
-				if (bbPlayer(Owner) == None || !bbPlayer(Owner).bNewNet)
+				if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 					Other.TakeDamage(damage, instigator,HitLocation,
 						(MomentumTransfer * Velocity/speed), MyDamageType );
 				Chunkie.EndHit();
@@ -136,7 +140,7 @@ simulated function NewProcessTouch (Actor Other, vector HitLocation)
 			if ( Role == ROLE_Authority )
 			{
 				Chunkie.HitSomething(Self, Other);
-				if (bbPlayer(Owner) == None || !bbPlayer(Owner).bNewNet)
+				if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 					Other.TakeDamage(damage, instigator,HitLocation,
 						(MomentumTransfer * Velocity/speed), MyDamageType );
 				Chunkie.EndHit();
@@ -189,11 +193,12 @@ simulated function HitWall( vector HitNormal, actor Wall )
 
 simulated function DoSmallSpark(vector Loc, rotator Tater)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local SmallSpark s;
 
 	if (RemoteRole < ROLE_Authority)
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Owner) {
 				s = Spawn(Class'SmallSpark',P,, Loc, Tater);
 				s.RemoteRole = ROLE_None;
@@ -203,11 +208,12 @@ simulated function DoSmallSpark(vector Loc, rotator Tater)
 
 simulated function DoWallCrack(vector Loc, rotator Tater)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local WallCrack s;
 	
 	if (RemoteRole < ROLE_Authority)
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Owner) {
 				s = Spawn(class'WallCrack',P,,Loc, Tater);
 				s.bOnlyOwnerSee = True;

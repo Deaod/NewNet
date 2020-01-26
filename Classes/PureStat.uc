@@ -4,7 +4,7 @@
 // Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
 // ===============================================================
 
-class PureStat extends Info;
+class PureStat extends Info Config (UltimateNewNet);
 
 // Installs this mutator class.
 var class<ST_Mutator> cM;

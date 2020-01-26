@@ -34,7 +34,7 @@ auto state Flying
 		
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
-		if ( bCanHitInstigator || (Other != Owner && Other != Instigator) && Other.Owner != Owner )
+		if ( bCanHitInstigator || (Other != Owner && Other != Instigator) /* && Other.Owner != Owner  */)
 		{
 			if (Other == Owner)
 				NN_Momentum(MomentumTransfer * Normal(Velocity), HitLocation);
@@ -46,12 +46,12 @@ auto state Flying
 				{
 					if ( Other.bIsPawn && (HitLocation.Z - Other.Location.Z > 0.62 * Other.CollisionHeight) )
 					{
-						bbP.xxNN_TakeDamage(Other, class'Ripper', 2, instigator,HitLocation,
+						bbP.xxNN_TakeDamage(Other, 16, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'decapitated', zzNN_ProjIndex );
 					}
 					else			 
 					{
-						bbP.xxNN_TakeDamage(Other, class'Ripper', 0, instigator,HitLocation,
+						bbP.xxNN_TakeDamage(Other, 15, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'shredded', zzNN_ProjIndex );
 					}
 					bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, (MomentumTransfer * Normal(Velocity)));

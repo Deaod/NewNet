@@ -52,10 +52,10 @@ var Rotator GV;
 var Vector CDO;
 var float yMod;
 var float FireInterval, NextFireInterval;
-var int count;
 
 // For Special minigun
 var int HitCounter;
+var Class<NN_WeaponFunctions> nnWF;
 
 function PostBeginPlay()
 {
@@ -162,7 +162,7 @@ function AltFire( float Value )
 	}
 	else GoToState('Idle');	
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -207,7 +207,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 simulated function bool ClientFire(float Value)
 {
 	local bbPlayer bbP;
@@ -329,9 +329,9 @@ simulated function NN_TraceFire( float Accuracy )
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	
 	if (PawnOwner.bFire != 0)
-		bbP.xxNN_TakeDamage(Other, class'Minigun2', 0, PawnOwner, HitLocation, 3500.0*X, MyDamageType, -1);
+		bbP.xxNN_TakeDamage(Other, -18, PawnOwner, HitLocation, 3500.0*X, MyDamageType, -1);
 	else
-		bbP.xxNN_TakeDamage(Other, class'Minigun2', 1, PawnOwner, HitLocation, 5000.0*X, MyDamageType, -1);
+		bbP.xxNN_TakeDamage(Other, -19, PawnOwner, HitLocation, 5000.0*X, MyDamageType, -1);
 	/*
 	if (PawnOwner.bFire != 0)
 		bbP.xxNN_Fire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), false, ClientFRVI, Accuracy);
@@ -339,11 +339,7 @@ simulated function NN_TraceFire( float Accuracy )
 		bbP.xxNN_AltFire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), false, ClientFRVI, Accuracy);
 	*/
 	
-
-	if(Pawn(Owner) != None)
-	{
-		MT = Spawn(class'MTracer',Owner,, StartTrace + 96 * AimDir,rotator(EndTrace - StartTrace));
-	}
+	MT = Spawn(class'MTracer',,, StartTrace + 96 * AimDir,rotator(EndTrace - StartTrace));
 	bbP.xxClientDemoFix(MT, class'MTracer', StartTrace + 96 * AimDir, MT.Velocity, MT.Acceleration, rotator(EndTrace - StartTrace));
 	NN_ProcessTraceHit(Other, HitLocation, HitNormal, vector(GV),Y,Z);
 }
@@ -389,6 +385,18 @@ function float GetFRV()
 	if (bbP.zzFRVI == bbP.FRVI_length)
 		bbP.zzFRVI = 0;
 	return bbP.GetFRV(bbP.zzFRVI);
+}
+
+function GenerateBullet()
+{
+	if (bbPlayer(Owner) != None)
+	{
+		if (bbPlayer(Owner).bFire != 0)
+			bbPlayer(Owner).xxAddFired(18);
+		else
+			bbPlayer(Owner).xxAddFired(19);
+	}
+	Super.GenerateBullet();
 }
 
 // Original code did: Sleep(0.13)
@@ -709,6 +717,7 @@ function TraceFire( float Accuracy )
 	local vector HitLocation, HitNormal, StartTrace, EndTrace, X,Y,Z, AimDir;
 	local actor Other;
 	local bbPlayer bbP;
+	local float R1, R2;
 	
 	if (Owner.IsA('Bot'))
 	{
@@ -726,19 +735,17 @@ function TraceFire( float Accuracy )
 	GetAxes(bbP.zzNN_ViewRot,X,Y,Z);
 	StartTrace = Owner.Location + CalcDrawOffset() + FireOffset.Y * Y + FireOffset.Z * Z; 
 	AdjustedAim = pawn(owner).AdjustAim(1000000, StartTrace, 2.75*AimError, False, False);	
-	EndTrace = StartTrace + Accuracy * (FRand() - 0.5 )* Y * 1000
-		+ Accuracy * (FRand() - 0.5 ) * Z * 1000;
+	R1 = NN_GetFRV();
+	R2 = NN_GetFRV();
+	EndTrace = StartTrace + Accuracy * (R1 - 0.5 )* Y * 1000
+		+ Accuracy * (R2 - 0.5 ) * Z * 1000;
 	AimDir = vector(AdjustedAim);
 	EndTrace += (10000 * AimDir); 
 	Other = Pawn(Owner).TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
 	Other = bbP.zzNN_HitActor;
 	if (Pawn(Other) != None && FastTrace(Other.Location))
 		HitLocation += (bbP.zzNN_HitLoc - Other.Location);
-
-	if(Pawn(Owner) != None)
-	{
-		Spawn(class'NN_MTracerOwnerHidden',Owner,, StartTrace + 96 * AimDir,rotator(EndTrace - StartTrace));
-	}
+	Spawn(class'NN_MTracerOwnerHidden',Owner,, StartTrace + 96 * AimDir,rotator(EndTrace - StartTrace));
 	
 	ProcessTraceHit(Other, HitLocation, HitNormal, vector(AdjustedAim),Y,Z);
 }
@@ -799,62 +806,19 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		HitCounter = 0;
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'minigun2';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'minigun2');
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Select',1000.00);
-		else	
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
 }
 
-simulated function TweenDown()
+simulated function TweenDown ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 function DropFrom(vector StartLocation)
@@ -923,4 +887,5 @@ defaultproperties
      bNewNet=True
      FireInterval=0.120000
      NextFireInterval=0.111000
+	 nnWF=Class'NN_WeaponFunctions'
 }

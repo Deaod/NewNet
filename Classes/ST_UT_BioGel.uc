@@ -24,7 +24,6 @@ simulated function PostBeginPlay()
 	Super.PostBeginPlay();
 }
 
-
 simulated function Timer()
 {
 	local ut_GreenGelPuff f;
@@ -45,10 +44,10 @@ simulated function Timer()
 	if (bbP != None && bbP.bNewNet)
 	{
 		if (Level.NetMode == NM_Client && !bOwnerNoSee) {
-			if (IsA('BioGlob'))
-				bbP.NN_HurtRadius(self, class'UT_BioRifle', 1, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
+			if (IsA('ST_BioGlob'))
+				bbP.NN_HurtRadius(self, 6, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
 			else
-				bbP.NN_HurtRadius(self, class'UT_BioRifle', 0, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
+				bbP.NN_HurtRadius(self, 5, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
 		}
 	}
 	else
@@ -106,7 +105,7 @@ auto state Flying
 		
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
-		if ( ( Other != Owner && Pawn(Other)!=Instigator && Other.Owner != Owner || bOnGround) && (!Other.IsA('ST_UT_BioGel') || Other.Owner != Owner) && NN_HitOther != Other && !bOwnerNoSee )
+		if ( ( Other != Owner && Pawn(Other)!=Instigator /*&& ther.Owner != Owner  */|| bOnGround) && (!Other.IsA('ST_UT_BioGel')/*  || Other.Owner != Owner */) && NN_HitOther != Other && !bOwnerNoSee )
 		{
 			NN_HitOther = Other;
 			bDirect = Other.IsA('Pawn') && !bOnGround;
@@ -114,7 +113,7 @@ auto state Flying
 	
 			if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client)
 			{
-				bbP.xxNN_TakeDamage(Other, class'UT_BioRifle', 0, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex);
+				bbP.xxNN_TakeDamage(Other, 5, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex);
 				bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, Normal(HitLocation - Other.Location));
 			}
 		}
@@ -135,5 +134,5 @@ state OnSurface
 
 defaultproperties
 {
-     Damage=0.000000
+     //Damage=0.000000
 }

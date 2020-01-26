@@ -11,6 +11,7 @@ var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
+var Class<NN_WeaponFunctions> nnWF;
 
 function PostBeginPlay()
 {
@@ -226,6 +227,7 @@ function Fire( float Value )
 	}
 	if (AmmoType.UseAmmo(1))
 	{
+		bbPlayer(Owner).xxAddFired(20);
 		bCanClientFire = true;
 		bPointing=True;
 		
@@ -369,6 +371,8 @@ function AltFire( float Value )
 	}
 	if (AmmoType.UseAmmo(1))
 	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(21);
 		bPointing=True;
 		bCanClientFire = true;
 		PawnOwner.MakeNoise(PawnOwner.SoundDampening);
@@ -405,7 +409,7 @@ function AltFire( float Value )
 		GoToState('AltFiring');
 	}
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -450,7 +454,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 state NormalFire
 {
 	function Fire(float F) 
@@ -499,67 +503,24 @@ state AltFiring
 	}
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'UT_FlakCannon';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'UT_FlakCannon');
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Still',1000.00);
-		else	
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
 }
 
-simulated function TweenDown()
+simulated function TweenDown ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Still',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 simulated function PlayPostSelect()
 {
-	//PlayAnim('Loading', 3.0, 0.0);
+	PlayAnim('Loading', 1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 	Owner.PlayOwnedSound(Misc2Sound, SLOT_None,1.3*Pawn(Owner).SoundDampening);	
 }
 
@@ -590,4 +551,5 @@ state Active
 defaultproperties
 {
      bNewNet=True
+	 nnWF=Class'NN_WeaponFunctions'
 }

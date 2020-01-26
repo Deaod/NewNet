@@ -11,17 +11,14 @@ replication
 
 simulated function Tick(float DeltaTime)
 {
-	local Pawn P;
+	local bbPlayer bbP;
 
-	//if(Role == ROLE_Authority || Instigator.IsA('Bot') || Instigator.IsA('bbPlayer'))
-	//{
-		Texture=Texture'UltimateNewnetv0_6_Database.TeamShock4.B_a00';
-	   	LightBrightness=255;
-   		LightHue=148;
-    	LightSaturation=64;
-    	LightRadius=6;
-    	LightEffect=LE_Cylinder;
-	//}
+	Texture = Texture'B_a00';
+	LightBrightness=255;
+	LightHue=170;
+	LightSaturation=0;
+	LightRadius=6;
+	LightEffect=LE_Cylinder;
 
 	if (Level.NetMode == NM_Client) {
 	
@@ -29,6 +26,7 @@ simulated function Tick(float DeltaTime)
 			LightType = LT_None;
 			SetCollisionSize(0, 0);
 			bAlreadyHidden = True;
+			//Texture = None;
 			Destroy();
 			return;
 		}
@@ -39,9 +37,13 @@ simulated function Tick(float DeltaTime)
 			{
 				Velocity *= 2;
 				NN_EndAccelTime = Level.TimeSeconds + NN_OwnerPing * Level.TimeDilation / 2500;
-				for (P = Level.PawnList; P != None; P = P.NextPawn)
-					if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
-						NN_EndAccelTime += P.PlayerReplicationInfo.Ping * Level.TimeDilation / 2500;
+				//for (P = Level.PawnList; P != None; P = P.NextPawn)
+				ForEach AllActors(class'bbPlayer', bbP)
+				{
+					if ( Viewport(bbP.Player) != None )
+					///if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
+						NN_EndAccelTime += bbP.PlayerReplicationInfo.Ping * Level.TimeDilation / 2500;
+				}
 			}
 			else if (Level.TimeSeconds > NN_EndAccelTime)
 			{
@@ -83,18 +85,21 @@ simulated function Explode(vector HitLocation,vector HitNormal)
 
 simulated function DoExplode(int Dmg, vector HitLocation,vector HitNormal)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
+		{
 			if (P != Instigator) {
 				if (Dmg > 60)
-					CR = P.Spawn(class'Blue_RingExplosion',P,, HitLocation+HitNormal*8,rotator(HitNormal));
+					CR = P.Spawn(class'UT_BlueRingExplosion2',P,, HitLocation+HitNormal*8,rotator(HitNormal));
 				else
-					CR = P.Spawn(class'Blue_RingExplosion',P,, HitLocation+HitNormal*8,rotator(Velocity));
+					CR = P.Spawn(class'UT_BlueRingExplosion2',P,, HitLocation+HitNormal*8,rotator(Velocity));
 				CR.bOnlyOwnerSee = True;
 			}
+		}
 	}
 }
 
@@ -107,7 +112,7 @@ function SuperExplosion()	// aka, combo.
 		STM.PlayerHit(Instigator, 7, Instigator.Location == StartLocation);	// 7 = Shock Combo, bSpecial if Standstill.
 	}
 	//Log(Class.Name$" (SuperExplosion) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
-	if (!bbPlayer(Owner).bNewNet)
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 		HurtRadius(Damage*3, 250, MyDamageType, MomentumTransfer*2, Location );
 	if (STM != None)
 		STM.PlayerClear();
@@ -124,12 +129,13 @@ function SuperExplosion()	// aka, combo.
 
 simulated function DoSuperExplosion()
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 
 	if (RemoteRole < ROLE_Authority)
 	{
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 		{
 			if (P != Owner)
 			{
@@ -149,7 +155,7 @@ function SuperDuperExplosion()	// aka, combo.
 		STM.PlayerHit(Instigator, 7, Instigator.Location == StartLocation);	// 7 = Shock Combo, bSpecial if Standstill.
 	}
 	//Log(Class.Name$" (SuperExplosion) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
-	if (!bbPlayer(Owner).bNewNet)
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 		HurtRadius(Damage*9, 750, MyDamageType, MomentumTransfer*6, Location );
 	if (STM != None)
 		STM.PlayerClear();
@@ -166,11 +172,12 @@ function SuperDuperExplosion()	// aka, combo.
 
 simulated function DoSuperDuperExplosion()
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 		{
 			if (P != Owner)
 			{
@@ -184,10 +191,10 @@ simulated function DoSuperDuperExplosion()
 defaultproperties
 {
     bOwnerNoSee=True
-    Texture=Texture'UltimateNewnetv0_6_Database.TeamShock4.B_a00'
+    Texture=Texture'B_a00'
 	LightBrightness=255
-   	LightHue=148
-    LightSaturation=64
+   	LightHue=170
+    LightSaturation=0
     LightRadius=6
     LightEffect=LE_Cylinder
 }

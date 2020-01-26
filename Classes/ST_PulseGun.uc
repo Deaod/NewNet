@@ -11,6 +11,7 @@ var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
+var Class<NN_WeaponFunctions> nnWF;
 
 function PostBeginPlay()
 {
@@ -22,20 +23,6 @@ function PostBeginPlay()
 			if (STM != None)
 				break;
 	}
-}
-
-function float RateSelf( out int bUseAltMode )
-{
-	local float EnemyDist;
-	local bool bRetreating;
-	local vector EnemyDir;
-
-	if ( AmmoType.AmmoAmount <=0 )
-		return -2;
-
-	bUseAltMode = 0;
-
-	return -2;
 }
 
 simulated function RenderOverlays(Canvas Canvas)
@@ -84,6 +71,8 @@ function Fire( float Value )
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(13);
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -124,6 +113,8 @@ function AltFire( float Value )
 		}
 		if ( PlasmaBeam == None )
 		{
+			if (bbPlayer(Owner) != None)
+				bbPlayer(Owner).xxAddFired(14);
 			if (bNewNet)
 				PlasmaBeam = PBolt(ProjectileFire(Class'NN_StarterBoltOwnerHidden', AltProjectileSpeed, bAltWarnTarget));
 			else
@@ -135,7 +126,7 @@ function AltFire( float Value )
 		}
 	}
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -180,7 +171,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 state AltFiring
 {
 	ignores AnimEnd;
@@ -555,62 +546,19 @@ function Projectile ProjectileFire(class<projectile> ProjClass, float ProjSpeed,
 	return Spawn(ProjClass,Owner,, Start,AdjustedAim);	
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'PulseGun';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'PulseGun');
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Still',1000.00);
-		else	
-			PlayAnim('Still',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
 }
 
-simulated function TweenDown()
+simulated function TweenDown ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 state Active
@@ -639,7 +587,8 @@ state Active
 
 defaultproperties
 {
-     bNewNet=True
-     ProjectileClass=Class'ST_PlasmaSphere'
-     AltProjectileClass=Class'ST_StarterBolt'
+    bNewNet=True
+    ProjectileClass=Class'ST_PlasmaSphere'
+    AltProjectileClass=Class'ST_StarterBolt'
+	nnWF=Class'NN_WeaponFunctions'
 }

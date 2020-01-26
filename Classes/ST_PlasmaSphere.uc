@@ -34,14 +34,14 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 	
 	if (bDeleteMe || Other == None || Other.bDeleteMe)
 		return;
-	If ( Other != Owner && Other!=Instigator && Other.Owner != Owner  && PlasmaSphere(Other)==None )
+	If ( Other != Owner && Other!=Instigator && /* Other.Owner != Owner  &&  */PlasmaSphere(Other)==None )
 	{
 		if ( Other.bIsPawn )
 		{
 			bHitPawn = true;
 			bExploded = !Level.bHighDetailMode || Level.bDropDetail;
 		}
-		if ( Role == ROLE_Authority && !bbPlayer(Owner).bNewNet )
+ 		if ( Role == ROLE_Authority && !bbPlayer(Owner).bNewNet )
 		{
 			if (STM != None)
 				STM.PlayerHit(Instigator, 9, False);	// 9 = Plasma Sphere
@@ -62,7 +62,7 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 			else
 				Which = 2;
 			
-			bbP.xxNN_TakeDamage(Other, class'PulseGun', 0, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex, 0, 0, Which);
+			bbP.xxNN_TakeDamage(Other, 13, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex, 0, 0, Which);
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, MomentumTransfer*Vector(Rotation));
 		}
 		Explode(HitLocation, vect(0,0,1));

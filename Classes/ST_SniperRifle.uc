@@ -15,9 +15,8 @@ var float HitDamage;
 var float HeadDamage;
 var float BodyHeight;
 var float SniperSpeed;
-var Projectile Tracked;
-var bool bBotSpecialMove;
-var float TapTime;
+var int zzWin;
+var Class<NN_WeaponFunctions> nnWF;
 
 function PostBeginPlay()
 {
@@ -69,8 +68,8 @@ simulated function bool ClientFire(float Value)
 {
 	local bbPlayer bbP;
 	
-	//if (Owner.IsA('Bot'))
-		//return Super.ClientFire(Value);
+	if (Owner.IsA('Bot'))
+		return Super.ClientFire(Value);
 	
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
@@ -122,6 +121,7 @@ function Fire ( float Value )
 	bbP = bbPlayer(Owner);
 	if (bbP != None && bNewNet && Value < 1)
 		return;
+	bbPlayer(Owner).xxAddFired(zzWin);
 	Super.Fire(Value);
 }
 
@@ -140,7 +140,7 @@ function AltFire( float Value )
 		return;
 	Super.AltFire(Value);
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -185,7 +185,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 state NormalFire
 {
 	function Fire(float F) 
@@ -218,8 +218,8 @@ simulated function NN_TraceFire()
 	local bbPlayer bbP;
 	local bool bHeadshot;
 	
-	//if (Owner.IsA('Bot'))
-		//return;
+	if (Owner.IsA('Bot'))
+		return;
 	
 	yModInit();
 	
@@ -230,7 +230,7 @@ simulated function NN_TraceFire()
 
 //	Owner.MakeNoise(Pawn(Owner).SoundDampening);
 	GetAxes(GV,X,Y,Z);
-	StartTrace = Owner.Location + CDO + yMod * Y + FireOffset.Z * Z;
+	StartTrace = Owner.Location + PawnOwner.Eyeheight * Z;
 	EndTrace = StartTrace + (100000 * vector(GV)); 
 	
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
@@ -247,12 +247,10 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 	local Pawn PawnOwner;
 	local float CH;
 	
-	//if (Owner.IsA('Bot'))
-		//return false;
+	if (Owner.IsA('Bot'))
+		return false;
 
 	PawnOwner = Pawn(Owner);
-
-	NN_SpawnEffect(HitLocation, Owner.Location + CDO + (FireOffset.X + 20) * X + Y * yMod + FireOffset.Z * Z, HitNormal);
 
 	s = Spawn(class'UT_ShellCase',, '', Owner.Location + CDO + 30 * X + (2.8 * yMod+5.0) * Y - Z * 1);
 	if ( s != None ) 
@@ -276,10 +274,12 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 	{
 		if ( Other.bIsPawn )
 		{
-			if ((Other.GetAnimGroup(Other.AnimSequence) == 'Ducking') && (Other.AnimFrame > -0.03))
+			if ((Other.GetAnimGroup(Other.AnimSequence) == 'Ducking') && (Other.AnimFrame > -0.03)) {
 				CH = 0.3 * Other.CollisionHeight;
-			else
+				return false; // disable crouching headshot
+			} else {
 				CH = Other.CollisionHeight;
+			}
 			
 			if (HitLocation.Z - Other.Location.Z > BodyHeight * CH)
 				return true;
@@ -291,94 +291,9 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 	return false;
 }
 
-simulated function NN_SpawnEffect(vector HitLocation, vector SmokeLocation, vector HitNormal)
-{
-	local RedSniperTrace st;
-	local BlueSniperTrace bst;
-	local GreenSniperTrace gst;
-	local GoldSniperTrace gost;
-	local Vector DVector;
-	local int NumPoints;
-	local rotator SmokeRotation;
-
-	//if (Owner.IsA('Bot'))
-		//return;
-
-	DVector = HitLocation - SmokeLocation;
-	NumPoints = VSize(DVector)/150;
-	if ( NumPoints < 1 )
-		return;
-	SmokeRotation = rotator(DVector);
-	SmokeRotation.roll = Rand(65535);
-
-	if(Pawn(Owner) != None && Owner != None)
-	{
-		if(class'IndiaSettings'.default.bSniperTraceEffects)
-		{
-			if(Pawn(Owner).PlayerReplicationInfo.Team == 0)
-			{
-				st = Spawn(class'NN_RedSniperTrace',Owner,,SmokeLocation,SmokeRotation);
-				st.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-				st.NumPuffs = NumPoints - 1;
-			}
-			else if(Pawn(Owner).PlayerReplicationInfo.Team == 1)
-			{
-				bst = Spawn(class'NN_BlueSniperTrace',Owner,,SmokeLocation,SmokeRotation);
-				bst.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-				bst.NumPuffs = NumPoints - 1;
-			}
-			else if(Pawn(Owner).PlayerReplicationInfo.Team == 2)
-			{
-				gst = Spawn(class'NN_GreenSniperTrace',Owner,,SmokeLocation,SmokeRotation);
-				gst.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-				gst.NumPuffs = NumPoints - 1;
-			}
-			else if(Pawn(Owner).PlayerReplicationInfo.Team == 3)
-			{
-				gost = Spawn(class'NN_GoldSniperTrace',Owner,,SmokeLocation,SmokeRotation);
-				gost.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-				gost.NumPuffs = NumPoints - 1;
-			}
-			else if(Pawn(Owner).PlayerReplicationInfo.Team >= 4)
-			{
-				st = Spawn(class'NN_RedSniperTrace',Owner,,SmokeLocation,SmokeRotation);
-				st.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-				st.NumPuffs = NumPoints - 1;
-			}
-		}
-	}
-
-	if (bbPlayer(Owner) != None)
-	{
-		if(class'IndiaSettings'.default.bSniperTraceEffects)
-		{
-			if(Pawn(Owner).PlayerReplicationInfo.Team == 0)
-			{
-				bbPlayer(Owner).xxClientDemoFix(None, class'NN_RedSniperTrace',SmokeLocation,,,SmokeRotation);
-			}
-			else if(Pawn(Owner).PlayerReplicationInfo.Team == 1)
-			{
-				bbPlayer(Owner).xxClientDemoFix(None, class'NN_BlueSniperTrace',SmokeLocation,,,SmokeRotation);
-			}
-			else if(Pawn(Owner).PlayerReplicationInfo.Team == 2)
-			{
-				bbPlayer(Owner).xxClientDemoFix(None, class'NN_GreenSniperTrace',SmokeLocation,,,SmokeRotation);
-			}
-			else if(Pawn(Owner).PlayerReplicationInfo.Team == 3)
-			{
-				bbPlayer(Owner).xxClientDemoFix(None, class'NN_GoldSniperTrace',SmokeLocation,,,SmokeRotation);
-			}
-			else if(Pawn(Owner).PlayerReplicationInfo.Team >= 4)
-			{
-				bbPlayer(Owner).xxClientDemoFix(None, class'NN_RedSniperTrace',SmokeLocation,,,SmokeRotation);
-			}
-		}
-	}
-}
-
 function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vector X, Vector Y, Vector Z)
 {
-	local UT_Shellcase s;
+	local vector realLoc;
 	local Pawn PawnOwner, POther;
 	local PlayerPawn PPOther;
 	local vector HeadHitLocation, HeadHitNormal;
@@ -387,21 +302,21 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	local inventory inv;
 	local bbPlayer bbP;
 	
-	//if (Owner.IsA('Bot'))
-	//{
-		//Super.ProcessTraceHit(Other, HitLocation, HitNormal, X, Y, Z);
-		//return;
-	//}
-
-	//if(Owner.IsA('Bot'))
-	//{
-		//GetAxes(Pawn(Owner).ViewRotation, X, Y, Z);
-	//}
-	//if (bbP == None || !bNewNet)
-	//{
-		//Super.ProcessTraceHit(Other, HitLocation, HitNormal, X,Y,Z);
-		//return;
-	//}
+	if (Owner.IsA('Bot'))
+	{
+		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X, Y, Z);
+		return;
+	}
+	
+	bbP = bbPlayer(Owner);
+	if (bbP == None || !bNewNet)
+	{
+		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X,Y,Z);
+		return;
+	}
+	
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(24))
+		return;
 
 	PawnOwner = Pawn(Owner);
 	POther = Pawn(Other);
@@ -409,26 +324,9 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	if (STM != None)
 		STM.PlayerFire(PawnOwner, 18);		// 18 = Sniper
 
-	if (Other==None)
-	{
-		HitNormal = -X;
-		HitLocation = Owner.Location + X*10000.0;
-	}
-	
-	bbP = bbPlayer(Owner);
+	realLoc = Owner.Location + CalcDrawOffset();
+	DoShellCase(PlayerPawn(Owner), realLoc + 20 * X + FireOffset.Y * Y + Z, X,Y,Z);
 
-	if(Owner.IsA('Bot') || Instigator != Owner)
-		SpawnEffect(HitLocation, Owner.Location + CalcDrawOffset() + (FireOffset.X + 20) * X + FireOffset.Y * Y + FireOffset.Z * Z);
-
-	if (bNewNet)
-		s = Spawn(class'NN_UT_ShellCaseOwnerHidden',Owner, '', Owner.Location + CalcDrawOffset() + 30 * X + (2.8 * FireOffset.Y+5.0) * Y - Z * 1);
-	else
-		s = Spawn(class'UT_ShellCase',, '', Owner.Location + CalcDrawOffset() + 30 * X + (2.8 * FireOffset.Y+5.0) * Y - Z * 1);
-	if ( s != None ) 
-	{
-		s.DrawScale = 2.0;
-		s.Eject(((FRand()*0.3+0.4)*X + (FRand()*0.2+0.2)*Y + (FRand()*0.3+1.0) * Z)*160);              
-	}
 	if (Other == Level)
 	{
 		if (bNewNet)
@@ -441,10 +339,10 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		if ( Other.bIsPawn )
 			Other.PlaySound(Sound 'ChunkHit',, 4.0,,100);
 		
-		if ( bbP.zzbNN_Special || !bNewNet &&
+		if ( (bbP.zzbNN_Special || !bNewNet &&
 			Other.bIsPawn && (HitLocation.Z - Other.Location.Z > BodyHeight * Other.CollisionHeight) 
 			&& (instigator.IsA('PlayerPawn') || (instigator.IsA('Bot') && !Bot(Instigator).bNovice)) )
-			//&& !PPOther.bIsCrouching && PPOther.GetAnimGroup(PPOther.AnimSequence) != 'Ducking' )
+			&& !PPOther.bIsCrouching && PPOther.GetAnimGroup(PPOther.AnimSequence) != 'Ducking' )
 		{
 			if (STM != None)
 				STM.PlayerHit(PawnOwner, 18, True);		// 18 = Sniper, Headshot
@@ -476,78 +374,37 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	}
 }
 
-function SpawnEffect(vector HitLocation, vector SmokeLocation)
+simulated function DoShellCase(PlayerPawn Pwner, vector HitLoc, Vector X, Vector Y, Vector Z)
 {
-	local RedSniperTrace2 Rings;
-	local BlueSniperTrace2 BRings;
-	local GreenSniperTrace2 GRings;
-	local GoldSniperTrace2 GoRings;
-	local Vector DVector;
-	local int NumPoints;
-	local rotator SmokeRotation;
-
-	//if (Owner.IsA('Bot'))
-	//{
-		//return;
-	//}
-
-	DVector = HitLocation - SmokeLocation;
-	NumPoints = VSize(DVector)/150;
-	if ( NumPoints < 1 )
-		return;
-	SmokeRotation = rotator(DVector);
-	SmokeRotation.roll = Rand(65535);
+	local PlayerPawn P;
+	local Actor CR;
+	local UT_Shellcase s;
 	
-	if(bNewNet)
-	{
-		if(Pawn(Owner) != None)
+	if (Owner.IsA('Bot'))
+		return;
+
+	if (RemoteRole < ROLE_Authority) {
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 		{
-			if(class'IndiaSettings'.default.bSniperTraceEffects)
+			if (P != Pwner) {
+				CR = P.Spawn(class'UT_ShellCase',P, '', HitLoc);
+				CR.bOnlyOwnerSee = True;
+				s = UT_Shellcase(CR);
+			if ( s != None ) 
 			{
-				if(Pawn(Owner).PlayerReplicationInfo.Team == 0)
-				{
-					Rings = Spawn(class'RedSniperTrace2',,,SmokeLocation,SmokeRotation);
-					Rings.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-					Rings.NumPuffs = NumPoints - 1;
-				}
-				else if(Pawn(Owner).PlayerReplicationInfo.Team == 1)
-				{
-					BRings = Spawn(class'BlueSniperTrace2',,,SmokeLocation,SmokeRotation);
-					BRings.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-					BRings.NumPuffs = NumPoints - 1;
-				}
-				else if(Pawn(Owner).PlayerReplicationInfo.Team == 2)
-				{
-					GRings = Spawn(class'GreenSniperTrace2',,,SmokeLocation,SmokeRotation);
-					GRings.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-					GRings.NumPuffs = NumPoints - 1;
-				}
-				else if(Pawn(Owner).PlayerReplicationInfo.Team == 3)
-				{
-					GoRings = Spawn(class'GoldSniperTrace2',,,SmokeLocation,SmokeRotation);
-					GoRings.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-					GoRings.NumPuffs = NumPoints - 1;
-				}
-				else if(Pawn(Owner).PlayerReplicationInfo.Team >= 4)
-				{
-					Rings = Spawn(class'RedSniperTrace2',,,SmokeLocation,SmokeRotation);
-					Rings.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-					Rings.NumPuffs = NumPoints - 1;
-				}
+				s.DrawScale = 2.0;
+				s.Eject(((FRand()*0.3+0.4)*X + (FRand()*0.2+0.2)*Y + (FRand()*0.3+1.0) * Z)*160);              
+			}
 			}
 		}
 	}
-	/*else
-	{
-		Rings = Spawn(class'NN_RedSniperTraceOwnerHidden',,,SmokeLocation,SmokeRotation);
-		Rings.MoveAmount = Normal(DVector) * 10000; //Multiply because sending it over net
-		Rings.NumPuffs = NumPoints - 1;
-	}*/
 }
 
 function TraceFire( float Accuracy )
 {
 	local bbPlayer bbP;
+	//local Pawn PawnOwner;
 	local vector NN_HitLoc, HitLocation, HitNormal, StartTrace, EndTrace, X,Y,Z;
 	
 	if (Owner.IsA('Bot'))
@@ -563,34 +420,19 @@ function TraceFire( float Accuracy )
 		return;
 	}
 	
-	if (bbP.zzNN_HitActor.IsA('bbPlayer') && !bbPlayer(bbP.zzNN_HitActor).xxCloseEnough(bbP.zzNN_HitLoc))
+	if (bbP == None)
+	{
+		if (bbP.zzNN_HitActor.IsA('bbPlayer') && !bbPlayer(bbP.zzNN_HitActor).xxCloseEnough(bbP.zzNN_HitLoc))
 		bbP.zzNN_HitActor = None;
+	}
 	
 	Owner.MakeNoise(bbP.SoundDampening);
 	GetAxes(bbP.zzNN_ViewRot,X,Y,Z);
-	GetAxes(Pawn(owner).ViewRotation,X,Y,Z);
-	
-	/*StartTrace = Owner.Location + bbP.Eyeheight * Z; 
+	StartTrace = Owner.Location + bbP.Eyeheight * Z;
+	//StartTrace = Owner.Location + PawnOwner.Eyeheight * Z;
 	AdjustedAim = bbP.AdjustAim(1000000, StartTrace, 2*AimError, False, False);	
 	X = vector(AdjustedAim);
-	EndTrace = StartTrace + 10000 * X;*/
-
-	StartTrace = Owner.Location + CalcDrawOffset() + FireOffset.Y * Y + FireOffset.Z * Z; 
-	EndTrace = StartTrace + Accuracy * (FRand() - 0.5 )* Y * 1000
-		+ Accuracy * (FRand() - 0.5 ) * Z * 1000 ;
-
-	if ( bBotSpecialMove && (Tracked != None)
-		&& (((Owner.Acceleration == vect(0,0,0)) && (VSize(Owner.Velocity) < 40)) ||
-			(Normal(Owner.Velocity) Dot Normal(Tracked.Velocity) > 0.95)) )
-		EndTrace += MaxTargetRange * Normal(Tracked.Location - StartTrace);
-	else
-	{
-		AdjustedAim = pawn(owner).AdjustAim(1000000, StartTrace, 2.75*AimError, False, False);	
-		EndTrace += (MaxTargetRange * vector(AdjustedAim)); 
-	}
-
-	Tracked = None;
-	bBotSpecialMove = false;
+	EndTrace = StartTrace + 100000 * X; 
 	
 	if (bbP.zzNN_HitActor != None && VSize(bbP.zzNN_HitDiff) > bbP.zzNN_HitActor.CollisionRadius + bbP.zzNN_HitActor.CollisionHeight)
 		bbP.zzNN_HitDiff = vect(0,0,0);
@@ -610,62 +452,19 @@ function TraceFire( float Accuracy )
 	bbP.zzNN_HitActor = None;
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'SniperRifle';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'SniperRifle');
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Select',1000.00);
-		else	
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
 }
 
-simulated function TweenDown()
+simulated function TweenDown ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 simulated function PlayFiring()
@@ -674,9 +473,9 @@ simulated function PlayFiring()
 
 	PlayOwnedSound(FireSound, SLOT_None, Pawn(Owner).SoundDampening*3.0);
 	if (SniperSpeed > 0)
-		PlayAnim(FireAnims[Rand(5)], 0.53 * SniperSpeed + 0.53 * FireAdjust, 0.05);
+		PlayAnim(FireAnims[Rand(5)], 0.5 * SniperSpeed + 0.5 * FireAdjust, 0.05);
 	else
-		PlayAnim(FireAnims[Rand(5)], 0.53 * class'UTPure'.default.SniperSpeed + 0.53 * FireAdjust, 0.05);
+		PlayAnim(FireAnims[Rand(5)], 0.5 * class'UTPure'.default.SniperSpeed + 0.5 * FireAdjust, 0.05);
 
 	if ( (PlayerPawn(Owner) != None) 
 		&& (PlayerPawn(Owner).DesiredFOV == PlayerPawn(Owner).DefaultFOV) )
@@ -709,6 +508,8 @@ state Active
 
 defaultproperties
 {
-     bNewNet=True
-     BodyHeight=0.660000
+    bNewNet=True
+    BodyHeight=0.66
+    zzWin=24
+	nnWF=Class'NN_WeaponFunctions'
 }

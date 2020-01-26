@@ -107,5 +107,5 @@ simulated function BlowUp(vector HitLocation)
 
 defaultproperties
 {
-     bOwnerNoSee=True
+    bOwnerNoSee=True
 }

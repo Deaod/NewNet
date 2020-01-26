@@ -1,3 +1,9 @@
+// ===============================================================
+// Stats.ST_Translocator: put your comment here
+
+// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
+// ===============================================================
+
 class ST_Translocator extends Translocator;
 
 var ST_Mutator STM;
@@ -5,8 +11,9 @@ var bool bNewNet;		// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
-var bool bClientTTargetOut;
+var bool bClientTTargetOut, bPlayTeleportEffect;
 var NN_TranslocatorTarget zzClientTTarget;
+var Class<NN_WeaponFunctions> nnWF;
 
 function PostBeginPlay()
 {
@@ -69,7 +76,7 @@ function AltFire( float Value )
 		return;
 	Super.AltFire(Value);
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -114,7 +121,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 simulated function bool ClientFire(float Value)
 {
 	local bbPlayer bbP;
@@ -272,8 +279,7 @@ simulated function ClientThrowTarget()
 	GV = Pawn(Owner).AdjustToss(TossForce, Start, 0, true, true); 
 	GetAxes(GV,X,Y,Z);
 	zzClientTTarget = Spawn(class'NN_TranslocatorTarget',Owner,, Start);
-	if(bbPlayer(Owner) != None)
-		bbPlayer(Owner).zzClientTTarget = zzClientTTarget;
+	bbPlayer(Owner).zzClientTTarget = zzClientTTarget;
 	if (zzClientTTarget!=None)
 	{
 		bClientTTargetOut = true;
@@ -283,8 +289,7 @@ simulated function ClientThrowTarget()
 		zzClientTTarget.Throw(Pawn(Owner), MaxTossForce, Start);
 	}
 	else GotoState('Idle');
-	if(bbPlayer(Owner) != None)
-    	bbPlayer(Owner).xxClientDemoFix(zzClientTTarget, Class'TranslocatorTarget', Start, zzClientTTarget.Velocity, zzClientTTarget.Acceleration, zzClientTTarget.Rotation);
+    bbPlayer(Owner).xxClientDemoFix(zzClientTTarget, Class'TranslocatorTarget', Start, zzClientTTarget.Velocity, zzClientTTarget.Acceleration, zzClientTTarget.Rotation);
 }
 
 simulated function bool ClientAltFire( float Value )
@@ -328,6 +333,7 @@ function ThrowTarget()
 	yModInit();
 	
 	bbP = bbPlayer(Owner);
+	//bbPlayer(Owner).xxAddFired(0);
 	
 	if (STM != None)
 		STM.PlayerFire(Pawn(Owner), 2);		// 2 = Translocator
@@ -408,6 +414,7 @@ function Fire( float Value )
 			Pawn(Owner).gibbedBy(TTarget.disruptor);
 			return;
 		}
+		//bbPlayer(Owner).xxAddFired(0);
 		if (!bNewNet)
 			Owner.PlaySound(AltFireSound, SLOT_Misc, 4 * Pawn(Owner).SoundDampening);
 		bTTargetOut = false;
@@ -433,6 +440,7 @@ function Translocate()
 		return;
 	}
 
+	//bbPlayer(Owner).xxAddFired(0);
 	if (STM != None)
 		STM.PlayerHit(Pawn(Owner), 2, False);			// 2 = Translocator
 	
@@ -491,7 +499,7 @@ function Translocate()
 			Owner.Velocity.X = 0;
 			Owner.Velocity.Y = 0;
 			
-			if (bbP != None && bNewNet)
+			if (bbP != None && bNewNet && bPlayTeleportEffect)
 				bbP.PlayTeleportEffect(true, true);
 			
 			B = Bot(Owner);
@@ -555,29 +563,6 @@ simulated function PlayIdleAnim()
 			LoopAnim('Idle2',0.2,0.1);
 	}
 	Enable('AnimEnd');
-}
-
-simulated function PlaySelect()
-{
-	bForceFire = false;
-	bForceAltFire = false;
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
-	if (bNewNet && !Owner.IsA('Bot')) {
-		if ( bClientTTargetOut )
-			TweenAnim('ThrownFrame', 0.27);
-		else
-		{
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-		}
-	} else {
-		if ( bTTargetOut )
-			TweenAnim('ThrownFrame', 0.27);
-		else
-		{
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-		}
-	}
-	PlaySound(SelectSound, SLOT_Misc,Pawn(Owner).SoundDampening);		
 }
 
 state NormalFire
@@ -670,36 +655,28 @@ state ClientFiring
 	}
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'Translocator');
+}
 
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'Translocator';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
+simulated function PlaySelect()
+{
+	bForceFire = false;
+	bForceAltFire = false;
+	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
+	if (bNewNet && !Owner.IsA('Bot')) {
+		if ( bClientTTargetOut )
+			TweenAnim('ThrownFrame', 0.27);
+		else
+			PlayAnim('Select',1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
+	} else {
+		if ( bTTargetOut )
+			TweenAnim('ThrownFrame', 0.27);
+		else
+			PlayAnim('Select',1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
+	}
+	PlaySound(SelectSound, SLOT_Misc,Pawn(Owner).SoundDampening);		
 }
 
 simulated function TweenDown()
@@ -714,12 +691,12 @@ simulated function TweenDown()
 	else if (bNewNet)
 	{
 		if ( bClientTTargetOut ) PlayAnim('Down2', 1.1, 0.05);
-		else PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		else PlayAnim('Down', 1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 	}
 	else
 	{
 		if ( bTTargetOut ) PlayAnim('Down2', 1.1, 0.05);
-		else PlayAnim('Down', 1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+		else PlayAnim('Down', 1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
 	}
 }
 
@@ -750,4 +727,6 @@ state Active
 defaultproperties
 {
      bNewNet=True
+     bPlayTeleportEffect=True
+	 nnWF=Class'NN_WeaponFunctions'
 }

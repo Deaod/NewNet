@@ -35,6 +35,10 @@ var UTConsole zzOldConsole;
 var int zzMyState; // 0=global state 1=UWINDOW 2=Typing
 var bool bForcedStats;
 var string Ello;
+var int SpamGetWeaponCount, SpamSwitchWeaponCount, SpamBestWeaponCount;
+var class<Weapon> SpamGetWeapon;
+var byte SpamSwitchWeapon;
+var bool SpamBestWeapon;
 
 event PreRender( canvas zzC);
 
@@ -194,6 +198,9 @@ final function bool xxKeyEvent( EInputKey Key, EInputAction Action, FLOAT Delta 
 		zzbbP.zzbStoppingTraceBot = zzbbP.zzTrue;
 		zzbbP.xxStopTracebot();
 	}
+	
+	if (zzbbP != None)
+		zzbbP.xxCheckInput(Key, Action);
 	
 	if (zzMyState!=0)
 	{
@@ -468,6 +475,19 @@ event Tick( float Delta )
 //	local rotator zzVR;
 	
 	// Tick is
+	
+	if (SpamGetWeaponCount > 0)
+	{
+		GetWeapon(SpamGetWeapon);
+	}
+	else if (SpamSwitchWeaponCount > 0)
+	{
+		SwitchWeapon(SpamSwitchWeapon);
+	}
+	else if (SpamBestWeaponCount > 0)
+	{
+		SwitchToBestWeapon();
+	}
 
 	//Console (probably not needed though):
 	MsgTickTime += Delta;
@@ -1265,7 +1285,28 @@ exec function BanID(string ID)	{ ViewPort.Actor.Mutate("BanID"@ID); }
 exec simulated function GetWeapon(class<Weapon> NewWeaponClass )
 {
 	if (ViewPort != None && ViewPort.Actor != None) {
-		bbPlayer(ViewPort.Actor).zzSwitchedTime = ViewPort.Actor.Level.TimeSeconds;
+		if (!ViewPort.Actor.Weapon.IsA(NewWeaponClass.name))
+		{
+			if (SpamGetWeaponCount == 0 || NewWeaponClass != SpamGetWeapon)
+			{
+				SpamGetWeaponCount = 0;
+				SpamGetWeapon = NewWeaponClass;
+				bbPlayer(ViewPort.Actor).zzSwitchedTime = ViewPort.Actor.Level.TimeSeconds;
+			}
+			else
+			{
+				SpamSwitchWeaponCount = 0;
+				SpamBestWeaponCount = 0;
+			}
+			
+			SpamGetWeaponCount++;
+			if (SpamGetWeaponCount > 5)
+			{
+				SpamGetWeaponCount = 0;
+				SpamGetWeapon = None;
+			}
+		}
+		
 		ViewPort.Actor.GetWeapon(NewWeaponClass);
 	}
 }
@@ -1273,7 +1314,28 @@ exec simulated function GetWeapon(class<Weapon> NewWeaponClass )
 exec simulated function SwitchWeapon(byte F)
 {
 	if (ViewPort != None && ViewPort.Actor != None) {
-		bbPlayer(ViewPort.Actor).zzSwitchedTime = ViewPort.Actor.Level.TimeSeconds;
+		if (ViewPort.Actor.Weapon == None || ViewPort.Actor.Weapon.InventoryGroup != F)
+		{
+			if (SpamSwitchWeaponCount == 0 || F != SpamSwitchWeapon)
+			{
+				SpamSwitchWeaponCount = 0;
+				SpamSwitchWeapon = F;
+				bbPlayer(ViewPort.Actor).zzSwitchedTime = ViewPort.Actor.Level.TimeSeconds;
+			}
+			else
+			{
+				SpamGetWeaponCount = 0;
+				SpamBestWeaponCount = 0;
+			}
+			
+			SpamSwitchWeaponCount++;
+			if (SpamSwitchWeaponCount > 5)
+			{
+				SpamSwitchWeaponCount = 0;
+				SpamSwitchWeapon = 199;
+			}
+		}
+		
 		ViewPort.Actor.SwitchWeapon(F);
 	}
 }
@@ -1297,7 +1359,25 @@ exec simulated function NextWeapon()
 exec simulated function SwitchToBestWeapon()
 {
 	if (ViewPort != None && ViewPort.Actor != None) {
-		bbPlayer(ViewPort.Actor).zzSwitchedTime = ViewPort.Actor.Level.TimeSeconds;
+		if (SpamBestWeaponCount == 0 || !SpamBestWeapon)
+		{
+			SpamBestWeaponCount = 0;
+			SpamBestWeapon = true;
+			bbPlayer(ViewPort.Actor).zzSwitchedTime = ViewPort.Actor.Level.TimeSeconds;
+		}
+		else
+		{
+			SpamGetWeaponCount = 0;
+			SpamSwitchWeaponCount = 0;
+		}
+		
+		SpamBestWeaponCount++;
+		if (SpamBestWeaponCount > 5)
+		{
+			SpamBestWeaponCount = 0;
+			SpamBestWeapon = false;
+		}
+		
 		ViewPort.Actor.SwitchToBestWeapon();
 	}
 }
@@ -1343,4 +1423,5 @@ exec function Version()
 defaultproperties
 {
      Ello="g0v"
+     SpamSwitchWeapon=199
 }

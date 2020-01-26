@@ -63,5 +63,5 @@ function EndHit()
 
 defaultproperties
 {
-     LifeSpan=3.500000
+     LifeSpan=2.000000
 }

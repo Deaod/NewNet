@@ -126,23 +126,23 @@ static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, 
 defaultproperties
 {
      CarcassType=Class'Botpack.TBossCarcass'
-     HitSound3=Sound'Botpack.Boss.BInjur3'
-     HitSound4=Sound'Botpack.Boss.BInjur4'
-     Deaths(0)=Sound'Botpack.Boss.BDeath1'
-     Deaths(1)=Sound'Botpack.Boss.BDeath1'
-     Deaths(2)=Sound'Botpack.Boss.BDeath3'
-     Deaths(3)=Sound'Botpack.Boss.BDeath4'
-     Deaths(4)=Sound'Botpack.Boss.BDeath3'
-     Deaths(5)=Sound'Botpack.Boss.BDeath4'
-     LandGrunt=Sound'Botpack.Boss.Bland01'
-     JumpSound=Sound'Botpack.Boss.BJump1'
+     HitSound3=Sound'Botpack.BInjur3'
+     HitSound4=Sound'Botpack.BInjur4'
+     Deaths(0)=Sound'Botpack.BDeath1'
+     Deaths(1)=Sound'Botpack.BDeath1'
+     Deaths(2)=Sound'Botpack.BDeath3'
+     Deaths(3)=Sound'Botpack.BDeath4'
+     Deaths(4)=Sound'Botpack.BDeath3'
+     Deaths(5)=Sound'Botpack.BDeath4'
+     LandGrunt=Sound'Botpack.Bland01'
+     JumpSound=Sound'Botpack.BJump1'
      DefaultSkinName="BossSkins.Boss"
      StatusDoll=Texture'Botpack.BossDoll'
      StatusBelt=Texture'Botpack.BossBelt'
      VoicePackMetaClass="BotPack.VoiceBoss"
      SelectionMesh="Botpack.SelectionBoss"
-     HitSound1=Sound'Botpack.Boss.BInjur1'
-     HitSound2=Sound'Botpack.Boss.BInjur2'
+     HitSound1=Sound'Botpack.BInjur1'
+     HitSound2=Sound'Botpack.BInjur2'
      Die=Sound'Botpack.BDeath1'
      MenuName="Boss"
      VoiceType="BotPack.VoiceBotBoss"

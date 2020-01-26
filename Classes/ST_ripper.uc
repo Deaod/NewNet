@@ -11,6 +11,7 @@ var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
+var Class<NN_WeaponFunctions> nnWF;
 
 function PostBeginPlay()
 {
@@ -56,38 +57,6 @@ simulated function yModInit()
 		yMod = 0;
 
 	CDO = CalcDrawOffset();
-}
-
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'ripper';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
 }
 
 simulated function bool ClientFire(float Value)
@@ -208,6 +177,8 @@ function Fire( float Value )
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(15);
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -252,6 +223,8 @@ function AltFire( float Value )
 	}
 	if (AmmoType.UseAmmo(1))
 	{
+		if (bbPlayer(Owner) != None)
+			bbPlayer(Owner).xxAddFired(17);
 		GotoState('AltFiring');
 		bCanClientFire = true;
 		bPointing=True;
@@ -270,7 +243,7 @@ function AltFire( float Value )
 		}
 	}
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -315,7 +288,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 function Projectile ProjectileFire(class<projectile> ProjClass, float ProjSpeed, bool bWarn)
 {
 	local Vector Start, X,Y,Z;
@@ -394,30 +367,19 @@ state AltFiring
 	}
 }
 
-simulated function PlaySelect()
+function SetSwitchPriority(pawn Other)
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Select',1000.00);
-		else	
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'ripper');
 }
 
-simulated function TweenDown()
+simulated function PlaySelect ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
+}
+
+simulated function TweenDown ()
+{
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 state Active
@@ -449,4 +411,5 @@ defaultproperties
      bNewNet=True
      ProjectileClass=Class'ST_Razor2'
      AltProjectileClass=Class'ST_Razor2Alt'
+	 nnWF=Class'NN_WeaponFunctions'
 }

@@ -1,3 +1,9 @@
+// ===============================================================
+// Stats.ST_UT_SeekingRocket: put your comment here
+
+// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
+// ===============================================================
+
 class ST_UT_SeekingRocket extends UT_SeekingRocket;
 
 var ST_Mutator STM;
@@ -80,103 +86,59 @@ auto state Flying
 
 	simulated function BlowUp(vector HitLocation)
 	{
-		local actor Victims, TracedTo;
-		local int DamageRadius;
-		local float damageScale, dist;
-		local vector dir, VictimHitLocation, VictimMomentum, MoverHitLocation, MoverHitNormal;
 		local bbPlayer bbP;
-		local Mover M;
 		
 		bbP = bbPlayer(Owner);
-
-		if( bHurtEntry )
-			return;
-		
-		DamageRadius = 180;
-		bHurtEntry = true;
-		foreach VisibleCollidingActors( class 'Actor', Victims, DamageRadius, HitLocation )
-		{
-			if( Victims != self )
-			{
-				dir = Victims.Location - HitLocation;
-				dist = FMax(1,VSize(dir));
-				dir = dir/dist;
-				dir.Z = FMin(0.45, dir.Z); 
-				damageScale = 1 - FMax(0,(dist - Victims.CollisionRadius)/DamageRadius);
-				VictimHitLocation = Victims.Location - 0.5 * (Victims.CollisionHeight + Victims.CollisionRadius) * dir;
-				VictimMomentum = damageScale * MomentumTransfer * dir;
-				if (bbP != None && bbP.bNewNet)
-				{
-					if (Level.NetMode == NM_Client && !IsA('NN_RocketMk2OwnerHidden'))
-					{
-						bbP.xxNN_TakeDamage
-						(
-							Victims,
-							class'UT_Eightball',
-							1,
-							Instigator, 
-							VictimHitLocation,
-							VictimMomentum,
-							MyDamageType,
-							zzNN_ProjIndex,
-							damageScale * Damage,
-							DamageRadius
-						);
-					}
-				}
-				else
-				{
-					Victims.TakeDamage
-					(
-						damageScale * Damage,
-						Instigator, 
-						VictimHitLocation,
-						VictimMomentum,
-						MyDamageType
-					);
-				}
-				if (Victims == Owner)
-					NN_Momentum(VictimMomentum, VictimHitLocation);
-			} 
-		}
-		
+		if (STM != None)
+			STM.PlayerHit(Instigator, 16, bDirect);		// 16 = Rockets. No special for seeking, a seeker just means it has a larger chance of direct (yeah rite :P)
 		if (bbP != None && bbP.bNewNet)
 		{
-			foreach RadiusActors( class 'Mover', M, DamageRadius, HitLocation )
-			{
-				TracedTo = Trace(MoverHitLocation, MoverHitNormal, M.Location, HitLocation, True);
-				dir = MoverHitLocation - HitLocation;
-				dist = FMax(1,VSize(dir));
-				if (TracedTo != M || dist > DamageRadius)
-					continue;
-				dir = dir/dist; 
-				damageScale = 1 - FMax(0,(dist - M.CollisionRadius)/DamageRadius);
-				bbP.xxNN_ServerTakeDamage( M, class'UT_Eightball', 1, Instigator, HitLocation, bbP.GetBetterVector(damageScale * MomentumTransfer * dir), MyDamageType, zzNN_ProjIndex, damageScale * Damage);
-				//bbP.xxMover_TakeDamage( M, damageScale * Damage, bbP, M.Location - 0.5 * (M.CollisionHeight + M.CollisionRadius) * dir, damageScale * MomentumTransfer * dir, MyDamageType );
-			}
+			if (Level.NetMode == NM_Client && !IsA('NN_UT_SeekingRocket'))
+				bbP.NN_HurtRadius(self, 22, 220.0, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex );
 		}
-		
-		bHurtEntry = false;
+		else
+		{
+			HurtRadius(Damage, 220.0, MyDamageType, MomentumTransfer, HitLocation );
+		}
+		NN_Momentum(220.0, MomentumTransfer, HitLocation);
+		if (STM != None)
+			STM.PlayerClear();
 		MakeNoise(1.0);
 	}
 
-	simulated function NN_Momentum( vector Momentum, vector HitLocation )
+	simulated function NN_Momentum( float DamageRadius, float Momentum, vector HitLocation )
 	{
+		local actor Victims;
+		local float damageScale, dist;
+		local vector dir;
 		local bbPlayer bbP;
 		
 		bbP = bbPlayer(Owner);
 		
-		if ( bbP == None || !bbP.bNewNet || Self.IsA('NN_Razor2AltOwnerHidden') || RemoteRole == ROLE_Authority )
+		if ( bbP == None || !bbP.bNewNet || Self.IsA('NN_ut_SeekingRocketOwnerHidden') || RemoteRole == ROLE_Authority )
 			return;
-		
-		if (bbP.Physics == PHYS_None)
-			bbP.SetMovementPhysics();
-		if (bbP.Physics == PHYS_Walking)
-			Momentum.Z = FMax(Momentum.Z, 0.4 * VSize(Momentum));
-			
-		Momentum = 0.6*Momentum/bbP.Mass;
 
-		bbP.AddVelocity(Momentum);
+		foreach VisibleCollidingActors( class 'Actor', Victims, DamageRadius, HitLocation )
+		{
+			if( Victims == Owner )
+			{
+				dir = Owner.Location - HitLocation;
+				dist = FMax(1,VSize(dir));
+				dir = dir/dist; 
+				damageScale = 1 - FMax(0,(dist - Owner.CollisionRadius)/DamageRadius);
+				
+				dir = damageScale * Momentum * dir;
+				
+				if (bbP.Physics == PHYS_None)
+					bbP.SetMovementPhysics();
+				if (bbP.Physics == PHYS_Walking)
+					dir.Z = FMax(dir.Z, 0.4 * VSize(dir));
+					
+				dir = 0.6*dir/bbP.Mass;
+
+				bbP.AddVelocity(dir); 
+			}
+		}
 	}
 }
 

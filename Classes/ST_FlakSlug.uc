@@ -9,8 +9,6 @@ class ST_FlakSlug extends flakslug;
 var ST_Mutator STM;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
-var bool bDirect;
-var bool bHurtEntry;
 
 function PostBeginPlay()
 {
@@ -28,15 +26,14 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 {		
 	if (bDeleteMe || Other == None || Other.bDeleteMe)
 		return;
-	if ( Other != instigator && Other != Owner && Other.Owner != Owner && NN_HitOther != Other )
+	if ( Other != instigator && Other != Owner && /* Other.Owner != Owner && */ NN_HitOther != Other )
 	{
 		NN_HitOther = Other;
-		bDirect = Other.IsA('Pawn');
-		NewExplode(HitLocation,Normal(HitLocation - Other.Location));
+		NewExplode(HitLocation,Normal(HitLocation-Other.Location), Other.IsA('Pawn'));
 	}
 }
 
-/*simulated function NewExplode(vector HitLocation, vector HitNormal, bool bDirect)
+simulated function NewExplode(vector HitLocation, vector HitNormal, bool bDirect)
 {
 	local vector start;
 	local ST_UTChunkInfo CI;
@@ -52,7 +49,7 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_FlakSlugOwnerHidden'))
 		{
-			bbP.NN_HurtRadius(self, class'UT_FlakCannon', 1, 150, 'FlakDeath', MomentumTransfer, HitLocation, zzNN_ProjIndex);
+			bbP.NN_HurtRadius(self, 21, 150, 'FlakDeath', MomentumTransfer, HitLocation, zzNN_ProjIndex);
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, HitNormal);
 		}
 	}
@@ -99,110 +96,6 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 	CI.AddChunk(Proj);
 	
  	Destroy();
-}*/
-
-simulated function NewExplode (Vector HitLocation, Vector HitNormal)
-{
-  local Vector Start;
-  local ST_UTChunkInfo CI;
-  local actor Victims, TracedTo;
-	local int DamageRadius;
-	local float damageScale, dist;
-	local vector dir, VictimHitLocation, VictimMomentum, MoverHitLocation, MoverHitNormal;
-	local bbPlayer bbP;
-	local Mover M;
-
-	if(STM != None)
-  		STM.PlayerHit(Instigator,15,bDirect);
-  //if ( (Role == ROLE_Authority) && (Level.NetMode != NM_Client ))
-  //{
-    HurtRadius(Damage,150.0,'FlakDeath',MomentumTransfer,HitLocation);
-  //}
-   bbP = bbPlayer(Owner);
-
-		if( bHurtEntry )
-			return;
-		
-		DamageRadius = 150;
-		bHurtEntry = true;
-		foreach VisibleCollidingActors( class 'Actor', Victims, DamageRadius, HitLocation )
-		{
-			if( Victims != self )
-			{
-				dir = Victims.Location - HitLocation;
-				dist = FMax(1,VSize(dir));
-				dir = dir/dist;
-				dir.Z = FMin(0.45, dir.Z); 
-				damageScale = 1 - FMax(0,(dist - Victims.CollisionRadius)/DamageRadius);
-				VictimHitLocation = Victims.Location - 0.5 * (Victims.CollisionHeight + Victims.CollisionRadius) * dir;
-				VictimMomentum = damageScale * MomentumTransfer * dir;
-				if (bbP != None && bbP.bNewNet)
-				{
-					if (Level.NetMode == NM_Client && !IsA('NN_FlakSlugOwnerHidden'))
-					{
-						bbP.xxNN_TakeDamage
-						(
-							Victims,
-							class'UT_FlakCannon',
-							1,
-							Instigator, 
-							VictimHitLocation,
-							VictimMomentum,
-							MyDamageType,
-							zzNN_ProjIndex,
-							damageScale * Damage,
-							DamageRadius
-						);
-					}
-				}
-				else
-				{
-					Victims.TakeDamage
-					(
-						damageScale * Damage,
-						Instigator, 
-						VictimHitLocation,
-						VictimMomentum,
-						MyDamageType
-					);
-				}
-				if (Victims == Owner)
-				{
-					//NN_Momentum(VictimMomentum, VictimHitLocation);
-					NN_Momentum(150, MomentumTransfer, VictimHitLocation);
-				}
-			} 
-		}
-		
-		if (bbP != None && bbP.bNewNet)
-		{
-			foreach RadiusActors( class 'Mover', M, DamageRadius, HitLocation )
-			{
-				TracedTo = Trace(MoverHitLocation, MoverHitNormal, M.Location, HitLocation, True);
-				dir = MoverHitLocation - HitLocation;
-				dist = FMax(1,VSize(dir));
-				if (TracedTo != M || dist > DamageRadius)
-					continue;
-				dir = dir/dist; 
-				damageScale = 1 - FMax(0,(dist - M.CollisionRadius)/DamageRadius);
-				bbP.xxNN_ServerTakeDamage( M, class'UT_FlakCannon', 1, Instigator, HitLocation, bbP.GetBetterVector(damageScale * MomentumTransfer * dir), MyDamageType, zzNN_ProjIndex, damageScale * Damage);
-				//bbP.xxMover_TakeDamage( M, damageScale * Damage, bbP, M.Location - 0.5 * (M.CollisionHeight + M.CollisionRadius) * dir, damageScale * MomentumTransfer * dir, MyDamageType );
-			}
-		}
-		
-		bHurtEntry = false;
-		MakeNoise(1.0);
-  if (STM != None)
-	STM.PlayerClear();
-  Start = Location + 10 * HitNormal;
-  Spawn(Class'UT_FlameExplosion',,,Start);
-  CI = Spawn(Class'ST_UTChunkInfo',Instigator);
-  CI.AddChunk(Spawn(Class'ST_UTChunk2',Owner,'None',Start));
-  CI.AddChunk(Spawn(Class'ST_UTChunk3',Owner,'None',Start));
-  CI.AddChunk(Spawn(Class'ST_UTChunk4',Owner,'None',Start));
-  CI.AddChunk(Spawn(Class'ST_UTChunk1',Owner,'None',Start));
-  CI.AddChunk(Spawn(Class'ST_UTChunk2',Owner,'None',Start));
-  Destroy();
 }
 
 simulated function NN_Momentum( float DamageRadius, float Momentum, vector HitLocation )
@@ -245,7 +138,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	if (bDeleteMe)
 		return;
 	NN_Momentum(150, MomentumTransfer, HitLocation);
-	NewExplode(HitLocation, HitNormal);
+	NewExplode(HitLocation, HitNormal, False);
 }
 
 defaultproperties

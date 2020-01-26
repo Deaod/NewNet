@@ -15,15 +15,15 @@ simulated function SpawnEffects()
 {
 	local actor a;
 
-	/*if ( Level.bHighDetailMode && !Level.bDropDetail )
+	if ( Level.bHighDetailMode && !Level.bDropDetail )
 	{
 		a = Spawn(class'Red_RingExplosion',self);
 		a.RemoteRole = ROLE_None;
-	}*/
+	}
 
 	Spawn(class'BigEnergyImpact',,,,rot(16384,0,0));
 
-	a = Spawn(class'shockexplo');
+	a = Spawn(class'RedShockExplo');
 	a.RemoteRole = ROLE_None;
 
 	a =	Spawn(class'Red_shockrifleWave');	
@@ -33,8 +33,8 @@ simulated function SpawnEffects()
 defaultproperties
 {
     LifeSpan=0.900000
-    Skin=None
-    MultiSkins(0)=Texture'UltimateNewnetv0_6_Database.TeamShock.Redr'
-	MultiSkins(1)=Texture'UltimateNewnetv0_6_Database.TeamShock.Redr'
+    Skin=Texture'Redr'
+    MultiSkins(0)=Texture'Redr'
+	MultiSkins(1)=Texture'Redr'
     DrawScale=4.000000
 }

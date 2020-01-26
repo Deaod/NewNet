@@ -1,13 +1,8 @@
-class Green_RingExplosion extends UT_RingExplosion5;
-
-simulated function SpawnExtraEffects()
-{
-	 Spawn(class'EnergyImpact');
-	 bExtraEffectsSpawned = true;
-}
+class Green_RingExplosion extends UT_RingExplosion4;
 
 defaultproperties
 {
-	MultiSkins(0)=Texture'UltimateNewnetv0_6_Database.TeamShock.Greenr'
-    bExtraEffectsSpawned=False
+     Skin=Texture'Greenr'
+     MultiSkins(0)=Texture'Greenr'
+     MultiSkins(1)=Texture'Greenr'
 }

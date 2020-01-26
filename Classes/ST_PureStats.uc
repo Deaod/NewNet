@@ -1146,6 +1146,7 @@ defaultproperties
      SpecialName(17)="Flying Hits"
      SpecialName(18)="Headshots"
      SpecialName(19)="Driven"
+     LastMonth=12
      PickupNames(0)="Other/Special"
      PickupNames(1)="Body Armor"
      PickupNames(2)="Thigh Pads"

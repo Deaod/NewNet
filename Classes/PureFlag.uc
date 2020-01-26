@@ -7,6 +7,8 @@
 
 class PureFlag extends GreenFlag;
 
+#exec Texture Import File=Textures\PureFlag.pcx Name=PureFlag Mips=Off
+
 event PreBeginPlay()
 {
 // Dont call PreBP or risk being Destroyed
@@ -14,7 +16,8 @@ event PreBeginPlay()
 
 event PostBeginPlay()
 {
-// No need for flag animation
+		loopanim('pflag',0.7);
+		animframe = FRand();
 }
 
 function SendHome()
@@ -32,7 +35,7 @@ ignores Touch, Timer, BeginState, EndState;
 
 defaultproperties
 {
-     Skin=Texture'NewNetLogo'
+     Skin=Texture'PureFlag'
      bCollideWorld=False
      LightType=LT_None
 }

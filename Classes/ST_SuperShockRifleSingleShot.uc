@@ -14,7 +14,7 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X, Y, Z);
 		return;
 	}
-		
+
 	yModInit();
 
 	PawnOwner = Pawn(Owner);
@@ -31,9 +31,64 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	SpawnEffect(HitLocation, Owner.Location + CalcDrawOffset() + (FireOffset.X + 20) * X + FireOffset.Y * Y + FireOffset.Z * Z);
 
 	if (bNewNet && !bAltFired)
-		DoSuperRing2(PlayerPawn(Owner), HitLocation, HitNormal);
+	{
+		if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
+		{
+				Switch(Pawn(owner).PlayerReplicationInfo.Team)
+				{
+					case 0:
+						DoRingExplosion_RED(PlayerPawn(Owner), HitLocation, HitNormal);	
+						break;
+					case 1:
+						DoRingExplosion_BLUE(PlayerPawn(Owner), HitLocation, HitNormal);	
+						break;
+					case 2:
+						DoRingExplosion_GREEN(PlayerPawn(Owner), HitLocation, HitNormal);
+						break;
+					case 3:
+						DoRingExplosion_GOLD(PlayerPawn(Owner), HitLocation, HitNormal);
+						break;
+					case 4:
+						DoRingExplosion_BLUE(PlayerPawn(Owner), HitLocation, HitNormal);
+						break;
+					default:
+						DoRingExplosion_BLUE(PlayerPawn(Owner), HitLocation, HitNormal);
+						break;
+				}
+			}
+			else
+				DoRingExplosion_BLUE(PlayerPawn(Owner), HitLocation, HitNormal);
+		//}	
+	}
 	else
-		Spawn(class'ut_SuperRing2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+	{
+		if(Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo != None))
+		{
+				Switch(Pawn(Owner).PlayerReplicationInfo.Team)
+				{
+					case 0:
+						Spawn(class'UT_RedRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						break;
+					case 1:
+						Spawn(class'Blue_RingExplosion',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						break;
+					case 2:
+						Spawn(class'UT_GreenRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						break;
+					case 3:
+						Spawn(class'UT_GoldRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						break;
+					case 4:
+						Spawn(class'UT_BlueRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						break;
+					default:
+						Spawn(class'UT_BlueRingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+						break;
+				}
+			}
+			else
+				Spawn(class'ut_SuperRing2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+	}
 	
 	if (Other == None)
 	{

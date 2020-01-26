@@ -11,12 +11,11 @@ replication
 
 simulated function Tick(float DeltaTime)
 {
-	local Pawn P;
+	local bbPlayer bbP;
 	
 	if (Level.NetMode == NM_Client) {
 	
-		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None && Instigator != None)
-		{
+		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
 			LightType = LT_None;
 			SetCollisionSize(0, 0);
 			bAlreadyHidden = True;
@@ -29,10 +28,14 @@ simulated function Tick(float DeltaTime)
 			if (NN_EndAccelTime == 0)
 			{
 				Velocity *= 2;
-				NN_EndAccelTime = Level.TimeSeconds + NN_OwnerPing * Level.TimeDilation / 1000;
-				for (P = Level.PawnList; P != None; P = P.NextPawn)
-					if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
-						NN_EndAccelTime += P.PlayerReplicationInfo.Ping * Level.TimeDilation / 1000;
+				NN_EndAccelTime = Level.TimeSeconds + NN_OwnerPing * Level.TimeDilation / 2500;
+				//for (P = Level.PawnList; P != None; P = P.NextPawn)
+				ForEach AllActors(class'bbPlayer', bbP)
+				{
+					if ( Viewport(bbP.Player) != None )
+					///if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
+						NN_EndAccelTime += bbP.PlayerReplicationInfo.Ping * Level.TimeDilation / 2500;
+				}
 			}
 			else if (Level.TimeSeconds > NN_EndAccelTime)
 			{
@@ -59,7 +62,7 @@ simulated function HitWall (vector HitNormal, actor Wall)
 		Spawn(ExplosionDecal,self,,Location, rotator(HitNormal));
 }
 
-function Explode(vector HitLocation, vector Momentum)
+simulated function Explode(vector HitLocation, vector Momentum)
 {
 	if (bDeleteMe)
 		return;

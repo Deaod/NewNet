@@ -20,6 +20,9 @@ function PostBeginPlay()
 	
 	super.PostBeginPlay();
 
+	Spawn(class'PureStat');
+	//Spawn(class'NNAnnouncer');
+
 	// Make sure it wasn't added as a mutator
 	foreach AllActors(class'UTPure',UTP)
 		return;
@@ -33,7 +36,7 @@ function PostBeginPlay()
 	// Fix the MaxTimeMargin for Epic
 	
 	class'playerpawn'.default.maxtimemargin = 1;
-	class'playerpawn'.staticsaveconfig();	
+	class'playerpawn'.staticsaveconfig();
 }
 
 function Mutator GetAceMut()

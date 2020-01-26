@@ -3,9 +3,10 @@ class NN_PBoltOwnerHidden extends ST_PBolt;
 var bool bAlreadyHidden;
 
 simulated function Tick(float DeltaTime) {
-	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None && Instigator != None)
-	{
+	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
 		LightType = LT_None;
+		AmbientSound = None;
+		ExplosionDecal = None;
 		SetCollisionSize(0, 0);
 		bAlreadyHidden = True;
 	}
@@ -152,6 +153,8 @@ simulated function CheckBeam(vector X, float DeltaTime)
 			GrowthAccumulator += DeltaTime;
 			if (GrowthAccumulator > 0.050)		// 1 / 20 (Tickrate 20) = 0.050
 			{
+				if (bbPlayer(Owner) != None)
+					bbPlayer(Owner).xxAddFired(14);
 				PlasmaBeam = Spawn(class'NN_PBoltOwnerHidden',Owner,, Location + BeamSize * X);
 				PlasmaBeam.Position = Position + 1;
 				ST_PBolt(PlasmaBeam).GrowthAccumulator = GrowthAccumulator; // - 0.050;		// This causing extra damage?

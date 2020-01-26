@@ -13,6 +13,7 @@ var Vector CDO;
 var float yMod;
 var Actor NN_LockedTarget;
 var name LastState;
+var Class<NN_WeaponFunctions> nnWF;
 
 replication
 {
@@ -55,26 +56,10 @@ simulated function RenderOverlays(Canvas Canvas)
 	bbP = bbPlayer(Owner);
 	if (bNewNet && Role < ROLE_Authority && bbP != None)
 	{
-		if (bbP.bFire != 0)
-		{
-			if (AmmoType.AmmoAmount == 0)
-			{
-				if (!IsInState('NN_FireRockets'))
-					GotoState('NN_FireRockets');
-			}
-			else if (!IsInState('ClientFiring'))
-				ClientFire(1);
-		}
-		else if (bbP.bAltFire != 0)
-		{
-			if (AmmoType.AmmoAmount == 0)
-			{
-				if (!IsInState('NN_FireRockets'))
-					GotoState('NN_FireRockets');
-			}
-			else if (!IsInState('ClientAltFiring'))
-				ClientAltFire(1);
-		}
+		if (bbP.bFire != 0 && !IsInState('ClientFiring'))
+			ClientFire(1);
+		else if (bbP.bAltFire != 0 && !IsInState('ClientAltFiring'))
+			ClientAltFire(1);
 	}
 }
 
@@ -248,7 +233,7 @@ exec function ServerFireRockets( int ProjIndex, bool bPrimary, int RoxLoaded, fl
 	
 	GotoState('FireRockets');
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -293,7 +278,7 @@ State ClientActive
 		}
 	}
 }
-
+ */
 ///////////////////////////////////////////////////////
 state NN_FireRockets
 {
@@ -397,6 +382,7 @@ state NN_FireRockets
 		if (bTightWad || !bFireLoad) RocketRad=7;
 		bMultiRockets = ( RocketsLoaded > 1 );
 		
+		//bbP.ClientMessage("Client ("$(Level.NetMode==NM_Client)$"):"@RocketsLoaded);
 		While ( RocketsLoaded > 0 )
 		{
 			R2 = NN_GetFRV();
@@ -761,9 +747,7 @@ state NormalFire
 		{
 			if ( RocketsLoaded == 6 )
 			{
-				if (bNewNet)
-					GotoState('Idle');
-				else
+				if (!bNewNet)
 					GotoState('FireRockets');
 				return;
 			}
@@ -808,20 +792,20 @@ state NormalFire
 				Pawn(Owner).bFire = 0;
 			if ( Pawn(Owner).bFire == 0 )
 			{
-				if (bNewNet)
-					GotoState('Idle');
-				else
-					GoToState('FireRockets');
+				if (  !bNewNet || (bbPlayer(Owner) == None) )
+				{
+				  GotoState('FireRockets');
+				}
 				return;
 			}
 		}
 		if ( AmmoType.AmmoAmount <= 0 ) 
 		{
-			if (bNewNet)
-				GotoState('Idle');
-			else
+			  if (  !bNewNet || (bbPlayer(Owner) == None) )
+			  {
 				GotoState('FireRockets');
-			return;
+			  }
+			  return;
 		}
 		if ( AmmoType.AmmoAmount == 1 )
 			Owner.PlaySound(Misc2Sound, SLOT_None, Pawn(Owner).SoundDampening); 
@@ -854,10 +838,10 @@ state AltFiring
 		{
 			if ( RocketsLoaded == 6 )
 			{
-				if (bNewNet)
-					GotoState('Idle');
-				else
-					GotoState('FireRockets');
+				if (  !bNewNet || (bbPlayer(Owner) == None) )
+				{
+				  GotoState('FireRockets');
+				}
 				return;
 			}
 			else if (bbPlayer(Owner) != None && bNewNet && bbPlayer(Owner).bAltFire == 0)
@@ -884,11 +868,11 @@ state AltFiring
 		}
 		if (AmmoType.AmmoAmount<=0)
 		{ 
-			if (bNewNet)
-				GotoState('Idle');
-			else
+			  if (  !bNewNet || (bbPlayer(Owner) == None) )
+			  {
 				GotoState('FireRockets');
-			return;
+			  }
+			  return;
 		}
 		PlayRotating(RocketsLoaded-1);
 		bRotated = true;
@@ -936,9 +920,7 @@ state Idle
 					Pawn(Owner).bFire = 0;
 					bFireLoad = True;
 					RocketsLoaded = 1;
-					if (bNewNet)
-						GotoState('Idle');
-					else
+					if (!bNewNet)
 						GotoState('FireRockets', 'Begin');
 					return;
 				}
@@ -1029,9 +1011,15 @@ state FireRockets
 		}
 
 		if ( bFireLoad ) 		
+		{
+			bbPlayer(Owner).xxAddFired(22);
 			AdjustedAim = PawnOwner.AdjustAim(ProjectileSpeed, StartLoc, AimError, True, bWarnTarget);
+		}
 		else 
+		{
+			bbPlayer(Owner).xxAddFired(23);
 			AdjustedAim = PawnOwner.AdjustToss(AltProjectileSpeed, StartLoc, AimError, True, bAltWarnTarget);	
+		}
 			
 		if (bbP == None || !bNewNet)
 			AdjustedAim = Pawn(Owner).ViewRotation;
@@ -1064,6 +1052,8 @@ state FireRockets
 		RocketRad = 4;
 		if (bTightWad || !bFireLoad) RocketRad=7;
 		bMultiRockets = ( RocketsLoaded > 1 );
+		
+		//bbP.ClientMessage("Server ("$(Level.NetMode!=NM_Client)$"):"@RocketsLoaded);
 		While ( RocketsLoaded > 0 )
 		{
 			R2 = GetFRV();
@@ -1153,64 +1143,22 @@ state FireRockets
 	}
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'UT_Eightball';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-	}		
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'UT_Eightball');
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
+	RocketsLoaded = 0;
 	ServerForceFire(false);
 	ServerForceAltFire(false);
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Select',1000.00);
-		else	
-			PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-	}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
 }
 
-simulated function TweenDown()
+simulated function TweenDown ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 state Active
@@ -1240,7 +1188,5 @@ state Active
 defaultproperties
 {
      bNewNet=True
-     shakemag=0.000000
-     shaketime=0.000000
-     shakevert=0.000000
+	 nnWF=Class'NN_WeaponFunctions'
 }

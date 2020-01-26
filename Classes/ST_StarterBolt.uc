@@ -181,11 +181,11 @@ simulated function Tick(float DeltaTime)
 defaultproperties
 {
      StartError=0.500000
-     SpriteAnim(0)=Texture'Botpack.sbolt0'
-     SpriteAnim(1)=Texture'Botpack.sbolt1'
-     SpriteAnim(2)=Texture'Botpack.sbolt2'
-     SpriteAnim(3)=Texture'Botpack.sbolt3'
-     SpriteAnim(4)=Texture'Botpack.sbolt4'
+     SpriteAnim(0)=Texture'Botpack.Skins.sbolt0'
+     SpriteAnim(1)=Texture'Botpack.Skins.sbolt1'
+     SpriteAnim(2)=Texture'Botpack.Skins.sbolt2'
+     SpriteAnim(3)=Texture'Botpack.Skins.sbolt3'
+     SpriteAnim(4)=Texture'Botpack.Skins.sbolt4'
      RemoteRole=ROLE_SimulatedProxy
      LightType=LT_Steady
      LightEffect=LE_NonIncidence

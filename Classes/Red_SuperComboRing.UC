@@ -12,7 +12,7 @@ simulated function SpawnEffects()
 
 	Spawn(class'BigEnergyImpact',,,,rot(16384,0,0));
 
-	a = Spawn(class'shockexplo');
+	a = Spawn(class'RedShockExplo');
 	a.RemoteRole = ROLE_None;
 
 	a =	Spawn(class'Red_SuperShockrifleWave');	
@@ -21,7 +21,7 @@ simulated function SpawnEffects()
 	
 defaultproperties
 {
-	MultiSkins(0)=Texture'UltimateNewnetv0_6_Database.TeamShock.Redr'
-	MultiSkins(1)=Texture'UltimateNewnetv0_6_Database.TeamShock.Redr'
+	MultiSkins(0)=Texture'Redr'
+	MultiSkins(1)=Texture'Redr'
     DrawScale=12.000000
 }

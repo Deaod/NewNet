@@ -151,5 +151,5 @@ auto state Flying
 
 defaultproperties
 {
-     bOwnerNoSee=True
+    bOwnerNoSee=True
 }

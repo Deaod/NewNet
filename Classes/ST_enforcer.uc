@@ -11,6 +11,7 @@ var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
+var Class<NN_WeaponFunctions> nnWF;
 
 function PostBeginPlay()
 {
@@ -103,6 +104,34 @@ simulated function bool ClientFire(float Value)
 	return Super.ClientFire(Value);
 }
 
+function Fire(float Value)
+{
+	if ( AmmoType == None )
+	{
+		// ammocheck
+		GiveAmmo(Pawn(Owner));
+	}
+	if ( AmmoType.UseAmmo(1) )
+	{
+		if (bbPlayer(Owner) != None)
+		{
+			if (bIsSlave)
+				bbPlayer(Owner).xxAddFired(33);
+			else
+				bbPlayer(Owner).xxAddFired(3);
+		}
+		GotoState('NormalFire');
+		bCanClientFire = true;
+		bPointing=True;
+		ClientFire(value);
+		if ( SlaveEnforcer != None )
+			Pawn(Owner).PlayRecoil(2 * FiringSpeed);
+		else if ( !bIsSlave )
+			Pawn(Owner).PlayRecoil(FiringSpeed);
+		TraceFire(0.2);
+	}
+}
+
 simulated function bool ClientAltFire(float Value)
 {
 	local bbPlayer bbP;
@@ -113,7 +142,7 @@ simulated function bool ClientAltFire(float Value)
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
 	{
-		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
+		if (bbP.ClientCannotShoot())
 			return false;
 		if ( (AmmoType == None) && (AmmoName != None) )
 		{
@@ -131,7 +160,7 @@ simulated function bool ClientAltFire(float Value)
 	}
 	return Super.ClientAltFire(Value);
 }
-
+/* 
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -177,6 +206,12 @@ State ClientActive
 	}
 }
 
+simulated function PlayPostSelect()
+{
+	PlayAnim('Reload', 1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
+	//Owner.PlayOwnedSound(Misc1Sound, SLOT_None,1.3*Pawn(Owner).SoundDampening);
+}
+ */
 state ClientFiring
 {
 	simulated function EndState()
@@ -214,8 +249,8 @@ state ClientAltFiring
 	{
 		if (bNewNet && !Owner.IsA('Bot')) {
 			NN_TraceFire(AltAccuracy);
-			if (SlaveEnforcer != None)
-				ST_enforcer(SlaveEnforcer).NN_TraceFire(AltAccuracy);
+/* 			if (SlaveEnforcer != None)
+				ST_enforcer(SlaveEnforcer).NN_TraceFire(AltAccuracy); */
 		}
 		Global.PlayRepeatFiring();
 	}
@@ -237,8 +272,15 @@ Begin:
 		SetTimer(0.20, false);
 	FinishAnim();
 Repeater:	
-	if (AmmoType.UseAmmo(1)) 
+	if (AmmoType.UseAmmo(1))
 	{
+		if (bbPlayer(Owner) != None)
+		{
+			if (bIsSlave)
+				bbPlayer(Owner).xxAddFired(44);
+			else
+				bbPlayer(Owner).xxAddFired(4);
+		}
 		FlashCount++;
 		if (!bNewNet || Owner.IsA('Bot'))
 		{
@@ -350,7 +392,10 @@ simulated function NN_TraceFire(float Accuracy)
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	NN_ProcessTraceHit(Other, HitLocation, HitNormal, vector(GV),Y,Z);
 	
-	bbP.xxNN_TakeDamage(Other, class'Enforcer', 0, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
+	if (PawnOwner.bFire != 0)
+		bbP.xxNN_TakeDamage(Other, -3, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
+	else
+		bbP.xxNN_TakeDamage(Other, -4, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
 	/*
 	if (PawnOwner.bFire != 0)
 		bbP.xxNN_Fire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), bIsSlave, ClientFRVI, Accuracy);
@@ -525,7 +570,7 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 
 simulated function DoShellCase(PlayerPawn Pwner, vector HitLoc, Vector X, Vector Y, Vector Z)
 {
-	local Pawn P;
+	local PlayerPawn P;
 	local Actor CR;
 	local UT_Shellcase s;
 	
@@ -533,7 +578,9 @@ simulated function DoShellCase(PlayerPawn Pwner, vector HitLoc, Vector X, Vector
 		return;
 
 	if (RemoteRole < ROLE_Authority) {
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
+		{
 			if (P != Pwner) {
 				CR = P.Spawn(class'UT_ShellCase',P, '', HitLoc);
 				CR.bOnlyOwnerSee = True;
@@ -541,79 +588,23 @@ simulated function DoShellCase(PlayerPawn Pwner, vector HitLoc, Vector X, Vector
 				if ( s != None )
 					s.Eject(((FRand()*0.3+0.4)*X + (FRand()*0.2+0.2)*Y + (FRand()*0.3+1.0) * Z)*160);    
 			}
+		}
 	}
 }
 
-simulated function SetSwitchPriority(pawn Other)
-{	// Make sure "old" priorities are kept.
-	local int i;
-	local name temp, carried;
-
-	if ( PlayerPawn(Other) != None )
-	{
-		// also set double switch priority
-
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( PlayerPawn(Other).WeaponPriority[i] == 'doubleenforcer' )
-			{
-				DoubleSwitchPriority = i;
-				break;
-			}
-
-		for ( i=0; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++)
-			if ( IsA(PlayerPawn(Other).WeaponPriority[i]) )		// <- The fix...
-			{
-				AutoSwitchPriority = i;
-				return;
-			}
-		// else, register this weapon
-		carried = 'enforcer';
-		for ( i=AutoSwitchPriority; i<ArrayCount(PlayerPawn(Other).WeaponPriority); i++ )
-		{
-			if ( PlayerPawn(Other).WeaponPriority[i] == '' )
-			{
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				return;
-			}
-			else if ( i<ArrayCount(PlayerPawn(Other).WeaponPriority)-1 )
-			{
-				temp = PlayerPawn(Other).WeaponPriority[i];
-				PlayerPawn(Other).WeaponPriority[i] = carried;
-				carried = temp;
-			}
-		}
-
-	
-	}
+function SetSwitchPriority(pawn Other)
+{
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'enforcer');
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
-	bForceFire = false;
-	bForceAltFire = false;
-	bCanClientFire = false;
-	//if ( !IsAnimating() || (AnimSequence != 'Select') )
-	//{
-		if(Pawn(Owner) != None)
-		{
-			if(Class'IndiaSettings'.default.bFWS)
-				PlayAnim('Select',1000.00);
-			else	
-				PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
-		}
-	//}
-	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
-}	
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
+}
 
-simulated function TweenDown()
+simulated function TweenDown ()
 {
-	if(Pawn(Owner) != None)
-	{
-		if(Class'IndiaSettings'.default.bFWS)
-			PlayAnim('Down',1000.00);
-		else	
-			PlayAnim('Down',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.05);
-	}
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
 function DropFrom(vector StartLocation)
@@ -737,5 +728,6 @@ state Active
 defaultproperties
 {
      bNewNet=True
-     hitdamage=0
+	 nnWF=Class'NN_WeaponFunctions'
+	 //Misc1Sound=Sound'Reload'
 }

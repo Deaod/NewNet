@@ -1,9 +1,15 @@
-class ST_Mutator extends PureStatMutator;
+// ===============================================================
+// Stats.ST_Mutator: put your comment here
+
+// Created by UClasses - (C) 2000-2001 by meltdown@thirdtower.com
+// ===============================================================
+
+class ST_Mutator extends PureStatMutator config(UltimateNewNet);
 
 // Good to have Variables
 var name ST_Log;
 var string PreFix;
-var string WelcomeMessage, MutateUltimateMessage;
+var string WelcomeMessage;
 var DeathMatchPlus DMP;
 var vector VecNull;
 var bool bFixedWeapons, bStarted, bEnded;
@@ -21,6 +27,12 @@ const MaxAss = 16;
 var Pawn Asses[64];			// Team*16, Who assisted in a cap
 var int AssCount[4];			// How many assisted.
 var Pawn NextCTFVictim;			// The Guy that just got killed who had flag
+
+// Boost Fix
+var bool preInit, postInit;
+var config localized int BoostThreshold;
+
+var bool MMSupport;
 
 function ST_PureStats GetStats(Pawn P)
 {
@@ -363,7 +375,10 @@ function string GetReplacementWeapon(Weapon W, bool bDamnEpic)
 	}
 	else if (W.IsA('Translocator') && !W.IsA('ST_Translocator'))
 	{
-		WStr = "ST_Translocator";
+		if (class'UTPure'.default.zzbH4x)
+			WStr = "h4x_Xloc";
+		else
+			WStr = "ST_Translocator";
 		BitMap = (1 << 2);				// TLoc = 02
 	}
 	else if ((W.IsA('enforcer') && !W.IsA('ST_enforcer')) || W.IsA('AutoMag'))
@@ -376,7 +391,7 @@ function string GetReplacementWeapon(Weapon W, bool bDamnEpic)
 		WStr = "ST_ut_biorifle";
 		BitMap = (1 << 4);				// BioRifle = 04
 	}
-	else if ((W.IsA('ShockRifle') && !W.IsA('SuperShockRifle') && !W.IsA('ST_ShockRifle')) || W.IsA('ASMD'))
+	else if ((W.IsA('ShockRifle') && !W.IsA('SuperShockRifle') && !W.IsA('ST_ShockRifle') && !W.IsA('ST_SiegeShockRifle')) || W.IsA('ASMD'))
 	{
 		WStr = "ST_ShockRifle";
 		BitMap = (1 << 5) | (1 << 6) | (1 << 7);	// Shock Rifle = 05, 06, 07
@@ -406,7 +421,7 @@ function string GetReplacementWeapon(Weapon W, bool bDamnEpic)
 		WStr = "ST_UT_FlakCannon";
 		BitMap = (1 << 14) | (1 << 15);			// Flak Cannon = 14, 15
 	}
-	else if ((W.IsA('UT_Eightball') && !W.IsA('ST_UT_Eightball')) || W.IsA('Eightball'))
+	else if ((W.IsA('UT_Eightball') && !W.IsA('ST_UT_Eightball') && !W.IsA('ST_sgUT_Eightball')) || W.IsA('Eightball'))
 	{
 		WStr = "ST_UT_Eightball";
 		BitMap = (1 << 16) | (1 << 17);			// Rocket Launcher = 16, 17
@@ -421,6 +436,16 @@ function string GetReplacementWeapon(Weapon W, bool bDamnEpic)
 		WStr = "ST_WarheadLauncher";
 		BitMap = (1 << 19);				// Redeemer = 19
 	}
+/* 	else if (W.IsA('RXWeapon'))
+	{
+		//Class'UTPure'.Default.MaxPosError = 100;	// Rocket X jump detect for riders
+		Spawn(class'RXSLV_NN');
+	}
+	else if (W.IsA('SLWeapon'))
+	{
+		//Class'UTPure'.Default.MaxPosError = 100;	// Strange Love jump detect for riders
+		Spawn(class'RXSLV_NN');
+	} */
 
 	WeaponDisplay = WeaponDisplay | BitMap;
 	return WStr;
@@ -474,7 +499,14 @@ function ReplaceWeapons()
 
 //	AddWD(Level.Game.BaseMutator.MutatedDefaultWeapon());
 	W = Spawn(Level.Game.BaseMutator.MutatedDefaultWeapon());
-	GetReplacementWeapon(W, False);		// This adds the default weapon to DisplayList
+ 	if (MMSupport)
+	{
+		MMSupport = MMSupport;
+	}
+	else
+	{
+		GetReplacementWeapon(W, False);		// This adds the default weapon to DisplayList
+	}
 	W.Destroy();				
 	ForEach AllActors(Class'Arena', ArenaMutator)
 	{
@@ -496,7 +528,14 @@ function ReplaceWeapons()
 		{	// Avoid running all this messed up code for projectiles and effects.
 			if (W.Location != VecNull)		// Nasty hack to make sure only the original weapons are auto-switched
 			{					// If any map HAPPENS to have a weapon at 0,0,0 ... FU!!
-				NewClassName = GetReplacementWeapon(W, True);
+				if (MMSupport)
+				{
+					MMSupport = MMSupport;
+				}
+				else
+				{
+					NewClassName = GetReplacementWeapon(W, True);
+				}
 				if (NewClassName != "")
 				{
 	//				Log("CR: Replacing"@W@"with"@NewClassName);
@@ -665,12 +704,8 @@ function ModifyPlayer(Pawn Other)
 				STW = Spawn(Class'ST_PureStats', Other);
 				STW.PlayerName = Other.PlayerReplicationInfo.PlayerName;
 			}
-			if(bbPlayer(Other) != None)
-			{
-				bbPlayer(Other).AttachStats(STW, Self);
-				bbPlayer(Other).ClientMessage(WelcomeMessage);
-				bbPlayer(Other).ClientMessage(MutateUltimateMessage);
-			}
+			bbPlayer(Other).AttachStats(STW, Self);
+			bbPlayer(Other).ClientMessage(WelcomeMessage);
 		}
 		else if (Other.IsA('ST_HumanBotPlus'))
 		{
@@ -725,17 +760,17 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 			return false;
 		}
 	}
-	else if (!Level.Game.IsA('NewNetSDOM'))
+/* 	else if (!Level.Game.IsA('NewNetSDOM'))
 	{
 		if (Other.IsA('ShockCore') || Other.IsA('BulletBox'))
 		{
 			if (TournamentAmmo(Other).AmmoAmount == 10)
-				TournamentAmmo(Other).AmmoAmount = 10;
+				TournamentAmmo(Other).AmmoAmount = 8;
 			if (TournamentAmmo(Other).MaxAmmo == 50)
-				TournamentAmmo(Other).MaxAmmo = 50;
+				TournamentAmmo(Other).MaxAmmo = 40;
 		}
 	}
-	
+ */
     return true;
 }
 
@@ -793,7 +828,12 @@ function Tick(float deltaTime)
 }
 
 function PreBeginPlay()
-{
+{	// Boost Fix //
+	if (preInit) return;
+    preInit = True;
+
+    // Log("Boost Fix loaded.", 'StartMutator');
+	// Boost Fix End //
 	DMP = DeathMatchPlus(Level.Game);
 	DMP.BotConfigType = Class'ST_ChallengeBotInfo';		// Make sure game uses our �bersuperior bots.
 	if (DMP.BotConfig != None)
@@ -807,6 +847,26 @@ function PreBeginPlay()
 	Class'bbCHSpectator'.Default.cStat = Class'ST_PureStatsSpec';
 	Super.PreBeginPlay();
 }
+// Boost Fix //
+function PostBeginPlay() 
+{
+    if (postInit) return;
+    postInit = True;
+    Level.Game.RegisterDamageMutator(Self);
+}
+
+function MutatorTakeDamage(out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+    local bbPlayer bbP;
+    if (Victim != None && Victim == InstigatedBy) {
+    bbP = bbPlayer(Victim);
+    if (bbP != None && VSize(Momentum) > BoostThreshold) {
+    bbP.zzIgnoreUpdateUntil = 1.0 >> 32;
+    }
+    }
+    if ( NextDamageMutator != None )
+        NextDamageMutator.MutatorTakeDamage(ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType);
+}
+// Boost Fix End //
 
 function Mutate(string MutateString, PlayerPawn Sender)
 {
@@ -822,7 +882,6 @@ function Mutate(string MutateString, PlayerPawn Sender)
 	else if (MutateString ~= "CheatInfo")
 	{
 		Sender.ClientMessage(WelcomeMessage);
-		Sender.ClientMessage(MutateUltimateMessage);
 		Sender.ClientMessage("PureStats Settings:");
 		bbP = bbPlayer(Sender);
 		if (bbP != None)
@@ -840,6 +899,5 @@ defaultproperties
      ST_Log=PureStats
      Prefix="UltimateNewNet"
      WelcomeMessage="This server is using Pure Stats! Type 'showstats' into console to view!"
-     MutateUltimateMessage="Type 'mutate ultimatenn client' to open client window!"
      DefaultWeapon=Class'ST_ImpactHammer'
 }

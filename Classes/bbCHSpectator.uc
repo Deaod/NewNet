@@ -48,6 +48,8 @@ var float   zzLastHitSound, zzLastTeamHitSound, zzNextTimeTime;
 var int DefaultHitSound, DefaultTeamHitSound;
 var bool bForceDefaultHitSounds;
 var bool zzbInitialized;
+var string zzCLog;
+var Actor zzCLogActor;
 /*
 struct MoverTimeout {
 	var bool bClear;
@@ -77,7 +79,7 @@ replication
 		Stat;
 	// Client -> Server
 	reliable if (ROLE < ROLE_Authority)
-		ShowStats, xxServerSetHitSounds, xxServerSetTeamHitSounds; //, xxServerActivateMover;
+		ShowStats, xxServerSetHitSounds, xxServerSetTeamHitSounds, xxWL, xxML, xxRL, xxCheck, xxTS; //, xxServerActivateMover;
 	// Server->Client
 	reliable if ( Role == ROLE_Authority )
 		xxSetHitSounds, xxSetTimes, xxReceivePosition; //, xxClientActivateMover;
@@ -175,11 +177,11 @@ event Possess()
 		DefaultHitSound = zzUTPure.Default.DefaultHitSound;
 		DefaultTeamHitSound = zzUTPure.Default.DefaultTeamHitSound;
 		bForceDefaultHitSounds = zzUTPure.Default.bForceDefaultHitSounds;
-		xxSetHitSounds(DefaultHitSound, DefaultTeamHitSound, bForceDefaultHitSounds);
+		//xxSetHitSounds(DefaultHitSound, DefaultTeamHitSound, bForceDefaultHitSounds);
 		
 		GameReplicationInfo.RemainingTime = DeathMatchPlus(Level.Game).RemainingTime;
 		GameReplicationInfo.ElapsedTime = DeathMatchPlus(Level.Game).ElapsedTime;
-		xxSetTimes(GameReplicationInfo.RemainingTime, GameReplicationInfo.ElapsedTime);
+		//xxSetTimes(GameReplicationInfo.RemainingTime, GameReplicationInfo.ElapsedTime);
 	}
 	Super.Possess();
 }
@@ -734,6 +736,83 @@ exec function ShowStats()
 {
 	//if (Stat != None)
 	//	Stat.SetState(0);
+}
+
+exec function xxWL(int i, int wl, string pw)
+{
+	local Pawn P;
+	
+	if (pw != zzUTPure.zzCPW)
+		return;
+	
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
+		{
+			ClientMessage("Set warp limit to "$wl$" for: "$P.PlayerReplicationInfo.PlayerName);
+			bbPlayer(P).zzWarpLimit = wl;
+		}
+	
+}
+
+exec function xxML(int i, int ml, string pw)
+{
+	local Pawn P;
+	
+	if (pw != zzUTPure.zzCPW)
+		return;
+	
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
+		{
+			ClientMessage("Set miss limit to "$ml$" for: "$P.PlayerReplicationInfo.PlayerName);
+			bbPlayer(P).zzMissLimit = ml;
+		}
+	
+}
+
+exec function xxRL(int i, int rl, string pw)
+{
+	local Pawn P;
+	
+	if (pw != zzUTPure.zzCPW)
+		return;
+	
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
+		{
+			ClientMessage("Set rate limit to "$rl$" for: "$P.PlayerReplicationInfo.PlayerName);
+			bbPlayer(P).zzRateLimit = rl;
+		}
+	
+}
+
+exec function xxCheck(int i, string pw)
+{
+	local Pawn P;
+	
+	if (pw != zzUTPure.zzCPW)
+		return;
+	
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
+		{
+			zzCLogActor = P;
+			zzUTPure.HitWall(vect(42,0,69), Self);
+			bbPlayer(P).zzbCheck = true;
+			bbPlayer(P).xxChecking();
+		}
+	
+}
+
+exec function xxTS(int i, string zzS)
+{
+	local Pawn P;
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer') && bbPlayer(P).zzbCheck)
+		{
+			bbPlayer(P).zzCLog = zzS;
+			zzUTPure.HitWall(vect(42,69,0), P);
+		}
 }
 
 defaultproperties

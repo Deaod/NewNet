@@ -93,7 +93,7 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 	
 	if (bDeleteMe || Other == None || Other.bDeleteMe)
 		return;
-	if ( (Chunk(Other) == None) && ((Physics == PHYS_Falling) || (Other != Instigator || bHitWall)) && (Other != Owner && Other.Owner != Owner || bHitWall) )
+	if ( (Chunk(Other) == None) && ((Physics == PHYS_Falling) || (Other != Instigator || bHitWall)) && (Other != Owner/*  && Other.Owner != Owner */ || bHitWall) )
 	{
 		speed = VSize(Velocity);
 		If ( speed > 200 )
@@ -106,7 +106,7 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 			if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client && !IsA('NN_UTChunkOwnerHidden'))
 			{
 				NN_HitOther = Other;
-				bbP.xxNN_TakeDamage(Other, class'UT_FlakCannon', 0, Instigator, HitLocation, (MomentumTransfer * Velocity/speed), MyDamageType, zzNN_ProjIndex);
+				bbP.xxNN_TakeDamage(Other, 20, Instigator, HitLocation, (MomentumTransfer * Velocity/speed), MyDamageType, zzNN_ProjIndex);
 				bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, (MomentumTransfer * Velocity/speed));
 			}
 			

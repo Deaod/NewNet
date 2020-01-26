@@ -7,7 +7,7 @@ auto state Pickup
 	simulated function Timer()
 	{
 		local Pawn P;
-		
+
 		if ( (Physics == PHYS_None) && (Role != ROLE_Authority)
 			&& (RealLocation != Location) && (RealLocation != vect(0,0,0)) )
 				SetLocation(RealLocation);
@@ -43,7 +43,7 @@ auto state Pickup
 				}
 		}
 		AnimEnd();
-		SetTimer(0.05, True);
+		SetTimer(1 + 2 * FRand(), false);
 	}
 
 	simulated event Landed( vector HitNormal )
@@ -53,7 +53,7 @@ auto state Pickup
 		if (bDeleteMe || Mesh == None)
 			return;
 
-		SetTimer(0.05, True);
+		SetTimer(2.5, false);
 		newRot = Rotation;
 		newRot.Pitch = 0;
 		newRot.Roll = 0;
@@ -105,7 +105,7 @@ auto state Pickup
 		Disruption += Damage;
 		Disruptor = EventInstigator;
 		if ( !Disrupted() )
-			SetTimer(0.05, True);
+			SetTimer(0.3, false);
 		else if ( Glow != None )
 			Glow.Destroy();
 	}
@@ -162,12 +162,12 @@ auto state Pickup
 		}
 		bAlreadyHit = ( HitNormal.Z > 0.7 );
 		PlayOwnedSound(ImpactSound, SLOT_Misc);	  // hit wall sound
-		Velocity = 0.7 * (( Velocity dot HitNormal ) * HitNormal * (-2.0) + Velocity);   // Reflect off Wall w/damping
+		Velocity = 0.3*(( Velocity dot HitNormal ) * HitNormal * (-2.0) + Velocity);   // Reflect off Wall w/damping
 		speed = VSize(Velocity);
 	}
 
 	simulated function Tick(float DeltaTime)
-	{	
+	{
 		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
 			if (Level.NetMode == NM_Client) {
 				Mesh = None;
@@ -228,19 +228,14 @@ auto state Pickup
 	}
 }
 
-simulated function Tick(float DeltaTime)
-{
-	if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None)
-	{
-		if (Level.NetMode == NM_Client) 
-		{
+simulated function Tick(float DeltaTime) {
+	if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+		if (Level.NetMode == NM_Client) {
 			Mesh = None;
 			SetCollisionSize(0, 0);
 			SetCollision(false,false,false);
 			Destroy();
-		} 
-		else if (Level.NetMode != NM_DedicatedServer)
-		{
+		} else if (Level.NetMode != NM_DedicatedServer) {
 			ImpactSound = Sound'UnrealShare.Eightball.GrenadeFloor';
 			AmbientSound = Sound'Botpack.Translocator.targethum';
 		}

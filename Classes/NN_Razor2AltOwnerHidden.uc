@@ -48,7 +48,7 @@ auto state Flying
 	simulated function SetUp()
 	{
 		local vector X;
-		local Pawn P;
+		local bbPlayer bbP;
 		
 		X = vector(Rotation);
 		
@@ -57,9 +57,12 @@ auto state Flying
 			bSpedUp = true;
 			Velocity = Speed * X * 2;     // Impart ONLY forward vel
 			NN_EndAccelTime = Level.TimeSeconds + NN_OwnerPing * Level.TimeDilation / 1000;
-			for (P = Level.PawnList; P != None; P = P.NextPawn)
-				if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
-					NN_EndAccelTime += P.PlayerReplicationInfo.Ping * Level.TimeDilation / 1000;
+			ForEach AllActors(class'bbPlayer', bbP)
+			{
+				if ( Viewport(bbP.Player) != None )
+				///if (PlayerPawn(P) != None && Viewport(PlayerPawn(P).Player) != None)
+					NN_EndAccelTime += bbP.PlayerReplicationInfo.Ping * Level.TimeDilation / 2500;
+			}
 		}
 		else
 		{
@@ -75,13 +78,13 @@ auto state Flying
 		
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
-		if ( Other != Instigator && Other.Owner != Owner ) 
+		if ( Other != Instigator /* && Other.Owner != Owner  */) 
 		{
 			if ( Role == ROLE_Authority && !bbPlayer(Owner).bNewNet )
 			{
 				if (STM != None)
 					STM.PlayerHit(Instigator, 12, Other.IsA('Pawn'));	// 12 = Ripper Secondary, Direct if Pawn
-				if (bbPlayer(Owner) == None || !bbPlayer(Owner).bNewNet)
+				if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 					Other.TakeDamage(damage, instigator,HitLocation,
 						(MomentumTransfer * Normal(Velocity)), MyDamageType );
 				if (STM != None)
@@ -116,7 +119,7 @@ auto state Flying
 	function BlowUp(vector HitLocation)
 	{
 		//Log(Class.Name$" (BlowUp) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
-		if (!bbPlayer(Owner).bNewNet)
+		if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 			OldBlowUp(HitLocation);
 		MakeNoise(1.0);
 	}

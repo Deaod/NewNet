@@ -1,4 +1,4 @@
-class DoubleJump extends Mutator;
+class DoubleJump extends Mutator Config (UltimateNewNet);
 
 var localized config int   maxJumps;
 

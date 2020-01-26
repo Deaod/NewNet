@@ -7,11 +7,6 @@ simulated function PreBeginPlay()
 	Super.PreBeginPlay();
 }
 
-simulated function PostBeginPlay()
-{
-	SetTimer(0.05, True);
-}
-
 simulated function bool Disrupted()
 {
 	return ( Disruption > DisruptionThreshold );
@@ -55,10 +50,10 @@ auto state Pickup
 	{
 		local int glownum;
 		
-		if ( (Physics != PHYS_None) || (Glow != None) || (Pawn(Owner).PlayerReplicationInfo == None) || Disrupted() )
+		if ( (Physics != PHYS_None) || (Glow != None) || (Instigator.PlayerReplicationInfo == None) || Disrupted() )
 			return;
 
-		glownum = Pawn(Owner).PlayerReplicationInfo.Team;
+		glownum = Instigator.PlayerReplicationInfo.Team;
 		if ( glownum > 3 )
 			glownum = 0;
 			
@@ -103,7 +98,7 @@ auto state Pickup
 				HitWall(-1 * Normal(Velocity), Other);
 			return;
 		}
-		bMasterTouch = ( Other == Pawn(Owner) );
+		bMasterTouch = ( Other == Instigator );
 		
 		if ( Physics == PHYS_None )
 		{
@@ -131,10 +126,10 @@ auto state Pickup
 		SetLocation(NewPos);
 		Velocity = vect(0,0,0);
 		if ( (Level == None || Level.Game == None || Level.Game.bTeamGame)
-			&& Pawn(Owner) != None && (Pawn(Owner).PlayerReplicationInfo.Team == Pawn(Other).PlayerReplicationInfo.Team) )
+			&& Instigator != None && (Instigator.PlayerReplicationInfo.Team == Pawn(Other).PlayerReplicationInfo.Team) )
 			return;
 
-		if ( Pawn(Owner) != None && Pawn(Owner).IsA('Bot') && Master != None )
+		if ( Instigator != None && Instigator.IsA('Bot') && Master != None )
 			Master.Translocate();
 	}
 

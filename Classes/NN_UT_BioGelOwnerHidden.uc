@@ -2,29 +2,25 @@ class NN_UT_BioGelOwnerHidden extends ST_UT_BioGel;
 
 var bool bAlreadyHidden;
 
-simulated function Tick(float DeltaTime)
-{
-	Super(UT_BioGel).Tick(DeltaTime);
-
-	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None)
-	{
+simulated function Tick(float DeltaTime) {
+	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
 		LightType = LT_None;
-		DrawType = DT_None;
-		//SetCollisionSize(0.0, 0.0);
+		Mesh = None;
+		SetCollisionSize(0, 0);
 		bAlreadyHidden = True;
 	}
 }
 
-simulated function Timer()
+function Timer()
 {
-	if(PlayerPawn(Owner) != None)
-		DoPuff(PlayerPawn(Owner));
-
+	DoPuff(PlayerPawn(Owner));
 	PlayOwnedSound (MiscSound,,3.0*DrawScale);	
 	if ( (Mover(Base) != None) && Mover(Base).bDamageTriggered )
 		Base.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 	
-	if (!bbPlayer(Owner).bNewNet)
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
+		HurtRadius(damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location);
+	else
 		HurtRadius(damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location);
 	Destroy();	
 }
@@ -32,11 +28,11 @@ simulated function Timer()
 simulated function DoPuff(PlayerPawn Pwner)
 {
 	local ut_GreenGelPuff f;
-	local Pawn P;
+	local PlayerPawn P;
 
-	if (RemoteRole < ROLE_Authority)
-	{
-		for (P = Level.PawnList; P != None; P = P.NextPawn)
+	if (RemoteRole < ROLE_Authority) {
+		//for (P = Level.PawnList; P != None; P = P.NextPawn)
+		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Pwner) {
 				f = spawn(class'ut_GreenGelPuff',P,,Location + SurfaceNormal*8); 
 				f.numBlobs = numBio;
@@ -90,7 +86,7 @@ auto state Flying
 		if (STM != None)
 			STM.PlayerHit(Instigator, 4, bDirect);		// 4 = Bio.
 		//Log(Class.Name$" (Explode) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
-		if (!bbPlayer(Owner).bNewNet)
+		if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 			HurtRadius(damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location);
 		NN_Momentum(FMin(250, DrawScale * 75), MomentumTransfer * Drawscale, Location);
 		if (STM != None)
