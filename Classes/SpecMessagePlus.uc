@@ -27,7 +27,7 @@ static function ClientReceive(
 			if ( (CHSpectator(P).Level.TimeSeconds - TournamentPlayer(P.ViewTarget).LastKillTime < 3) && (Switch != 1) )
 			{
 				TournamentPlayer(P.ViewTarget).MultiLevel++;
-				CHSpectator(P).ReceiveLocalizedMessage( class'MultiKillMessage', TournamentPlayer(P.ViewTarget).MultiLevel );
+				CHSpectator(P).ReceiveLocalizedMessage( class'MMultiKillMessage', TournamentPlayer(P.ViewTarget).MultiLevel );
 			} 
 			else
 				TournamentPlayer(P.ViewTarget).MultiLevel = 0;
@@ -45,8 +45,4 @@ static function ClientReceive(
 	} 
 	else
 		Super.ClientReceive(P, Switch, RelatedPRI_1, RelatedPRI_2, OptionalObject);
-}
-
-defaultproperties
-{
 }

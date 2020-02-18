@@ -6,21 +6,11 @@
 
 class ST_PlasmaSphere extends PlasmaSphere;
 
-var ST_Mutator STM;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
 
 simulated function PostBeginPlay()
 {
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-
-		if (STM != None)
-			STM.PlayerFire(Instigator, 9);			// 9 = Plasma Sphere
-	}
 	Velocity = Speed * vector(Rotation);
 	Super.PostBeginPlay();
 }
@@ -41,13 +31,10 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 			bHitPawn = true;
 			bExploded = !Level.bHighDetailMode || Level.bDropDetail;
 		}
- 		if ( Role == ROLE_Authority && !bbPlayer(Owner).bNewNet )
+		
+		if ( Role == ROLE_Authority && bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet )
 		{
-			if (STM != None)
-				STM.PlayerHit(Instigator, 9, False);	// 9 = Plasma Sphere
-			Other.TakeDamage( Damage, instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType);	
-			if (STM != None)
-				STM.PlayerClear();
+			Other.TakeDamage( Damage, instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType);
 		}
 		
 		if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client && !IsA('NN_PlasmaSphereOwnerHidden'))
@@ -62,7 +49,7 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 			else
 				Which = 2;
 			
-			bbP.xxNN_TakeDamage(Other, 13, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex, 0, 0, Which);
+			bbP.xxNN_TakeDamage(Other, class'PulseGun', 0, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex, 0, 0, Which);
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, MomentumTransfer*Vector(Rotation));
 		}
 		Explode(HitLocation, vect(0,0,1));
@@ -75,8 +62,4 @@ simulated function HitWall (vector HitNormal, actor Wall)
 	//	bbPlayer(Owner).xxMover_TakeDamage(Mover(Wall), Damage, Pawn(Owner), Location, MomentumTransfer*Vector(Rotation), MyDamageType);
 	
 	Super.HitWall(HitNormal, Wall);
-}
-
-defaultproperties
-{
 }

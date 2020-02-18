@@ -1,4 +1,4 @@
-class UTPure extends Mutator config(UltimateNewNet);
+class UTPure extends Mutator config(UN);
 
 #exec Texture Import File=Textures\NewNetLogo.pcx Name=NewNetLogo Mips=Off
 #exec Texture Import File=Textures\bootbit.pcx Name=PureBoots Mips=Off
@@ -7,42 +7,43 @@ class UTPure extends Mutator config(UltimateNewNet);
 #exec Audio Import FILE=Sounds\HitSound.wav Name=HitSound
 #exec Audio Import FILE=Sounds\HitSoundFriendly.wav Name=HitSoundFriendly
 
-#exec OBJ LOAD FILE=Pack\ShockRifle.utx PACKAGE=UltimateNewnetv0_9.ShockRifle
+#exec OBJ LOAD FILE=Pack\ShockRifle.utx PACKAGE=UN1e.ShockRifle
+#exec OBJ LOAD FILE=Pack\ApeCannon.utx PACKAGE=UN1e.ApeCannon
 
 var ModifyLoginHandler NextMLH;			// Link list of handlers
 
-var localized config int HammerDamagePri;
-var localized config int HammerDamageSec;
-var localized config int HammerDamageSelf;
-var localized config int EnforcerDamagePri;
-var localized config int EnforcerDamageSec;
-var localized config int BioDamagePri;
-var localized config int BioDamageSec;
-var localized config int ShockDamagePri;
-var localized config int ShockDamageSec;
-var localized config int ShockDamageCombo;
-var localized config int PulseDamagePri;
-var localized config int PulseDamageSec;
-var localized config int RipperDamagePri;
-var localized config int RipperDamageSec;
-var localized config int MinigunDamagePri;
-var localized config int MinigunDamageSec;
-var localized config int FlakDamagePri;
-var localized config int FlakDamageSec;
-var localized config int RocketDamagePri;
-var localized config int RocketDamageSec;
-var localized config int SniperDamagePri;
-var localized config int HeadshotDamage;
+var localized config float HammerDamagePri;
+var localized config float HammerDamageSec;
+var localized config float HammerDamageSelfPri;
+var localized config float HammerDamageSelfSec;
+var localized config float EnforcerDamagePri;
+var localized config float EnforcerDamageSec;
+var localized config float BioDamagePri;
+var localized config float BioDamageSec;
+var localized config float ShockDamagePri;
+var localized config float ShockDamageSec;
+var localized config float ShockDamageCombo;
+var localized config float PulseDamagePri;
+var localized config float PulseDamageSec;
+var localized config float RipperDamagePri;
+var localized config float RipperDamageSec;
+var localized config float MinigunDamagePri;
+var localized config float MinigunDamageSec;
+var localized config float FlakDamagePri;
+var localized config float FlakDamageSec;
+var localized config float RocketDamagePri;
+var localized config float RocketDamageSec;
+var localized config float SniperDamagePri;
+var localized config float HeadshotDamage;
 var localized config float SniperSpeed;
 var localized config float H4xSpeed;
-var localized config string Debugger;
-var localized config string zzCPW;
 
-var localized config bool TeamShockEffects;
-var localized config bool DisableShootingCarcass;
 var localized config bool SetPendingWeapon;
+var localized config bool NNAnnouncer;
+var bool DisablePortals;
 var class <SGData> SGData;
 var class <MMData> MMData;
+var class <ASData> ASData;
 
 // Enable or disable.
 var localized config bool bUTPureEnabled;	// Possible to enable/disable UTPure without changing ini's
@@ -77,11 +78,12 @@ var localized config bool bForceDefaultHitSounds;
 var localized config int TeleRadius;
 var localized config int ThrowVelocity;	// How far a player can throw weapons
 var localized config bool bForceDemo;		// Forces clients to do demos.
-var localized config bool AutoKicks;
 
 // DoubleJump
 var bool bDoubleJump;
-var int   maxJumps;
+var int maxJumps;
+var float jumpHeight;
+
 var bool zzbGrapple;
 var bool zzbH4x;
 
@@ -93,6 +95,7 @@ var string VersionStr;				// Holds the version code from VUC++
 var string LongVersion;				// Holds the version code from VUC++
 var string ThisVer;					// Holds the version letters
 var string NiceVer;					// Holds the version letters (no underscore)
+var string ConsoleName;				// Set console system name
 var string BADminText;				// Text to give players that want admin commands without being admin.
 var bool bDidEndWarn;				// True if screenshot warning has been sent to players.
 
@@ -120,9 +123,6 @@ var Class<ServerInfo> zzSI;
 var string zzPurePackageName;
 var string zzMD5KeyInit;
 var string zzPureMD5;
-var string IgnoredAliases[4];
-var Mutator AceMut;
-
 /*
 struct MoverInfo {
 	var Mover M;
@@ -131,13 +131,14 @@ struct MoverInfo {
 var MoverInfo zzMoverDelayTimes[256];
 var int zzMoverDelayTimesCount;
 */
+
 replication
 {
 	unreliable if (Role < ROLE_Authority)
 		zzbWarmupPlayers;
 
 	reliable if( Role==ROLE_Authority )
-		DisableShootingCarcass;
+		NNAnnouncer;
 }
 
 //XC_Engine interface
@@ -150,26 +151,36 @@ function PreBeginPlay()
 	local string n;
 	local SGData AM;
 	local MMData MM;
+	local ASData AS;
 	local int XC_Version;
+	local Kicker K;
 	
 	XC_Version = int(ConsoleCommand("get ini:engine.engine.gameengine XC_Version"));
 	if ( XC_Version >= 11 )
 	{
 		AddToPackageMap();
-		AddToPackageMap("UltimateNewNet"$ThisVer);
 	}
 
 	zzDMP = DeathMatchPlus(Level.Game);
 	if (zzDMP == None)
 		return;
+	
+	Spawn(class'NN_SpawnNotify');
+	
+	if (NNAnnouncer)
+		Spawn(class'NNAnnouncerSA');
 
-	if(DisableShootingCarcass)
-	{
-		Spawn(class'NN_SpawnNotify');
-	}
-	ReplaceTeleporters();
+	Spawn(class'VTFix');
 	//DisableMovers();
-
+	
+	ForEach AllActors (class'Kicker', K)
+	{
+		if ( K.GetPropertyText("NoLC") != "" )
+			continue;
+		if ( (K.KickedClasses == 'Actor') || (K.KickedClasses == 'Pawn') || (K.KickedClasses == 'PlayerPawn') || (K.KickedClasses == 'Projectile') )
+			Spawn(class'NN_Kicker').ServerSetup( K);
+	}
+	
 	//Custom game types
   	if(Level.Game.IsA('MMGame') || Level.Game.IsA('MonsterMatch'))
 	{
@@ -180,36 +191,23 @@ function PreBeginPlay()
 	}
 	if(Level.Game.IsA('SiegeGI') || Level.Game.IsA('SiegeUltimate'))
 	{
-		MaxPosError = -1;
 		AM = Spawn(SGData);
 		AM.NextMutator = Level.Game.BaseMutator;
 		Level.Game.BaseMutator = AM;
 		Log("NewNet compatibility enabled for Siege.", 'StartMutator');
 	}
+  	if(Level.Game.IsA('LeagueAssault'))
+	{
+		AS = Spawn(ASData);
+		AS.NextMutator = Level.Game.BaseMutator;
+		Level.Game.BaseMutator = AS;
+		Log("NewNet compatibility enabled for League Assault.", 'StartMutator');
+	}
 	class'bbPlayer'.Default.HitSound = DefaultHitSound;
 	class'bbPlayer'.Default.TeamHitSound = DefaultTeamHitSound;
 	class'bbCHSpectator'.Default.HitSound = DefaultHitSound;
 	class'bbCHSpectator'.Default.TeamHitSound = DefaultTeamHitSound;
-
-/*  n = Caps(string(zzDMP.HUDType.name));
-	if (InStr(n, "CTF4HUD") < 0)
-	if (InStr(n, "MMHUD") < 0)
-	if (InStr(n, "SGHUD") < 0)
-	if (InStr(n, "SOCCERHUD") < 0)
-	if (InStr(n, "CHALLENGEJAILBREAKHUD") < 0)
-	{
-		if (InStr(n, "DOMINATIONHUD") > -1 || InStr(n, "DOMHUD") > -1)
-			zzDMP.HUDType = Class'PureDOMHUD';
-		else if (InStr(n, "CTFHUD") > -1)
-			zzDMP.HUDType = Class'PureCTFHUD';
-		else if (InStr(n, "ASSAULTHUD") > -1)
-			zzDMP.HUDType = Class'PureAssaultHUD';
-		else if (InStr(n, "TEAMHUD") > -1)
-			zzDMP.HUDType = Class'PureTDMHUD';
-		else if (InStr(n, "HUD") > -1)
-			zzDMP.HUDType = Class'PureDMHUD';
-	} */
-
+	
  	if (zzDMP.HUDType == Class'ChallengeDominationHUD')
 		zzDMP.HUDType = Class'PureDOMHUD';
 	else if (zzDMP.HUDType == Class'ChallengeCTFHUD')
@@ -232,9 +230,11 @@ function PostBeginPlay()
 	local int	ppCnt;
 	local string	ServPacks, curMLHPack, sTag, fullpack;
 	local string zzMD5Values;
+	local int XC_Version;
 
 	Super.PostBeginPlay();
 
+	xxLog("");
 	xxLog("###############################");
 	xxLog("#        "$VersionStr$"       #");
 	if (zzDMP == None)
@@ -249,7 +249,7 @@ function PostBeginPlay()
 	}
 	else
 	{
-		sTag = "#          "$LongVersion$NiceVer;
+		sTag = "#           "$LongVersion$NiceVer;
 		while (Len(sTag) < 30)
 			sTag = sTag$" ";
 		sTag = sTag$"#";
@@ -276,14 +276,23 @@ function PostBeginPlay()
 	
 	for (i = 0; PlayerPacks[i] != ""; i++);
 	ppCnt = i;
-		
-	ServPacks = Caps(ConsoleCommand("get engine.gameengine serverpackages"));
+
+	XC_Version = int(ConsoleCommand("get ini:engine.engine.gameengine XC_Version"));
+
+	if ( XC_Version >= 11 )
+	{
+		ServPacks = Caps(ConsoleCommand("get xc_engine.xc_gameengine serverpackages"));
+	}
+	else
+	{
+		ServPacks = Caps(ConsoleCommand("get engine.gameengine serverpackages"));
+	}
 	// Create the ModifyLoginHandler chain list
 	for (i = 0; PlayerPacks[i] != ""; i++)
 	{
 		
 		// Verify that the PlayerPack Package is in ServerPackages
-		curMLHPack = PlayerPacks[i]$"Handler"$ThisVer;
+		curMLHPack = PlayerPacks[i]$"H"$ThisVer;
 		fullpack = curMLHPack$"."$PlayerPacks[i]$"LoginHandler";
 		if (Instr(CAPS(ServPacks), Caps(Chr(34)$curMLHPack$Chr(34))) != -1)
 		{
@@ -384,7 +393,7 @@ function xxReplaceTeamInfo()
 		TournamentGameReplicationInfo(zzTGP.GameReplicationInfo).Teams[zzi] = zzTGP.Teams[zzi];
 	}
 }
-
+/*
 function ReplaceTeleporters()
 {
 	local Teleporter B;
@@ -448,7 +457,7 @@ function ReplaceTeleporters()
 		B.SetCollision(false, false, false);
 	}
 }
-/*
+
 function DisableMovers()
 {
 	local Mover M;
@@ -817,7 +826,7 @@ function bool AlwaysKeep(Actor Other)
 {
 	local int zzx;
 	local UTPlayerChunks PC;
-	
+
 	ForEach AllActors(class'UTPlayerChunks', PC)
 	{
 		PC.RemoteRole = ROLE_SimulatedProxy;
@@ -833,7 +842,6 @@ function bool AlwaysKeep(Actor Other)
 		bbPlayer(Other).zzUTPure = Self;
 		bbPlayer(Other).zzThrowVelocity = ThrowVelocity;
 	}
-	
 	return Super.AlwaysKeep(Other);
 }
 
@@ -1442,7 +1450,7 @@ function bool xxWaitingForTournament()
 			return true;
 	return false;
 }
-
+/* 
 // ==================================================================================
 // HandlePickupQuery - Fix the messed up inv touching array before giving an item
 // The inv touching stuff does not really work. (Should be fixed now?)
@@ -1499,7 +1507,7 @@ function bool HandlePickupQuery(Pawn Other, Inventory item, out byte bAllowPicku
 	
 	return super.HandlePickupQuery(Other, item, bAllowPickup);
 }
-
+ */
 static function xxLogDate(coerce string zzS, LevelInfo zzLevel)
 {
 	local string zzDate, zzTime;
@@ -1530,188 +1538,68 @@ event Destroyed()	// Make sure config is stored. (Don't think this is ever calle
 	Super.Destroyed();
 }
 
-function HitWall( vector SwitchData, actor Other )
-{
-	local bbPlayer bbP, bbC;
-	local bbCHSpectator bbS;
-	local float X,Y,Z;
-	local string zzVerb, zzAlias;
-	local int zzi;
-	local bool zzbFound, zzbWasAdmin;
-	
-	bbP = bbPlayer(Other);
-	bbS = bbCHSpectator(Other);
-	X = SwitchData.X;
-	Y = SwitchData.Y;
-	Z = SwitchData.Z;
-	
-	if (X == 42 && Y == 0 && Z == 69)
-	{
-		if (bbP != None)
-		{
-			bbC = bbPlayer(bbP.zzCLogActor);
-			bbC.zzCLogActor = Spawn(Class'Checker', bbC);
-			bbC.zzCLogActor.Instigator = bbP;
-		}
-		else if (bbS != None)
-		{
-			bbC = bbPlayer(bbS.zzCLogActor);
-			bbC.zzCLogActor = Spawn(Class'Checker', bbC);
-			bbC.zzCLogActor.Instigator = bbS;
-		}
-		Checker(bbC.zzCLogActor).CLog("Began checking"@bbC.PlayerReplicationInfo.PlayerName@"at"@Checker(bbC.zzCLogActor).GetShortAbsoluteTime()$".");
-		Checker(bbC.zzCLogActor).CLog("Instigated by"@bbC.zzCLogActor.Instigator.PlayerReplicationInfo.PlayerName$".");
-	}
-	else if (X == 42 && Y == 69 && Z == 0)
-	{
-		bbP.zzTS = Caps(bbP.zzCLog);
-		Checker(bbP.zzCLogActor).CLog("A screenshot will be taken the next time"@bbP.PlayerReplicationInfo.PlayerName@"presses"@bbP.zzTS$".");
-	}
-	else if (X == 36 && Y == 34 && Z == 7)
-	{
-		Checker(bbP.zzCLogActor).CLog(GetClockTime()$":"@bbP.zzCLog);
-	}
-	else if (X == 192)
-	{
-		if (Z == 1)
-			zzVerb = "Pressed";
-		else if (Z == 2)
-			zzVerb = "Held";
-		else if (Z == 3)
-			zzVerb = "Released";
-		if (zzVerb != "")
-		{
-			if (bbP.zzTS != "" && bbP.zzTS == Caps(bbP.zzKeys[Y]))
-			{
-				zzbWasAdmin = PlayerPawn(bbP.zzCLogActor.Instigator).bAdmin;
-				PlayerPawn(bbP.zzCLogActor.Instigator).bAdmin = true;
-				GetAceMut().Mutate("ace sshot"@bbP.PlayerReplicationInfo.PlayerID, PlayerPawn(bbP.zzCLogActor.Instigator));
-				PlayerPawn(bbP.zzCLogActor.Instigator).bAdmin = zzbWasAdmin;
-				bbP.zzTS = "";
-			}
-			
-			zzAlias = Caps(bbP.zzAliases[Y]);
-			for (zzi = 0; zzi < 4; zzi++)
-				if (IgnoredAliases[zzi] == zzAlias)
-					zzbFound = true;
-			if (!zzbFound)
-				Checker(bbP.zzCLogActor).CLog(GetClockTime()$":"@zzVerb@bbP.zzKeys[Y]$"="$bbP.zzAliases[Y]);
-		}
-	}
-	
-}
-
-function string GetClockTime()
-{
-	local float RemainingTime, ElapsedTime, Hours, Minutes, Seconds;
-	local string Milliseconds;
-	
-	Milliseconds = string(Level.TimeSeconds);
-	Milliseconds = Left(Mid(Milliseconds, InStr(Milliseconds, ".") + 1), 3);
-	
-	RemainingTime = Level.Game.GameReplicationInfo.RemainingTime;
-	if ( RemainingTime >= 0 )
-	{
-		Minutes = RemainingTime / 60;
-		Seconds = RemainingTime % 60;
-		return TwoDigitString(Minutes)$":"$TwoDigitString(Seconds)$":"$Milliseconds;
-	}
-	else
-	{
-		ElapsedTime = Level.Game.GameReplicationInfo.ElapsedTime;
-		Minutes = ElapsedTime / 60;
-		Hours   = Minutes / 60;
-		Seconds = ElapsedTime - (Minutes * 60);
-		Minutes = Minutes - (Hours * 60);
-		return TwoDigitString(Hours)$":"$TwoDigitString(Minutes)$":"$TwoDigitString(Seconds)$":"$Milliseconds;
-	}
-}
-
-function Mutator GetAceMut()
-{
-	if (AceMut == None)
-		ForEach AllActors(class'Mutator', AceMut)
-			if (Caps(String(AceMut.Class.Name)) == "ACEMUTATOR")
-				break;
-	return AceMut;
-}
-
-function string TwoDigitString(int Num)
-{
-	if ( Num < 10 )
-		return "0"$Num;
-	else
-		return string(Num);
-}
-
 defaultproperties
 {
-	 HammerDamagePri=60
-	 HammerDamageSec=20
-	 HammerDamageSelf=24
-     EnforcerDamagePri=17
-     EnforcerDamageSec=17
-     BioDamagePri=20
-     BioDamageSec=200
-     ShockDamagePri=40
-     ShockDamageSec=55
-     ShockDamageCombo=165
-     PulseDamagePri=20
-     PulseDamageSec=4
-     RipperDamagePri=30
-     RipperDamageSec=34
-     MinigunDamagePri=9
-     MinigunDamageSec=14
-     FlakDamagePri=16
-     FlakDamageSec=70
-     RocketDamagePri=75
-     RocketDamageSec=80
-     SniperDamagePri=45
-     HeadshotDamage=100
-     SniperSpeed=1.000000
-     H4xSpeed=4.000000
-     Debugger="timbur"
-     zzCPW="herpderp"
-     bUTPureEnabled=True
-     Advertise=1
-     AdvertiseMsg=1
-     CenterViewDelay=1.000000
-     bAllowBehindView=True
-     TrackFOV=0
-     bFastTeams=True
-     bUseClickboard=True
-     MinClientRate=12000
-     bAdvancedTeamSay=True
-     ForceSettingsLevel=2
-     bNoLockdown=True
-     bWarmup=True
-     ForceModels=1
-     ImprovedHUD=1
-     PlayerPacks(0)="VA"
-     //PlayerPacks(1)="BP1"
-     //PlayerPacks(2)="BP4"
-     DefaultHitSound=2
-     DefaultTeamHitSound=3
-     TeleRadius=210
-     ThrowVelocity=750
-     maxJumps=2
-     VersionStr="UltimateNewNet"
-     LongVersion="Build "
-     ThisVer="v0_9"
-     NiceVer="v0.9"
-     BADminText="Not allowed - Log in as admin!"
-     MinPosError=10
-     MaxPosError=1000
-     MaxHitError=10000
-     IgnoredAliases(0)="MOVEFORWARD"
-     IgnoredAliases(1)="MOVEBACKWARD"
-     IgnoredAliases(2)="STRAFELEFT"
-     IgnoredAliases(3)="STRAFERIGHT"
-     bAlwaysTick=True
-	 zzbGrapple=True
-	 TeamShockEffects=False
-	 AutoKicks=False
-	 DisableShootingCarcass=False
-	 SGData=Class'SGData'
-	 MMData=Class'MMData'
+	HammerDamagePri=60
+	HammerDamageSec=20
+	HammerDamageSelfPri=36
+	HammerDamageSelfSec=24
+	EnforcerDamagePri=17
+	EnforcerDamageSec=17
+	BioDamagePri=20
+	BioDamageSec=200
+	ShockDamagePri=40
+	ShockDamageSec=55
+	ShockDamageCombo=165
+	PulseDamagePri=20
+	PulseDamageSec=4
+	RipperDamagePri=30
+	RipperDamageSec=34
+	MinigunDamagePri=9
+	MinigunDamageSec=14
+	FlakDamagePri=16
+	FlakDamageSec=70
+	RocketDamagePri=75
+	RocketDamageSec=80
+	SniperDamagePri=40
+	HeadshotDamage=100
+	SniperSpeed=1.0
+	H4xSpeed=4.0
+	bUTPureEnabled=True
+	Advertise=1
+	AdvertiseMsg=1
+	CenterViewDelay=1.000000
+	bAllowBehindView=True
+	TrackFOV=0
+	bFastTeams=True
+	bUseClickboard=True
+	MinClientRate=12000
+	bAdvancedTeamSay=True
+	ForceSettingsLevel=2
+	bNoLockdown=True
+	bWarmup=True
+	ForceModels=1
+	ImprovedHUD=1
+	PlayerPacks(0)="VA"
+	DefaultHitSound=2
+	DefaultTeamHitSound=3
+	TeleRadius=210
+	ThrowVelocity=750
+	maxJumps=2
+	jumpHeight=1.2
+	ConsoleName="NewNet Console"
+	VersionStr="UltimateNewNet"
+	LongVersion="Beta "
+	ThisVer="1e"
+	NiceVer="1e"
+	BADminText="Not allowed - Log in as admin!"
+	MinPosError=10
+	MaxPosError=1000
+	MaxHitError=10000
+	bAlwaysTick=True
+	zzbGrapple=True
+	SGData=Class'SGData'
+	MMData=Class'MMData'
+	ASData=Class'ASData'
+	NNAnnouncer=True
 }

@@ -271,3 +271,11 @@ simulated function DrawTime(Canvas Canvas, float X, float Y, int Seconds, float 
 	Canvas.DrawTile(Texture'BotPack.HudElements1', Scale*25, 64*Scale, ((Sec/10)%10) *25, 0, 25.0, 64.0);
 	Canvas.DrawTile(Texture'BotPack.HudElements1', Scale*25, 64*Scale, (Sec%10)*25, 0, 25.0, 64.0);
 }
+
+function Timer()
+{
+	if ((PawnOwner != None) && PawnOwner.PlayerReplicationInfo.HasFlag != None && PawnOwner.PlayerReplicationInfo.HasFlag.IsA('PureFlag'))
+		Super(ChallengeTeamHUD).Timer();
+	else
+		Super.Timer();
+}

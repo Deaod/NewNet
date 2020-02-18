@@ -6,24 +6,11 @@
 
 class ST_enforcer extends enforcer;
 
-var ST_Mutator STM;
 var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
-var Class<NN_WeaponFunctions> nnWF;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
+var int ClipCount;
 
 simulated function RenderOverlays(Canvas Canvas)
 {
@@ -113,13 +100,6 @@ function Fire(float Value)
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
-		if (bbPlayer(Owner) != None)
-		{
-			if (bIsSlave)
-				bbPlayer(Owner).xxAddFired(33);
-			else
-				bbPlayer(Owner).xxAddFired(3);
-		}
 		GotoState('NormalFire');
 		bCanClientFire = true;
 		bPointing=True;
@@ -146,7 +126,6 @@ simulated function bool ClientAltFire(float Value)
 			return false;
 		if ( (AmmoType == None) && (AmmoName != None) )
 		{
-			// ammocheck
 			GiveAmmo(Pawn(Owner));
 		}
 		if ( AmmoType.AmmoAmount > 0 )
@@ -158,9 +137,16 @@ simulated function bool ClientAltFire(float Value)
 			GotoState('ClientAltFiring');
 		}
 	}
-	return Super.ClientAltFire(Value);
+	if ( bCanClientFire && ((Role == ROLE_Authority) || (AmmoType == None) || (AmmoType.AmmoAmount > 0)) )
+	{
+		PlayAltFiring();
+		if ( Role < ROLE_Authority )
+			GotoState('ClientAltFiring');
+		return true;
+	}
+	return false;
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -206,12 +192,6 @@ State ClientActive
 	}
 }
 
-simulated function PlayPostSelect()
-{
-	PlayAnim('Reload', 1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
-	//Owner.PlayOwnedSound(Misc1Sound, SLOT_None,1.3*Pawn(Owner).SoundDampening);
-}
- */
 state ClientFiring
 {
 	simulated function EndState()
@@ -274,13 +254,6 @@ Begin:
 Repeater:	
 	if (AmmoType.UseAmmo(1))
 	{
-		if (bbPlayer(Owner) != None)
-		{
-			if (bIsSlave)
-				bbPlayer(Owner).xxAddFired(44);
-			else
-				bbPlayer(Owner).xxAddFired(4);
-		}
 		FlashCount++;
 		if (!bNewNet || Owner.IsA('Bot'))
 		{
@@ -392,10 +365,7 @@ simulated function NN_TraceFire(float Accuracy)
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	NN_ProcessTraceHit(Other, HitLocation, HitNormal, vector(GV),Y,Z);
 	
-	if (PawnOwner.bFire != 0)
-		bbP.xxNN_TakeDamage(Other, -3, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
-	else
-		bbP.xxNN_TakeDamage(Other, -4, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
+	bbP.xxNN_TakeDamage(Other, class'Enforcer', 0, PawnOwner, HitLocation, 3000.0*X, MyDamageType, -1);
 	/*
 	if (PawnOwner.bFire != 0)
 		bbP.xxNN_Fire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), bIsSlave, ClientFRVI, Accuracy);
@@ -500,7 +470,6 @@ function TraceFire( float Accuracy )
 	if (Pawn(Other) != None && FastTrace(Other.Location))
 		HitLocation += (bbP.zzNN_HitLoc - Other.Location);
 	ProcessTraceHit(Other, HitLocation, HitNormal, X,Y,Z);
-	
 	FireOffset = RealOffset;
 }
 
@@ -531,12 +500,6 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	yModInit();
 
 	PawnOwner = Pawn(Owner);
-	if (STM != None)
-	{
-		STM.PlayerFire(PawnOwner, 3);			// 3 = Enforcer
-		if (SlaveEnforcer != None)
-			STM.PlayerSpecial(PawnOwner, 3);	// 3 = Enforcer, Slave enforcer is special.
-	}
 
 	realLoc = Owner.Location + CalcDrawOffset();
 	DoShellCase(PlayerPawn(Owner), realLoc + 20 * X + FireOffset.Y * Y + Z, X,Y,Z);          
@@ -551,16 +514,12 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	{
 		if ( FRand() < 0.2 )
 			X *= 5;
-		if (STM != None)
-			STM.PlayerHit(PawnOwner, 3, False);	// 3 = Enforcer
 		if (!bNewNet) {
 			if (HitDamage > 0)
 				Other.TakeDamage(HitDamage, PawnOwner, HitLocation, 3000.0*X, MyDamageType);
 			else
 				Other.TakeDamage(class'UTPure'.default.EnforcerDamagePri, PawnOwner, HitLocation, 3000.0*X, MyDamageType);
 		}
-		if (STM != None)
-			STM.PlayerClear();
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
 			spawn(class'NN_UT_SpriteSmokePuffOwnerHidden',Owner,,HitLocation+HitNormal*9);
 		else
@@ -605,6 +564,11 @@ simulated function PlaySelect ()
 simulated function TweenDown ()
 {
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
+}
+
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
 }
 
 function DropFrom(vector StartLocation)
@@ -725,9 +689,25 @@ state Active
 	}
 }
 
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
+simulated function TweenToStill()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	Super.TweenToStill();
+}
+
 defaultproperties
 {
      bNewNet=True
-	 nnWF=Class'NN_WeaponFunctions'
-	 //Misc1Sound=Sound'Reload'
+	 ClipCount=20
 }

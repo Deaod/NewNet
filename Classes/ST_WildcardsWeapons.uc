@@ -1,8 +1,5 @@
 class ST_WildcardsWeapons expands TournamentWeapon;
 
-#exec OBJ LOAD FILE=Pack\ApeCannon.utx PACKAGE=UltimateNewNetv0_9.ApeCannon
-
-var ST_Mutator STM;
 var bool bNewNet;
 var Rotator GV;
 var Vector CDO;
@@ -10,7 +7,6 @@ var float yMod;
 var bool bGraphicsInitialized;
 var class<TournamentWeapon> OrgClass;
 var bool bInitSkin;
-var Class<NN_WeaponFunctions> nnWF;
 
 simulated event Spawned()
 {
@@ -20,18 +16,6 @@ simulated event Spawned()
 
 simulated function InitGraphics()
 {}
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function RenderOverlays(Canvas Canvas)
 {
@@ -90,7 +74,7 @@ state Active
 			Global.AltFire(F);
 	}
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -135,7 +119,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 simulated function PlaySelect ()
 {
 	Class'NN_WeaponFunctions'.static.PlaySelect( self);
@@ -146,9 +130,23 @@ simulated function TweenDown ()
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
 defaultproperties
 {
 	bNewNet=True
 	bNoSmooth=False
-	nnWF=Class'NN_WeaponFunctions'
 }

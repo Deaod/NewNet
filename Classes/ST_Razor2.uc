@@ -6,23 +6,8 @@
 
 class ST_Razor2 extends Razor2;
 
-var ST_Mutator STM;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
-
-simulated function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-		if (STM != None)
-			STM.PlayerFire(Instigator, 11);		// 11 = Ripper Primary
-	}
-}
 
 auto state Flying
 {
@@ -46,38 +31,30 @@ auto state Flying
 				{
 					if ( Other.bIsPawn && (HitLocation.Z - Other.Location.Z > 0.62 * Other.CollisionHeight) )
 					{
-						bbP.xxNN_TakeDamage(Other, 16, instigator,HitLocation,
+						bbP.xxNN_TakeDamage(Other, class'Ripper', 2, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'decapitated', zzNN_ProjIndex );
 					}
 					else			 
 					{
-						bbP.xxNN_TakeDamage(Other, 15, instigator,HitLocation,
+						bbP.xxNN_TakeDamage(Other, class'Ripper', 0, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'shredded', zzNN_ProjIndex );
 					}
 					bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, (MomentumTransfer * Normal(Velocity)));
 				}
 			}	
 				
-			if ( Role == ROLE_Authority && !bbPlayer(Owner).bNewNet )
+			if ( Role == ROLE_Authority && bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet )
 			{
 				if ( Other.bIsPawn && (HitLocation.Z - Other.Location.Z > 0.62 * Other.CollisionHeight) 
 					&& (!Instigator.IsA('Bot') || !Bot(Instigator).bNovice) )
 				{
-					if (STM != None)
-						STM.PlayerHit(Instigator, 11, True);		// 11 = Ripper Primary Headshot
 					Other.TakeDamage(3.5 * damage, instigator,HitLocation,
 						(MomentumTransfer * Normal(Velocity)), 'decapitated' );
-					if (STM != None)
-						STM.PlayerClear();
 				}
 				else			 
 				{
-					if (STM != None)
-						STM.PlayerHit(Instigator, 11, False);		// 11 = Ripper Primary
 					Other.TakeDamage(damage, instigator,HitLocation,
 						(MomentumTransfer * Normal(Velocity)), 'shredded' );
-					if (STM != None)
-						STM.PlayerClear();
 				}
 			}
 			if ( Other.bIsPawn )
@@ -161,8 +138,4 @@ auto state Flying
 
 		bbP.AddVelocity(Momentum);
 	}
-}
-
-defaultproperties
-{
 }

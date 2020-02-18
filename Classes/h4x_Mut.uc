@@ -57,7 +57,7 @@ defaultproperties
 {
     WeaponName=h4x_Rifle
     AmmoName=h4x_Bullets
-    WeaponString="UltimateNewNetv0_9.h4x_Rifle"
-    AmmoString="UltimateNewNetv0_9.h4x_Bullets"
-    DefaultWeapon=Class'UltimateNewNetv0_9.h4x_Rifle'
+    WeaponString="h4x_Rifle"
+    AmmoString="h4x_Bullets"
+    DefaultWeapon=Class'h4x_Rifle'
 }

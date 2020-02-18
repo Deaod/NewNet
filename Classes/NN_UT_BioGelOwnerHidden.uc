@@ -2,11 +2,17 @@ class NN_UT_BioGelOwnerHidden extends ST_UT_BioGel;
 
 var bool bAlreadyHidden;
 
-simulated function Tick(float DeltaTime) {
-	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+simulated function Tick(float DeltaTime)
+{
+	if ( Owner == None )
+		return;
+	
+	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None)
+	{
 		LightType = LT_None;
 		Mesh = None;
 		SetCollisionSize(0, 0);
+		ImpactSound = None;
 		bAlreadyHidden = True;
 	}
 }
@@ -19,8 +25,6 @@ function Timer()
 		Base.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 	
 	if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
-		HurtRadius(damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location);
-	else
 		HurtRadius(damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location);
 	Destroy();	
 }
@@ -56,7 +60,7 @@ auto state Flying
 		}
 	}
 	
-	function HitWall( vector HitNormal, actor Wall )
+	simulated function HitWall( vector HitNormal, actor Wall )
 	{
 		local PlayerPawn P;
 
@@ -83,14 +87,9 @@ auto state Flying
 		if ( (Mover(Base) != None) && Mover(Base).bDamageTriggered )	// A Base ain't a pawn, so don't worry.
 			Base.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 
-		if (STM != None)
-			STM.PlayerHit(Instigator, 4, bDirect);		// 4 = Bio.
-		//Log(Class.Name$" (Explode) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
 		if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 			HurtRadius(damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location);
 		NN_Momentum(FMin(250, DrawScale * 75), MomentumTransfer * Drawscale, Location);
-		if (STM != None)
-			STM.PlayerClear();
 		Destroy();	
 	}
 }
@@ -115,7 +114,7 @@ simulated function SetWall(vector HitNormal, Actor Wall)
 	local rotator RandRot;
 
 	SurfaceNormal = HitNormal;
-	if ( Level.NetMode != NM_DedicatedServer )
+	if ( Level.NetMode != NM_DedicatedServer && !bNetOwner )
 		spawn(class'NN_BioMarkOwnerHidden',Owner,,Location, rotator(SurfaceNormal));
 	RandRot = rotator(HitNormal);
 	RandRot.Roll += 32768;

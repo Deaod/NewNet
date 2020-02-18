@@ -83,6 +83,7 @@ static function xxSetClassDefault(Class<Actor> zzA)
 	local Class<Weapon> zzcW;
 
 //	Log("SCD:"@zzA);
+/* 
 	if (ClassIsChildOf(zzA,Class'Pickup'))
 	{
 		zzA.default.bUnlit = False;
@@ -113,8 +114,8 @@ static function xxSetClassDefault(Class<Actor> zzA)
 			zzA.Default.Texture = Texture'Botpack.FlakGlow.fglow_a00';
 		else if (ClassIsChildOf(zzA, Class'RocketTrail'))
 			zzA.Default.Texture = Texture'Botpack.JRFlare';
-	}
-	else if (ClassIsChildOf(zzA,Class'Weapon'))
+	} */
+	if (ClassIsChildOf(zzA,Class'Weapon'))
 	{
 //		Log(zzA@"is a weapon");
 		zzcW = Class<Weapon>(zzA);
@@ -133,7 +134,7 @@ static function xxSetClassDefault(Class<Actor> zzA)
 			}
 		}
 	}
-	else if (ClassIsChildOf(zzA,Class'Projectile'))
+/* 	else if (ClassIsChildOf(zzA,Class'Projectile'))
 	{
 		if (ClassIsChildOf(zzA,Class'RocketMk2'))
 		{
@@ -167,14 +168,14 @@ static function xxSetClassDefault(Class<Actor> zzA)
 	{
 		zzA.default.bHidden = True;
 	}
-
+ */
 }
 
 static function xxSetClass(Actor zzA)
 {
 	local int zzx;
 	local Weapon zzW;
-
+/* 
 //	Log("SC:"@zzA);
 	if (ClassIsChildOf(zzA.Class,Class'Pickup'))
 	{
@@ -206,8 +207,8 @@ static function xxSetClass(Actor zzA)
 			zzA.Texture = Texture'Botpack.FlakGlow.fglow_a00';
 		else if (ClassIsChildOf(zzA.Class, Class'RocketTrail'))
 			zzA.Texture = Texture'Botpack.JRFlare';
-	}
-	else if (ClassIsChildOf(zzA.Class,Class'Weapon'))
+	} */
+	if (ClassIsChildOf(zzA.Class,Class'Weapon'))
 	{
 //		Log(zzA@"is a weapon");
 		zzW = Weapon(zzA);
@@ -223,7 +224,7 @@ static function xxSetClass(Actor zzA)
 				zzW.MuzzleFlashScale = Default.WeaponFixes[zzx].zzMuzzleFlashScale;
 				zzW.MuzzleFlashMesh = Default.WeaponFixes[zzx].zzMuzzleFlashMesh;
 //				log("Post Fixing"@zzW.Class@zzW.ShakeMag@zzW.ShakeTime@zzW.ShakeVert@zzW.MuzzleFlashScale@zzW.MuzzleFlashMesh);
-				if (zzx == 2)
+/* 				if (zzx == 2)
 				{	// Pulse
 					zzW.FireSound = Sound'Botpack.PulseGun.PulseFire';
 					zzW.AltFireSound = Sound'Botpack.PulseGun.PulseBolt';
@@ -233,11 +234,11 @@ static function xxSetClass(Actor zzA)
 					zzW.FireSound = Sound'Botpack.minigun2.M2RegFire';
 					zzW.AltFireSound = Sound'Botpack.minigun2.M2AltFire';
 					zzW.Misc1Sound = Sound'Botpack.minigun2.M2WindDown';
-				}
+				} */
 			}
 		}
 	}
-	else if (ClassIsChildOf(zzA.Class,Class'Projectile'))
+/* 	else if (ClassIsChildOf(zzA.Class,Class'Projectile'))
 	{
 		if (ClassIsChildOf(zzA.Class,Class'RocketMk2'))
 		{
@@ -270,7 +271,7 @@ static function xxSetClass(Actor zzA)
 	else if (ClassIsChildOf(zzA.Class,Class'PlayerStart'))
 	{
 		zzA.bHidden = True;
-	}
+	} */
 }
 
 defaultproperties

@@ -3,6 +3,10 @@ class NN_ut_SeekingRocketOwnerHidden extends ST_UT_SeekingRocket;
 var bool bAlreadyHidden;
 
 simulated function Tick(float DeltaTime) {
+	
+	if ( Owner == None )
+		return;
+	
 	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
 		SpawnSound = None;
 		ImpactSound = None;
@@ -53,14 +57,9 @@ auto state Flying
 {
 	function BlowUp(vector HitLocation)
 	{
-		if (STM != None)
-			STM.PlayerHit(Instigator, 16, bDirect);		// 16 = Rockets. No special for seeking, a seeker just means it has a larger chance of direct (yeah rite :P)
-		//Log(Class.Name$" (BlowUp) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
 		if (!bbPlayer(Owner).bNewNet)
 			HurtRadius(Damage,220.0, MyDamageType, MomentumTransfer, HitLocation );
 		NN_Momentum(220.0, MomentumTransfer, HitLocation);
-		if (STM != None)
-			STM.PlayerClear();
 		MakeNoise(1.0);
 	}
 }

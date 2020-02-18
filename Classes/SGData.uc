@@ -50,7 +50,7 @@ function int WeaponReplacement (Actor Other)
 	
 	else if ( Other.Class == class'ShockRifle' )
 	{
-		return DoReplace(Weapon(Other),class'ST_SiegeShockRifle');
+		return DoReplace(Weapon(Other),class'ST_sgShockRifle');
 	}
 
 	else if ( ClassIsChildOf( Other.Class, class'PulseGun') )
@@ -81,7 +81,7 @@ function int WeaponReplacement (Actor Other)
 	
 	else if ( Other.Class == class'UT_Eightball' )
 	{
-		return DoReplace(Weapon(Other),class'ST_sgUT_Eightball');
+		return DoReplace(Weapon(Other),class'ST_UT_Eightball');
 	}
 	
 	else if ( Other.Class == class'SniperRifle' )
@@ -109,8 +109,8 @@ function int WeaponReplacement (Actor Other)
 	
 	else if ( Other.IsA('SiegeInstagibRifle') )
 	{
-		Class'ST_SiegeInstaGibRifle'.default.OrgClass = class<TournamentWeapon>(Other.Class);
-		return DoReplace( Weapon(Other), class'ST_SiegeInstaGibRifle');
+		Class'ST_sgInstaGibRifle'.default.OrgClass = class<TournamentWeapon>(Other.Class);
+		return DoReplace( Weapon(Other), class'ST_sgInstaGibRifle');
 	}
 	return 1;
 }

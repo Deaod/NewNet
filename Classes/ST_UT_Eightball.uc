@@ -6,14 +6,12 @@
 
 class ST_UT_Eightball extends UT_Eightball;
 
-var ST_Mutator STM;
 var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
 var Actor NN_LockedTarget;
 var name LastState;
-var Class<NN_WeaponFunctions> nnWF;
 
 replication
 {
@@ -32,18 +30,6 @@ simulated function Tick( float Delta )
 	
 	if (Role == ROLE_Authority && NN_LockedTarget != LockedTarget)
 		NN_LockedTarget = LockedTarget;
-}
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
 }
 
 simulated function RenderOverlays(Canvas Canvas)
@@ -233,7 +219,7 @@ exec function ServerFireRockets( int ProjIndex, bool bPrimary, int RoxLoaded, fl
 	
 	GotoState('FireRockets');
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -278,7 +264,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 ///////////////////////////////////////////////////////
 state NN_FireRockets
 {
@@ -454,14 +440,14 @@ state NN_FireRockets
 		bRotated = false;
 	}
 
-	simulated function AnimEnd()
+ 	simulated function AnimEnd()
 	{
 		if (Owner.IsA('Bot'))
 		{
 			Super.AnimEnd();
 			return;
 		}
-		if ( !bRotated && (AmmoType.AmmoAmount > 0) ) 
+		if ( !bRotated && (AmmoType.AmmoAmount > 0) )
 		{	
 			PlayLoading(1.5,0);
 			RocketsLoaded = 1;
@@ -793,19 +779,15 @@ state NormalFire
 			if ( Pawn(Owner).bFire == 0 )
 			{
 				if (  !bNewNet || (bbPlayer(Owner) == None) )
-				{
-				  GotoState('FireRockets');
-				}
+					GotoState('FireRockets');
 				return;
 			}
 		}
 		if ( AmmoType.AmmoAmount <= 0 ) 
 		{
-			  if (  !bNewNet || (bbPlayer(Owner) == None) )
-			  {
+			if (  !bNewNet || (bbPlayer(Owner) == None) )
 				GotoState('FireRockets');
-			  }
-			  return;
+			return;
 		}
 		if ( AmmoType.AmmoAmount == 1 )
 			Owner.PlaySound(Misc2Sound, SLOT_None, Pawn(Owner).SoundDampening); 
@@ -839,9 +821,7 @@ state AltFiring
 			if ( RocketsLoaded == 6 )
 			{
 				if (  !bNewNet || (bbPlayer(Owner) == None) )
-				{
-				  GotoState('FireRockets');
-				}
+					GotoState('FireRockets');
 				return;
 			}
 			else if (bbPlayer(Owner) != None && bNewNet && bbPlayer(Owner).bAltFire == 0)
@@ -868,11 +848,9 @@ state AltFiring
 		}
 		if (AmmoType.AmmoAmount<=0)
 		{ 
-			  if (  !bNewNet || (bbPlayer(Owner) == None) )
-			  {
+			if (  !bNewNet || (bbPlayer(Owner) == None) )
 				GotoState('FireRockets');
-			  }
-			  return;
+			return;
 		}
 		PlayRotating(RocketsLoaded-1);
 		bRotated = true;
@@ -1012,12 +990,10 @@ state FireRockets
 
 		if ( bFireLoad ) 		
 		{
-			bbPlayer(Owner).xxAddFired(22);
 			AdjustedAim = PawnOwner.AdjustAim(ProjectileSpeed, StartLoc, AimError, True, bWarnTarget);
 		}
 		else 
 		{
-			bbPlayer(Owner).xxAddFired(23);
 			AdjustedAim = PawnOwner.AdjustToss(AltProjectileSpeed, StartLoc, AimError, True, bAltWarnTarget);	
 		}
 			
@@ -1161,6 +1137,11 @@ simulated function TweenDown ()
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
 state Active
 {
 	function Fire(float F) 
@@ -1185,8 +1166,47 @@ state Active
 	}
 }
 
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
+simulated function PlayRFiring(int num)
+{
+	if ( PlayerPawn(Owner) != None && (!bNewNet || Level.NetMode == NM_Client) )
+	{
+		PlayerPawn(Owner).shakeview(ShakeTime, ShakeMag*RocketsLoaded, ShakeVert);
+		PlayerPawn(Owner).ClientInstantFlash( -0.4, vect(650, 450, 190));
+	}
+	if ( Affector != None )
+		Affector.FireEffect();
+	if ( bFireLoad )
+		PlayOwnedSound(class'RocketMk2'.Default.SpawnSound, SLOT_None, 4.0*Pawn(Owner).SoundDampening);
+	else
+		PlayOwnedSound(AltFireSound, SLOT_None, 4.0*Pawn(Owner).SoundDampening);
+	if ( bFireLoad && bInstantRocket )
+		PlayAnim(FireAnim[num], 0.54, 0.05);
+	else				
+		PlayAnim(FireAnim[num], 0.6, 0.05);
+}
+
+simulated function PlayIdleAnim()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	if (AnimSequence == LoadAnim[0] )
+		LoopAnim('Idle',1.0,0.5);
+	else
+		LoopAnim('Idle',1.0,0.5);
+}
+
 defaultproperties
 {
-     bNewNet=True
-	 nnWF=Class'NN_WeaponFunctions'
+	bNewNet=True
+	//FireOffset=(X=30,Y=-13,Z=-10),
 }

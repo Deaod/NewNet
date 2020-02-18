@@ -6,20 +6,7 @@
 
 class ST_PBolt extends PBolt;
 
-var ST_Mutator STM;
 var float GrowthAccumulator;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function CheckBeam(vector X, float DeltaTime)
 {
@@ -46,28 +33,20 @@ simulated function CheckBeam(vector X, float DeltaTime)
 			if ( DamagedActor == None )
 			{
 				AccumulatedDamage = FMin(0.5 * (Level.TimeSeconds - LastHitTime), 0.050);
-				if (STM != None)
-					STM.PlayerHit(Instigator, 10, False);						// 10 = Pulse Shaft
 				if (bNewNet)
-					bbP.xxNN_TakeDamage(HitActor, -14, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
+					bbP.xxNN_TakeDamage(HitActor, class'PulseGun', 1, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
 				else
 					HitActor.TakeDamage(AccumulatedDamage * damage + 0.050, instigator,HitLocation, // *2?...
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
-				if (STM != None)
-					STM.PlayerClear();
 				AccumulatedDamage = 0;
 			}				
 			else if ( DamagedActor != HitActor )
 			{
-				if (STM != None)
-					STM.PlayerHit(Instigator, 10, False);						// 10 = Pulse Shaft
 				if (bNewNet)
-					bbP.xxNN_TakeDamage(DamagedActor, -14, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
+					bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', 1, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
 				else
 					DamagedActor.TakeDamage(damage * AccumulatedDamage, instigator,HitLocation,
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
-				if (STM != None)
-					STM.PlayerClear();
 				AccumulatedDamage = 0;
 			}				
 			LastHitTime = Level.TimeSeconds;
@@ -77,15 +56,11 @@ simulated function CheckBeam(vector X, float DeltaTime)
 			{
 				if ( DamagedActor.IsA('Carcass') && (FRand() < 0.09) )
 					AccumulatedDamage = 35/damage;
-				if (STM != None)
-					STM.PlayerHit(Instigator, 10, True);						// 10 = Pulse Shaft, Overload
 				if (bNewNet)
-					bbP.xxNN_TakeDamage(DamagedActor, -14, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
+					bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', 1, Instigator, HitLocation, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
 				else
 					DamagedActor.TakeDamage(damage * AccumulatedDamage, instigator,HitLocation,
 						(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
-				if (STM != None)
-					STM.PlayerClear();
 				AccumulatedDamage = 0;
 			}
 		}
@@ -118,15 +93,11 @@ simulated function CheckBeam(vector X, float DeltaTime)
 	}
 	else if ( (Level.Netmode != NM_Client || bNewNet) && (DamagedActor != None) )
 	{
-		if (STM != None)
-			STM.PlayerHit(Instigator, 10, True);								// 10 = Pulse Shaft
 		if (bNewNet)
-			bbP.xxNN_TakeDamage(DamagedActor, -14, Instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
+			bbP.xxNN_TakeDamage(DamagedActor, class'PulseGun', 1, Instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius, (MomentumTransfer * X * AccumulatedDamage), MyDamageType, -1, 0, 0, 0, HitNormal, true);
 		else
 			DamagedActor.TakeDamage(damage * AccumulatedDamage, instigator, DamagedActor.Location - X * 1.2 * DamagedActor.CollisionRadius,
 				(MomentumTransfer * X * AccumulatedDamage), MyDamageType);
-		if (STM != None)
-			STM.PlayerClear();
 		AccumulatedDamage = 0;
 		DamagedActor = None;
 	}			
@@ -159,12 +130,9 @@ simulated function CheckBeam(vector X, float DeltaTime)
 			GrowthAccumulator += DeltaTime;
 			if (GrowthAccumulator > 0.050)		// 1 / 20 (Tickrate 20) = 0.050
 			{
-				if (bbPlayer(Owner) != None)
-					bbPlayer(Owner).xxAddFired(14);
 				PlasmaBeam = Spawn(class'ST_PBolt',,, Location + BeamSize * X);
 				PlasmaBeam.Position = Position + 1;
 				ST_PBolt(PlasmaBeam).GrowthAccumulator = GrowthAccumulator; // - 0.050;		// This causing extra damage?
-				ST_PBolt(PlasmaBeam).STM = STM;
 				GrowthAccumulator = 0.0;
 			}
 		}

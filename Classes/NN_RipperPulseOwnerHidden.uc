@@ -13,6 +13,10 @@ simulated function PostBeginPlay()
 }
 
 simulated function Tick(float DeltaTime) {
+	
+	if ( Owner == None )
+		return;
+	
 	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
 		NumFrames = 0;
 		Pause = 0;

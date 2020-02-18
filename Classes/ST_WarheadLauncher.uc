@@ -6,22 +6,28 @@
 
 class ST_WarheadLauncher extends WarheadLauncher;
 
-var ST_Mutator STM;
 var bool bNewNet;
-var Class<NN_WeaponFunctions> nnWF;
 
-function PostBeginPlay()
+function SetSwitchPriority(pawn Other)
 {
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
+	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'WarheadLauncher');
 }
-/* 
+
+simulated function PlaySelect ()
+{
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
+}
+
+simulated function TweenDown ()
+{
+	Class'NN_WeaponFunctions'.static.TweenDown( self);
+}
+
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -66,21 +72,6 @@ State ClientActive
 		}
 	}
 }
- */
-function SetSwitchPriority(pawn Other)
-{
-	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'WarheadLauncher');
-}
-
-simulated function PlaySelect ()
-{
-	Class'NN_WeaponFunctions'.static.PlaySelect( self);
-}
-
-simulated function TweenDown ()
-{
-	Class'NN_WeaponFunctions'.static.TweenDown( self);
-}
 
 state Active
 {
@@ -106,10 +97,32 @@ state Active
 	}
 }
 
+simulated function PlayIdleAnim()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	LoopAnim('Idle',0.01,0.3);
+}
+
+simulated function PlayFiring()
+{
+	PlayAnim( 'Fire', 0.3,0.05 );		
+	PlayOwnedSound(FireSound, SLOT_None,4.0*Pawn(Owner).SoundDampening);
+}
+
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
 defaultproperties
 {
      bNewNet=True
      ProjectileClass=Class'ST_WarShell'
      AltProjectileClass=Class'ST_GuidedWarshell'
-	 nnWF=Class'NN_WeaponFunctions'
 }

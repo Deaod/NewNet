@@ -6,47 +6,6 @@
 
 class ST_minigun2 extends minigun2;
 
-// Tickrate independant minigun.
-//
-// The orginal minigun used a loop where Sleep() decided when to fire next shot.
-// The problem with Sleep() is that it will NOT trigger accurately enough, and also
-// it changes accuracy when tickrate of server.
-//
-// Assuming a tickrate of 20, you have 1000/20 = 50ms (0.05 seconds) between each update.
-// (complex: actually, the formula is 1000/20 * Level.TimeDilation, and UT's timedilation is 1.1,
-//           which means the time between ticks is 0.055s, but in most my tests it is 0.054s,
-//           which means (...) that UT triggers tick just before it overflows. I need to get someone to check UT source.)
-//
-// Here is some more proof of the "bad" performance of Sleep()
-// Ratio 1.00 = "perfect", <1.0 = "reacts too slow", >1.0 = "reacts too fast"
-//	Tickrate 20		delta
-//	Sleep	Actual	Ratio	Tick
-//	0.010	0.054	0.184	0.054	(Notice how deltaTick is 0.054, if I change Level.TimeDilation to 1.0, it gives me 0.049 instead)
-//	0.020	0.054	0.369	0.054
-//	0.030	0.054	0.554	0.054
-//	0.040	0.054	0.739	0.054
-//	0.050	0.054	0.924	0.054
-//	0.060	0.054	1.109	0.054
-//	0.070	0.054	1.294	0.054
-//	0.080	0.054	1.479	0.054	<-- !!! 1.5 as many sleep will be performed. Meaning 0.08 is not 12.5/sec, but really 18.48!!!
-//	0.090	0.108	0.832	0.054
-//	0.100	0.108	0.924	0.054
-//	0.110	0.108	1.017	0.054
-//	0.120	0.108	1.109	0.054
-//	0.120	0.108	1.202	0.054
-//	0.140	0.162	0.863	0.054
-//	0.150	0.162	0.924	0.054
-//	0.160	0.162	0.986	0.054
-//	0.170	0.162	1.047	0.054
-//	0.180	0.162	0.109	0.054
-//	0.190	0.216	0.878	0.054
-//
-// In order to try to fix this, I implement the bullet generation in Tick() instead of a Sleep() loop.
-// To get correct values, I made a little util which simply checked how many shots/sec minigun fired when
-// using Sleep() and different Tickrates.
-//
-
-var ST_Mutator STM;
 var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
@@ -55,19 +14,6 @@ var float FireInterval, NextFireInterval;
 
 // For Special minigun
 var int HitCounter;
-var Class<NN_WeaponFunctions> nnWF;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function RenderOverlays(Canvas Canvas)
 {
@@ -112,7 +58,6 @@ function Fire( float Value )
 	}
 	if ( AmmoType == None )
 	{
-		// ammocheck
 		GiveAmmo(Pawn(Owner));
 	}
 	if ( AmmoType.UseAmmo(1) )
@@ -121,8 +66,8 @@ function Fire( float Value )
 		bCanClientFire = true;
 		bPointing=True;
 		ShotAccuracy = 0.2;
-		FireInterval = 0.120;		// Spinup
-		NextFireInterval = 0.111;	// 8.0 shots/sec
+		FireInterval = 0.120;
+		NextFireInterval = 0.111;
 		ClientFire(value);
 		if (!bNewNet)
 		{
@@ -142,7 +87,6 @@ function AltFire( float Value )
 	}
 	if ( AmmoType == None )
 	{
-		// ammocheck
 		GiveAmmo(Pawn(Owner));
 	}
 	if ( AmmoType.UseAmmo(1) )
@@ -150,8 +94,8 @@ function AltFire( float Value )
 		bPointing=True;
 		bCanClientFire = true;
 		ShotAccuracy = 0.95;
-		FireInterval = 0.120;		// Spinup
-		NextFireInterval = 0.111;	// Use Primary fire speed until completely spun up
+		FireInterval = 0.120;
+		NextFireInterval = 0.111;
 		SoundVolume = 255*Pawn(Owner).SoundDampening;	
 		ClientAltFire(value);
 		if (!bNewNet)
@@ -162,7 +106,7 @@ function AltFire( float Value )
 	}
 	else GoToState('Idle');	
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -207,7 +151,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 simulated function bool ClientFire(float Value)
 {
 	local bbPlayer bbP;
@@ -222,7 +166,6 @@ simulated function bool ClientFire(float Value)
 			return false;
 		if ( AmmoType == None )
 		{
-			// ammocheck
 			GiveAmmo(Pawn(Owner));
 		}
 		if ( AmmoType.AmmoAmount > 0 )
@@ -233,8 +176,8 @@ simulated function bool ClientFire(float Value)
 			bCanClientFire = true;
 			bPointing=True;
 			ShotAccuracy = 0.2;
-			FireInterval = 0.120;		// Spinup
-			NextFireInterval = 0.111;	// 8.0 shots/sec
+			FireInterval = 0.120;
+			NextFireInterval = 0.111;
 			GotoState('ClientFiring');
 		}
 		else GoToState('Idle');
@@ -256,7 +199,6 @@ simulated function bool ClientAltFire( float Value )
 			return false;
 		if ( AmmoType == None )
 		{
-			// ammocheck
 			GiveAmmo(Pawn(Owner));
 		}
 		if ( AmmoType.AmmoAmount > 0 )
@@ -265,8 +207,8 @@ simulated function bool ClientAltFire( float Value )
 			bPointing=True;
 			bCanClientFire = true;
 			ShotAccuracy = 0.95;
-			FireInterval = 0.120;		// Spinup
-			NextFireInterval = 0.111;	// Use Primary fire speed until completely spun up
+			FireInterval = 0.120;
+			NextFireInterval = 0.111;
 			Pawn(Owner).PlayRecoil(FiringSpeed);
 			SoundVolume = 255*Pawn(Owner).SoundDampening;
 			GoToState('ClientAltFiring');		
@@ -329,9 +271,9 @@ simulated function NN_TraceFire( float Accuracy )
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	
 	if (PawnOwner.bFire != 0)
-		bbP.xxNN_TakeDamage(Other, -18, PawnOwner, HitLocation, 3500.0*X, MyDamageType, -1);
+		bbP.xxNN_TakeDamage(Other, class'Minigun2', 0, PawnOwner, HitLocation, 3500.0*X, MyDamageType, -1);
 	else
-		bbP.xxNN_TakeDamage(Other, -19, PawnOwner, HitLocation, 5000.0*X, MyDamageType, -1);
+		bbP.xxNN_TakeDamage(Other, class'Minigun2', 1, PawnOwner, HitLocation, 5000.0*X, MyDamageType, -1);
 	/*
 	if (PawnOwner.bFire != 0)
 		bbP.xxNN_Fire(-1, bbP.Location, bbP.Velocity, bbP.zzViewRotation, Other, HitLocation, vect(0,0,0), false, ClientFRVI, Accuracy);
@@ -389,24 +331,14 @@ function float GetFRV()
 
 function GenerateBullet()
 {
-	if (bbPlayer(Owner) != None)
-	{
-		if (bbPlayer(Owner).bFire != 0)
-			bbPlayer(Owner).xxAddFired(18);
-		else
-			bbPlayer(Owner).xxAddFired(19);
-	}
-	Super.GenerateBullet();
+    LightType = LT_Steady;
+	bFiredShot = true;
+	if ( AmmoType.UseAmmo(1) ) 
+		TraceFire(ShotAccuracy);
+	else
+		GotoState('FinishFire');
 }
 
-// Original code did: Sleep(0.13)
-// This would (depending on tickrate) get called on irregular intervals.
-// According to a 20 tickrate server, this would result in about 6.667 shots/sec, 
-// 1/6.667 = 0.15s between, therefore...
-// Due to excessive whining, shots/sec is increased to 7.5
-// 1/7.5 = 0.13s between.
-// Due to more testing, I have now set fireinterval up to 8.0
-// 1/8.0 = 0.111s between
 state NormalFire
 {
 	function Tick( float DeltaTime )
@@ -441,17 +373,28 @@ state NormalFire
 
 	function AnimEnd()
 	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.AnimEnd();
-			return;
-		}
+		if (Pawn(Owner).Weapon != self) GotoState('');
+		else if (Pawn(Owner).bFire!=0 && AmmoType.AmmoAmount>0)
+			Global.Fire(0);
+		else if ( Pawn(Owner).bAltFire!=0 && AmmoType.AmmoAmount>0)
+			Global.AltFire(0);
+		else 
+			GotoState('FinishFire');
+		
 		if ( AmbientSound == None )
+		{
 			AmbientSound = FireSound;
+		}
 		if ( Affector != None )
 			Affector.FireEffect();
 	}
-
+	function BeginState()
+	{
+		bSteadyFlash3rd = true;
+		AmbientGlow = 250;
+		AmbientSound = FireSound;
+		Super.BeginState();
+	}
 Begin:
 	if (Owner.IsA('Bot'))
 	{
@@ -503,23 +446,35 @@ state AltFiring
 
 	function AnimEnd()
 	{
-		if (Owner.IsA('Bot'))
+ 		if (Owner.IsA('Bot'))
 		{
 			Super.AnimEnd();
 			return;
 		}
 		if ( (AnimSequence != 'Shoot2') || !bAnimLoop )
-		{	
+		{
 			AmbientSound = AltFireSound;
-			SoundVolume = 255*Pawn(Owner).SoundDampening;
 			LoopAnim('Shoot2',1.9);
+			SoundVolume = 255*Pawn(Owner).SoundDampening;
 			NextFireInterval = 0.08;	// 11.11 shots/sec ..12.5 shots/sec
 		}
 		else if ( AmbientSound == None )
+		{
 			AmbientSound = FireSound;
+		}
 		if ( Affector != None )
 			Affector.FireEffect();
 	}
+	
+	function BeginState()
+	{
+		bSteadyFlash3rd = true;
+		AmbientGlow = 250;
+		Super(TournamentWeapon).BeginState();
+		AmbientSound = FireSound;
+		bFiredShot = false;
+	}
+	
 Begin:
 	if (Owner.IsA('Bot'))
 	{
@@ -574,6 +529,12 @@ state ClientFiring
 			GoToState('ClientFinish');
 	}
 	
+	simulated function BeginState()
+	{
+		bSteadyFlash3rd = true;
+		AmbientSound = FireSound;
+	}
+	
 	simulated function EndState()
 	{
 		if (!Owner.IsA('Bot'))
@@ -616,6 +577,46 @@ state ClientAltFiring
 
 		if	( bFiredShot && ((P.bAltFire==0) || bOutOfAmmo) ) 
 			GoToState('ClientFinish');
+	}
+	
+	simulated function AnimEnd()
+	{
+		if ( (Pawn(Owner) == None) || (AmmoType.AmmoAmount <= 0) )
+		{
+			PlayUnwind();
+			GotoState('');
+		}
+		else if ( !bCanClientFire )
+			GotoState('');
+		else if ( Pawn(Owner).bAltFire != 0 )
+		{
+			if ( (AnimSequence != 'Shoot2') || !bAnimLoop )
+			{	
+				SoundVolume = 255*Pawn(Owner).SoundDampening;
+				AmbientSound = AltFireSound;
+				PlayAnim('Shoot2',1.9);
+			}
+			else if ( AmbientSound == None )
+				AmbientSound = FireSound;
+			if ( Affector != None )
+				Affector.FireEffect();
+			if ( PlayerPawn(Owner) != None )
+				PlayerPawn(Owner).ShakeView(ShakeTime, ShakeMag, ShakeVert);
+		}
+		else if ( Pawn(Owner).bFire != 0 )
+			Global.ClientFire(0);
+		else
+		{
+			PlayUnwind();
+			bSteadyFlash3rd = false;
+			GotoState('ClientFinish');
+		}
+	}
+
+	simulated function BeginState()
+	{
+		bSteadyFlash3rd = true;
+		AmbientSound = FireSound;
 	}
 	
 	simulated function EndState()
@@ -762,9 +763,6 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	}
 
 	PawnOwner = Pawn(Owner);
-	
-	if (STM != None)
-		STM.PlayerFire(PawnOwner, 13);				// 13 = Minigun
 
 	if (Other == Level) 
 		Spawn(class'NN_UT_LightWallHitEffectOwnerHidden',Owner,, HitLocation+HitNormal, Rotator(HitNormal));
@@ -784,12 +782,8 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 			rndDam = 7;		// was 9 + Rand(6);
 		if ( FRand() < 0.2 )
 			X *= 2.5;
-		if (STM != None)
-			STM.PlayerHit(PawnOwner, 13, False);			// 13 = Minigun
 		if (!bNewNet)
 			Other.TakeDamage(rndDam, PawnOwner, HitLocation, rndDam*500.0*X, MyDamageType);
-		if (STM != None)
-			STM.PlayerClear();
 	}
 
 	if (Pawn(Other) != None && Other != Owner && Pawn(Other).Health > 0)
@@ -798,8 +792,6 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		if (HitCounter == 8)
 		{	// Wowsers!
 			HitCounter = 0;
-			if (STM != None)
-				STM.PlayerSpecial(PawnOwner, 13);		// 13 = Minigun
 		}
 	}
 	else
@@ -819,6 +811,11 @@ simulated function PlaySelect ()
 simulated function TweenDown ()
 {
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
+}
+
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
 }
 
 function DropFrom(vector StartLocation)
@@ -882,10 +879,57 @@ state Active
 	}
 }
 
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
+simulated function PlayIdleAnim()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	LoopAnim('Idle',0.05,0.3);
+}
+
+simulated function TweenToStill()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	Super.TweenToStill();
+}
+
+simulated function PlayFiring()
+{	
+	if ( PlayerPawn(Owner) != None && (!bNewNet || Level.NetMode == NM_Client) )
+	{
+		PlayerPawn(Owner).ShakeView(ShakeTime, ShakeMag, ShakeVert);
+	}
+	bSteadyFlash3rd = true;
+	AmbientGlow = 250;
+	PlayAnim('Shoot1',1 + 0.6 * FireAdjust, 0.05);
+	AmbientSound = FireSound;
+}
+
+simulated function PlayAltFiring()
+{
+	if ( PlayerPawn(Owner) != None && (!bNewNet || Level.NetMode == NM_Client) )
+	{
+		PlayerPawn(Owner).ShakeView(ShakeTime, ShakeMag, ShakeVert);
+	}
+	bSteadyFlash3rd = true;
+	AmbientGlow = 250;
+	PlayAnim('Shoot1',1 + 0.3 * FireAdjust, 0.05);
+	AmbientSound = FireSound;
+}
+
 defaultproperties
 {
      bNewNet=True
      FireInterval=0.120000
      NextFireInterval=0.111000
-	 nnWF=Class'NN_WeaponFunctions'
 }

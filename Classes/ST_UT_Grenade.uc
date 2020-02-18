@@ -6,7 +6,6 @@
 
 class ST_UT_Grenade extends UT_Grenade;
 
-var ST_Mutator STM;
 var float R1, R2, R3, R4, R5, R6, R7, R8;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
@@ -92,12 +91,6 @@ simulated function PostBeginPlay()
 		bHitWater = True;
 		Disable('Tick');
 		Velocity=0.6*Velocity;			
-	}
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
 	}	
 }
 
@@ -138,20 +131,16 @@ simulated function BlowUp(vector HitLocation)
 	local bbPlayer bbP;
 	
 	bbP = bbPlayer(Owner);
-	if (STM != None)
-		STM.PlayerHit(Instigator, 17, !bCanHitOwner);	// bCanHitOwner is set to True after the Grenade has bounced once. Neat hax
 	if (bbP != None && bbP.bNewNet)
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_UT_Grenade'))
-			bbP.NN_HurtRadius(self, 23, 200, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex);
+			bbP.NN_HurtRadius(self, class'UT_Eightball', 1, 200, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex);
 	}
 	else
 	{
 		HurtRadius(damage, 200, MyDamageType, MomentumTransfer, HitLocation);
 	}
 	NN_Momentum(200, MomentumTransfer, HitLocation);
-	if (STM != None)
-		STM.PlayerClear();
 	MakeNoise(1.0);
 }
 
@@ -199,8 +188,4 @@ simulated function ProcessTouch( actor Other, vector HitLocation )
 		NN_HitOther = Other;
 		Explosion(HitLocation);
 	}
-}
-
-defaultproperties
-{
 }

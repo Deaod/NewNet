@@ -9,7 +9,7 @@
 // Pure7A: - Created
 // Pure7D: - Fixed slow countdown
 
-class PureAutoPause extends Info;
+class PureAutoPause extends Info config(UN);
 
 // config variables
 var globalconfig int PauseTotalTime;	// Total amount of Seconds a team may pause a game.

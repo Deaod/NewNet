@@ -4,12 +4,6 @@ function PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	WetTexture'APE_Flak'.Palette = Texture'APE_FlakPal'.Palette;
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
 }
 
 simulated event PostNetBeginPlay()
@@ -45,7 +39,6 @@ simulated function RenderOverlays(Canvas Canvas)
 	}
 }
 
-// return delta to combat style
 function float SuggestAttackStyle()
 {
 	local bot B;
@@ -136,10 +129,7 @@ simulated function bool ClientFire( float Value )
 	local bbPlayer bbP;
 	local ST_UTApeChunk Proj;
 	local int ProjIndex;
-	
-	if (Owner.IsA('Bot'))
-		return Super.ClientFire(Value);
-	
+
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
 	{
@@ -151,7 +141,6 @@ simulated function bool ClientFire( float Value )
 
 		if ( AmmoType == None )
 		{
-			// ammocheck
 			GiveAmmo(PawnOwner);
 		}
 		if (AmmoType.AmmoAmount > 0)
@@ -168,7 +157,6 @@ simulated function bool ClientFire( float Value )
 			Spawn(class'WeaponLight',,'',Start+X*20,rot(0,0,0));	
 			Start = Start + FireOffset.X * X + yMod * Y + FireOffset.Z * Z;	
 			
-			//bbP.ClientMessage("Client:"@GV);
 			Proj = Spawn( class 'ST_UTApeChunk1',Owner, '', Start, GV);
 			ProjIndex = bbP.xxNN_AddProj(Proj);
 			Proj.zzNN_ProjIndex = ProjIndex;
@@ -263,10 +251,7 @@ simulated function bool ClientAltFire( float Value )
 	local ST_APE_FlakSlug Proj;
 	local int ProjIndex;
 	local bbPlayer bbP;
-	
-	if (Owner.IsA('Bot'))
-		return Super.ClientAltFire(Value);
-	
+
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
 	{
@@ -278,7 +263,6 @@ simulated function bool ClientAltFire( float Value )
 
 		if ( AmmoType == None )
 		{
-			// ammocheck
 			GiveAmmo(PawnOwner);
 		}
 		if (AmmoType.AmmoAmount > 0)
@@ -307,7 +291,6 @@ simulated function bool ClientAltFire( float Value )
 	return Super.ClientAltFire(Value);
 }
 
-// Fire chunks
 function Fire( float Value )
 {
 	local Vector Start, X,Y,Z;
@@ -317,13 +300,7 @@ function Fire( float Value )
 	local Pawn PawnOwner;
 	local bbPlayer bbP;
 	local float OwnerPing;
-	
-/* 	if (Owner.IsA('Bot'))
-	{
-		Super.Fire(Value);
-		return;
-	} */
-	
+
 	bbP = bbPlayer(Owner);
 	if (bbP != None && bNewNet && Value < 1)
 		return;
@@ -332,12 +309,10 @@ function Fire( float Value )
 
 	if ( AmmoType == None )
 	{
-		// ammocheck
 		GiveAmmo(PawnOwner);
 	}
 	if (AmmoType.UseAmmo(1))
 	{
-		//bbPlayer(Owner).xxAddFired(20);
 		bCanClientFire = true;
 		bPointing=True;
 		
@@ -368,16 +343,10 @@ function Fire( float Value )
 			Spawn(class'WeaponLight',,'',Start+X*20,rot(0,0,0));		
 		}
 		CI = Spawn(class'ST_UTApeChunkInfo', PawnOwner);
-		CI.STM = STM;
 		OwnerPing = float(Owner.ConsoleCommand("GETPING"));
-		// My comment
-		// I am not sure why EPIC has decided to do flak (or rockets) this way, as they could
-		// Have created a masterchunk on client that spawned the rest of the chunks according to
-		// The below rules, creating less network traffic. Of course it would pose a problem
-		// When you run into a chunk that wasn't relevant when the original shot was fired. Oh well :/
+
 		if (bNewNet)
 		{
-			//bbP.ClientMessage("Server:"@bbP.zzNN_ViewRot);
 			COH = Spawn( class 'NN_UTApeChunk1OwnerHidden',Owner, '', Start, AdjustedAim);
 			COH.NN_OwnerPing = OwnerPing;
 			if (bbP != None)
@@ -465,8 +434,6 @@ function Fire( float Value )
 			CI.AddChunk(Spawn( class 'ST_UTApeChunk3',Owner, '', Start + 2 * Y + Z, AdjustedAim));
 			CI.AddChunk(Spawn( class 'ST_UTApeChunk4',Owner, '', Start - Y, AdjustedAim));
 		}
-
-		// lower skill bots fire less flak chunks
 		if ( (B == None) || !B.bNovice || ((B.Enemy != None) && (B.Enemy.Weapon != None) && B.Enemy.Weapon.bMeleeWeapon) )
 		{
 			if (bNewNet)
@@ -496,9 +463,6 @@ function Fire( float Value )
 			CI.AddChunk(Spawn( class 'ST_UTApeChunk4',Owner, '', Start + 2 * Y + Z, AdjustedAim));
 			}
 		}
-/* 		else if ( B.Skill > 1 )
-			CI.AddChunk(Spawn( class 'ST_UTApeChunk3',Owner, '', Start + Y - Z, AdjustedAim)); */
-		
 		ClientFire(Value);
 		
 		GoToState('NormalFire');
@@ -513,12 +477,6 @@ function AltFire( float Value )
 	local bbPlayer bbP;
 	local NN_APE_FlakSlugOwnerHidden NNFS;
 	
-/* 	if (Owner.IsA('Bot'))
-	{
-		Super.Fire(Value);
-		return;
-	} */
-	
 	bbP = bbPlayer(Owner);
 	if (bbP != None && bNewNet && Value < 1)
 		return;
@@ -527,13 +485,10 @@ function AltFire( float Value )
 
 	if ( AmmoType == None )
 	{
-		// ammocheck
 		GiveAmmo(PawnOwner);
 	}
 	if (AmmoType.UseAmmo(1))
 	{
-/* 		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxAddFired(21); */
 		bPointing=True;
 		bCanClientFire = true;
 		PawnOwner.MakeNoise(PawnOwner.SoundDampening);
@@ -558,15 +513,11 @@ function AltFire( float Value )
 			NNFS = Spawn(class'NN_APE_FlakSlugOwnerHidden',Owner,, Start,AdjustedAim);
 			if (bbP != None)
 				NNFS.zzNN_ProjIndex = bbP.xxNN_AddProj(NNFS);
-			NNFS.STM = STM;
 		} else {
 			PawnOwner.PlayRecoil(FiringSpeed);
 			Spawn(class'WeaponLight',,'',Start+X*20,rot(0,0,0));
 			Slug = Spawn(class'ST_APE_FlakSlug',,, Start,AdjustedAim);
-			Slug.STM = STM;
 		}
-		if (STM != None)
-			STM.PlayerFire(PawnOwner, 15);				// 15 = Flak Slug
 		GoToState('AltFiring');
 	}
 }
@@ -763,6 +714,11 @@ Begin:
 function SetSwitchPriority(pawn Other)
 {
 	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'ApeCannon');
+}
+
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
 }
 
 simulated function PlayIdleAnim()

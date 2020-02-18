@@ -1,4 +1,4 @@
-class Grappling extends TournamentWeapon config(UltimateNewNet);
+class Grappling extends TournamentWeapon config(UN);
 
 #exec AUDIO IMPORT FILE="Sounds\GrapplePull.wav" NAME="Pull" 
 #exec AUDIO IMPORT FILE="Sounds\GrappleEnd.wav" NAME="Reset"
@@ -30,6 +30,12 @@ replication
     JumpRel, HookFire, HookOffhandFire;
     reliable if(Role == ROLE_Authority)
     HookSpeed, FlySpeed, FFlySpeed, Range, SpeedFactor, bFlagFly, HookKillMode, bFlagNoAttach, bFlagTeamTravel;
+}
+
+function PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	SaveConfig();
 }
 
 simulated function Firing( )
@@ -410,7 +416,7 @@ exec function HookOffhandFire()
     }
 }
 
-simulated function PlaySelect()
+simulated function PlaySelect ()
 {
 	bForceFire = false;
 	bForceAltFire = false;
@@ -419,7 +425,7 @@ simulated function PlaySelect()
 		TweenAnim('ThrownFrame', 0.27);
 	else
 		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
-	PlaySound(SelectSound, SLOT_Misc,Pawn(Owner).SoundDampening);		
+	Owner.PlaySound(SelectSound, SLOT_Misc,Pawn(Owner).SoundDampening);		
 }
 
 simulated function TweenDown()

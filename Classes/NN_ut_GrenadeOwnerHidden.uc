@@ -17,7 +17,10 @@ function float GetFRV()
 
 simulated function Tick(float DeltaTime) {
 	local UT_BlackSmoke b;
-
+	
+	if ( Owner == None )
+		return;
+	
 	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
 		ImpactSound = None;
 		ExplosionDecal = None;
@@ -94,14 +97,9 @@ simulated function Explosion(vector HitLocation)
 
 simulated function BlowUp(vector HitLocation)
 {
-	if (STM != None)
-		STM.PlayerHit(Instigator, 17, !bCanHitOwner);	// bCanHitOwner is set to True after the Grenade has bounced once. Neat hax
-	//Log(Class.Name$" (BlowUp) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
-	if (!bbPlayer(Owner).bNewNet)
+	if (bbPlayer(Owner) == None || !bbPlayer(Owner).bNewNet)
 		HurtRadius(damage, 200, MyDamageType, MomentumTransfer, HitLocation);
 	NN_Momentum(200, MomentumTransfer, HitLocation);
-	if (STM != None)
-		STM.PlayerClear();
 	MakeNoise(1.0);
 }
 

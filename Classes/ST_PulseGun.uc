@@ -6,24 +6,10 @@
 
 class ST_PulseGun extends PulseGun;
 
-var ST_Mutator STM;
 var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
-var Class<NN_WeaponFunctions> nnWF;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function RenderOverlays(Canvas Canvas)
 {
@@ -71,8 +57,6 @@ function Fire( float Value )
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
-		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxAddFired(13);
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -96,6 +80,8 @@ function Fire( float Value )
 
 function AltFire( float Value )
 {
+	local Vector Start, X,Y,Z;
+	
 	if ( AmmoType == None )
 	{
 		// ammocheck
@@ -107,14 +93,14 @@ function AltFire( float Value )
 		bCanClientFire = true;
 		bPointing=True;
 		ClientAltFire(value);
+
 		if (!bNewNet)
 		{
 			Pawn(Owner).PlayRecoil(FiringSpeed);
 		}
+
 		if ( PlasmaBeam == None )
 		{
-			if (bbPlayer(Owner) != None)
-				bbPlayer(Owner).xxAddFired(14);
 			if (bNewNet)
 				PlasmaBeam = PBolt(ProjectileFire(Class'NN_StarterBoltOwnerHidden', AltProjectileSpeed, bAltWarnTarget));
 			else
@@ -126,14 +112,14 @@ function AltFire( float Value )
 		}
 	}
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
 	{
 		if (Owner.IsA('Bot'))
 			return Super.ClientFire(Value);
-		bForceFire = bbPlayer(Owner) == None || !bbPlayer(Owner).ClientCannotShoot();
+		bForceFire = bbPlayer(Owner) == None /* || !bbPlayer(Owner).ClientCannotShoot() */;
 		return bForceFire;
 	}
 
@@ -141,7 +127,7 @@ State ClientActive
 	{
 		if (Owner.IsA('Bot'))
 			return Super.ClientAltFire(Value);
-		bForceAltFire = bbPlayer(Owner) == None || !bbPlayer(Owner).ClientCannotShoot();
+		bForceAltFire = bbPlayer(Owner) == None /* || !bbPlayer(Owner).ClientCannotShoot() */;
 		return bForceAltFire;
 	}
 	
@@ -171,7 +157,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 state AltFiring
 {
 	ignores AnimEnd;
@@ -203,15 +189,15 @@ state AltFiring
 		Count += Deltatime;
 		if ( Count > 0.24 )
 		{
-			if ( Owner.IsA('PlayerPawn') )
-				PlayerPawn(Owner).ClientInstantFlash( InstFlash,InstFog);
-			if ( Affector != None )
-				Affector.FireEffect();
 			Count -= 0.24;
 			if ( !AmmoType.UseAmmo(1) )
 				Finish();
 		}
 	}
+Begin:
+	AmbientGlow = 200;
+	FinishAnim();
+	PlayAnim( 'boltloop');
 }
 
 simulated function bool ClientFire( float Value)
@@ -227,8 +213,8 @@ simulated function bool ClientFire( float Value)
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
 	{
-		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
-			return false;
+/* 		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
+			return false; */
 		yModInit();
 		
 		if ( (AmmoType == None) && (AmmoName != None) )
@@ -268,17 +254,18 @@ simulated state ClientFiring
 {
 	simulated function Tick( float DeltaTime )
 	{
-		if (Owner.IsA('Bot'))
+ 		if (Owner.IsA('Bot'))
 		{
 			Super.Tick(DeltaTime);
 			return;
 		}
-		
 		if (Owner==None) 
 			GotoState('Pickup');
 			
 		if ( (Pawn(Owner) != None) && (Pawn(Owner).bFire != 0) )
+		{
 			AmbientSound = FireSound;
+		}
 		else
 			AmbientSound = None;
 	}
@@ -380,8 +367,8 @@ simulated function bool ClientAltFire( float Value )
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
 	{
-		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
-			return false;
+/* 		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
+			return false; */
 		Instigator = Pawn(Owner);
 		bCanClientFire = AmmoType.AmmoAmount > 0;
 		GotoState('ClientAltFiring');
@@ -433,7 +420,6 @@ state NormalFire
 		Angle += 1.8;
 		return Spawn(ProjClass,Owner,, Start,AdjustedAim);	
 	}
-
 	function BeginState()
 	{
 		if (!Owner.IsA('Bot'))
@@ -471,17 +457,19 @@ state ClientAltFiring
 		Count += Deltatime;
 		if ( Count > 0.24 )
 		{
-			if ( Owner.IsA('PlayerPawn') )
-				PlayerPawn(Owner).ClientInstantFlash( InstFlash,InstFog);
 			if ( Affector != None )
 				Affector.FireEffect();
+			if ( PlayerPawn(Owner) != None && (!bNewNet || Level.NetMode == NM_Client) )
+			{
+				PlayerPawn(Owner).ClientInstantFlash( InstFlash, InstFog);
+			}
 			Count -= 0.24;
 			AmmoType.UseAmmo(1);
 			if ( AmmoType.AmmoAmount < 1 )
 				Finish();
 		}
 	}
-	
+
 	simulated function EndState()
 	{
 		if (!Owner.IsA('Bot'))
@@ -496,13 +484,36 @@ state ClientAltFiring
 		}
 		Super.EndState();
 	}
-
+	simulated function AnimEnd()
+	{
+		if ( AmmoType.AmmoAmount <= 0 )
+		{
+			PlayIdleAnim();
+			GotoState('');
+		}
+		else if ( !bCanClientFire )
+			GotoState('');
+		else if ( Pawn(Owner) == None )
+		{
+			PlayIdleAnim();
+			GotoState('');
+		}
+		else if ( Pawn(Owner).bAltFire != 0 )
+			PlayAnim('BoltLoop');
+		else if ( Pawn(Owner).bFire != 0 )
+			Global.ClientFire(0);
+		else
+		{
+			PlayIdleAnim();
+			GotoState('');
+		}
+	}
 Begin:
 	if (!Owner.IsA('Bot'))
 	{
 		AmbientGlow = 200;
-		FinishAnim();	
-		LoopAnim( 'boltloop');
+		FinishAnim();
+		PlayAnim( 'boltloop');
 	}
 }
 
@@ -551,37 +562,57 @@ function SetSwitchPriority(pawn Other)
 	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'PulseGun');
 }
 
-simulated function PlaySelect ()
-{
-	Class'NN_WeaponFunctions'.static.PlaySelect( self);
-}
-
 simulated function TweenDown ()
 {
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
-state Active
+
+simulated function PlaySelect ()
 {
-	function Fire(float F) 
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
+}
+
+simulated function AnimEnd ()
+{
+	if ( (Level.NetMode == NM_Client) && (Mesh != PickupViewMesh) )
+		AmbientSound = None;
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
+simulated function PlayIdleAnim()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	if ( (AnimSequence == 'BoltLoop') || (AnimSequence == 'BoltStart') )
+		PlayAnim('BoltEnd',1.0,0.05);		
+	else if ( AnimSequence != 'SpinDown' )
+		LoopAnim('Still',1.0,0.05);
+}
+
+simulated function TweenToStill()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	Super.TweenToStill();
+}
+
+simulated function PlayFiring()
+{
+	FlashCount++;
+	AmbientSound = FireSound;
+	PlayAnim( 'shootLOOP', 1 + 0.5 * FireAdjust, 0.0);
+	SoundVolume = Pawn(Owner).SoundDampening*255;
+	bWarnTarget = (FRand() < 0.2);
+}
+
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
 	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.Fire(F);
-			return;
-		}
-		if (F > 0 && bbPlayer(Owner) != None)
-			Global.Fire(F);
-	}
-	function AltFire(float F) 
-	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.AltFire(F);
-			return;
-		}
-		if (F > 0 && bbPlayer(Owner) != None)
-			Global.AltFire(F);
+		Super(Inventory).Landed(HitNormal);
 	}
 }
 
@@ -590,5 +621,4 @@ defaultproperties
     bNewNet=True
     ProjectileClass=Class'ST_PlasmaSphere'
     AltProjectileClass=Class'ST_StarterBolt'
-	nnWF=Class'NN_WeaponFunctions'
 }

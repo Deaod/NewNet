@@ -1,20 +1,7 @@
 class ST_APE_FlakSlug extends APE_FlakSlug;
 
-var ST_Mutator STM;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function ProcessTouch (Actor Other, vector HitLocation)
 {		
@@ -38,23 +25,18 @@ simulated function NewExplode(vector HitLocation, vector HitNormal, bool bDirect
 	
 	bbP = bbPlayer(Owner);
 	
-	if (STM != None)
-		STM.PlayerHit(Instigator, 15, bDirect);		// 15 = Flak Slug
 	if (bbP != None && bbP.bNewNet)
 	{
-			if (Level.NetMode == NM_Client && !IsA('NN_APE_FlakSlugOwnerHiddenFlakSlugOwnerHidden'))
-			{
-				bbP.NN_HurtRadius(self, 21, 170, 'FlakDeath', MomentumTransfer, HitLocation, zzNN_ProjIndex);
-				bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, HitNormal);
-			}
+		if (Level.NetMode == NM_Client && !IsA('NN_APE_FlakSlugOwnerHiddenFlakSlugOwnerHidden'))
+		{
+			bbP.NN_HurtRadius(self, class'UT_FlakCannon', 1, 150, 'FlakDeath', MomentumTransfer, HitLocation, zzNN_ProjIndex);
+			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, HitNormal);
+		}
 	}
 	else
 	{
 		HurtRadius(damage, 170, 'FlakDeath', MomentumTransfer, HitLocation);
 	}
-	
-	if (STM != None)
-		STM.PlayerClear();				// Damage is given now.
 	start = Location + 12 * HitNormal;
  	Spawn( class'ut_FlameExplosion',,,Start);
 	aRot = rotator( vector(rotation)*2 + hitnormal);
@@ -117,8 +99,4 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 		return;
 	NN_Momentum(170, MomentumTransfer, HitLocation);
 	NewExplode(HitLocation, HitNormal, False);
-}
-
-defaultproperties
-{
 }

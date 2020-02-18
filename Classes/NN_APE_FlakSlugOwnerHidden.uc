@@ -2,10 +2,15 @@ class NN_APE_FlakSlugOwnerHidden extends ST_APE_FlakSlug;
 
 var bool bAlreadyHidden;
 
-simulated function Tick(float DeltaTime) {
-	if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None)
+simulated function Tick(float DeltaTime)
+{
+	if ( Owner == None )
+		return;
+	
+	if (!bAlreadyHidden)
 	{	
-		if (Level.NetMode == NM_Client) {
+		if (Level.NetMode == NM_Client && bNetOwner)
+		{
 			SpawnSound = None;
 			ImpactSound = None;
 			Mesh = None;
@@ -25,13 +30,6 @@ simulated function Tick(float DeltaTime) {
 
 simulated function PostBeginPlay()
 {
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-	
 	Velocity = Vector(Rotation) * Speed;     
 	initialDir = Velocity;
 	Velocity.z += 200; 
@@ -60,15 +58,9 @@ function NewExplode(vector HitLocation, vector HitNormal, bool bDirect)
 	local NN_APE_FlakSlugOwnerHidden Proj2;
 	
 	bbP = bbPlayer(Owner);
-	bbP.xxAddFired(20);
-	
-	if (STM != None)
-		STM.PlayerHit(Instigator, 15, bDirect);		// 15 = Flak Slug
-	//Log(Class.Name$" (NewExplode) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
+
 	if (bbP == None || !bbP.bNewNet)
 		HurtRadius(damage, 170, 'FlakDeath', MomentumTransfer, HitLocation);
-	if (STM != None)
-		STM.PlayerClear();				// Damage is given now.
 	start = Location + 12 * HitNormal;
 	Spawn( class'NN_ut_FlameExplosionOwnerHidden',Owner,,Start);
 	aRot = rotator( vector(rotation)*2 + hitnormal);
@@ -93,11 +85,11 @@ function Explode(vector HitLocation, vector HitNormal)
 	NewExplode(HitLocation, HitNormal, False);
 }
 
-function Landed( vector HitNormal )
+simulated function Landed( vector HitNormal )
 {
 	local DirectionalBlast D;
 
-	if ( Level.NetMode != NM_DedicatedServer )
+	if ( Level.NetMode != NM_DedicatedServer && !bNetOwner )
 	{
 		D = Spawn(class'NN_DirectionalBlastOwnerHidden',Owner);
 		if ( D != None )
@@ -106,7 +98,7 @@ function Landed( vector HitNormal )
 	Explode(Location,HitNormal);
 }
 
-function HitWall (vector HitNormal, actor Wall)
+simulated function HitWall (vector HitNormal, actor Wall)
 {
 	local DirectionalBlast D;
 
@@ -129,7 +121,7 @@ function HitWall (vector HitNormal, actor Wall)
 		Spawn(ExplosionDecal,self,,Location, rotator(HitNormal));
 }
 
-function Timer()
+simulated function Timer()
 {
 	local ut_SpriteSmokePuff s;
 

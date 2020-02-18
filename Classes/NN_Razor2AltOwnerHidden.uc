@@ -14,6 +14,9 @@ simulated function Tick(float DeltaTime)
 {
 	local bbPlayer bbP;
 	
+	if ( Owner == None )
+		return;
+	
 	if (Level.NetMode == NM_Client) {
 	
 		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
@@ -82,13 +85,9 @@ auto state Flying
 		{
 			if ( Role == ROLE_Authority && !bbPlayer(Owner).bNewNet )
 			{
-				if (STM != None)
-					STM.PlayerHit(Instigator, 12, Other.IsA('Pawn'));	// 12 = Ripper Secondary, Direct if Pawn
 				if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 					Other.TakeDamage(damage, instigator,HitLocation,
 						(MomentumTransfer * Normal(Velocity)), MyDamageType );
-				if (STM != None)
-					STM.PlayerClear();
 			}
 			else
 			{
@@ -168,12 +167,8 @@ function NewProcessTouch (Actor Other, Vector HitLocation)
 		{
 			if (bbPlayer(Owner).bNewNet)
 				return;
-			if (STM != None)
-				STM.PlayerHit(Instigator, 12, Other.IsA('Pawn'));	// 12 = Ripper Secondary, Direct if Pawn
 			Other.TakeDamage(damage, instigator,HitLocation,
 				(MomentumTransfer * Normal(Velocity)), MyDamageType );
-			if (STM != None)
-				STM.PlayerClear();
 			MakeNoise(1.0);
 		}
 		else

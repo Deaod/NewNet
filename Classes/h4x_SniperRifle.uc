@@ -25,3 +25,13 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 			spawn(class'UT_SpriteSmokePuff',,,HitLocation+HitNormal*9);	
 	}
 }
+
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}

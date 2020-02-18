@@ -347,7 +347,7 @@ function AddDefaultInventory( pawn PlayerPawn )
 	local String s_Minigun2;
 	local String s_Eightball;
 	
-	PreFix = "UltimateNewNet"$class'UTPure'.default.ThisVer$".";
+	PreFix = "UN"$class'UTPure'.default.ThisVer$".";
 	
 	// Set botpack weapons strings
 	s_ShockRifle    = "Botpack.ShockRifle";

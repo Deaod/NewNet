@@ -1,6 +1,5 @@
 class ST_UTApeChunk extends UTChunk;
 
-var ST_Mutator STM;
 var ST_UTApeChunkInfo Chunkie;
 var int ChunkIndex;
 var float R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, R13, R14, R15, R16;
@@ -81,9 +80,6 @@ simulated function PostBeginPlay()
 
 	if (ROLE == ROLE_Authority)
 	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
 		RandRot = Rotation;
 		RandRot.Pitch += R2 * 2000 - 1000;
 		RandRot.Yaw += R3 * 2000 - 1000;
@@ -116,7 +112,7 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 			if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client && !IsA('NN_UTApeChunkOwnerHidden'))
 			{
 				NN_HitOther = Other;
-				bbP.xxNN_TakeDamage(Other, 20, Instigator, HitLocation, (MomentumTransfer * Velocity/speed), MyDamageType, zzNN_ProjIndex);
+				bbP.xxNN_TakeDamage(Other, class'UT_FlakCannon', 0, Instigator, HitLocation, (MomentumTransfer * Velocity/speed), MyDamageType, zzNN_ProjIndex);
 				bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, (MomentumTransfer * Velocity/speed));
 			}
 			
@@ -125,7 +121,6 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 				Chunkie.HitSomething(Self, Other);
 				Other.TakeDamage(Dmg, instigator,HitLocation,
 					(MomentumTransfer * Velocity/speed), MyDamageType );
-				Chunkie.EndHit();
 			}
 			if ( R1 < 0.5 )
 				PlaySound(Sound 'ChunkHit',, 4.0,,200);

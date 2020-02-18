@@ -248,26 +248,6 @@ Begin:
 	PlayIdleAnim();
 }
 
-auto state Pickup
-{
-	ignores AnimEnd;
-
-	// Landed on ground.
-	simulated function Landed(Vector HitNormal)
-	{
-		local rotator newRot;
-
-		newRot = Rotation;
-		newRot.pitch = 0;
-		SetRotation(newRot);
-		if ( Role == ROLE_Authority )
-		{
-			bSimFall = false;
-			SetTimer(2.0, false);
-		}
-	}
-}
-
 state NormalFire
 {
 	ignores AnimEnd;
@@ -553,9 +533,9 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 	}
 	else
 	{
-		Spawn(class'UT_RingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+		Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
 		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxClientDemoFix(None, class'UT_RingExplosion2',HitLocation+HitNormal*8,,, rotator(HitNormal));
+			bbPlayer(Owner).xxClientDemoFix(None, class'ut_RingExplosion5',HitLocation+HitNormal*8,,, rotator(HitNormal));
 	}
 	
 	//if (Other.IsA('Mover')) {
@@ -870,7 +850,7 @@ function TraceFire( float Accuracy )
 	}
 	else
 	{
-		bbP.TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
+		bbP.zzNN_HitActor = bbP.TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
 		NN_HitLoc = bbP.zzNN_HitLoc;
 	}
 	
@@ -892,8 +872,6 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	}
 
 	PawnOwner = Pawn(Owner);
-	if (STM != None)
-		STM.PlayerFire(PawnOwner, 5);		// 5 = Shock Beam.
 
 	if (Other==None)
 	{
@@ -905,15 +883,10 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	if ( PlayerOwner != None )
 		PlayerOwner.ClientInstantFlash( -0.4, vect(450, 190, 650));
 	SpawnEffect(HitLocation, Owner.Location + CalcDrawOffset() + (FireOffset.X + 20) * X + FireOffset.Y * Y + FireOffset.Z * Z);
-	
-	if (bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(7))
-		return;
-	
+
 	if ( NN_sgShockProjOwnerHidden(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
-		if (STM != None)
-			STM.PlayerUnfire(PawnOwner, 5);		// 5 = Shock Beam
 		Other.SetOwner(Owner);
 		NN_sgShockProjOwnerHidden(Other).SuperExplosion();
 		return;
@@ -921,8 +894,6 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	else if ( ST_sgShockProj(Other)!=None )
 	{
 		AmmoType.UseAmmo(1);
-		if (STM != None)
-			STM.PlayerUnfire(PawnOwner, 5);		// 5 = Shock Beam
 		ST_sgShockProj(Other).SuperExplosion();
 		return;
 	}
@@ -932,19 +903,15 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	}
 	else
 	{
-		Spawn(class'UT_RingExplosion2',,, HitLocation+HitNormal*8,rotator(HitNormal));
+		Spawn(class'ut_RingExplosion5',,, HitLocation+HitNormal*8,rotator(HitNormal));
 	}
 
 	if ( (Other != self) && (Other != Owner) && (Other != None) ) 
 	{
-		if (STM != None)
-			STM.PlayerHit(PawnOwner, 5, False);			// 5 = Shock Beam
 		//if (HitDamage > 0)
 			Other.TakeDamage(HitDamage, PawnOwner, HitLocation, 60000.0*X, MyDamageType);
 		//else
 			//Other.TakeDamage(class'UTPure'.default.ShockDamagePri, PawnOwner, HitLocation, 60000.0*X, MyDamageType);
-		if (STM != None)
-			STM.PlayerClear();
 	}
 
 	if (Pawn(Other) != None && Other != Owner && Pawn(Other).Health > 0)
@@ -953,8 +920,6 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		if (HitCounter == 3)
 		{	// Wowsers!
 			HitCounter = 0;
-			if (STM != None)
-				STM.PlayerSpecial(PawnOwner, 5);		// 5 = Shock Beam
 		}
 	}
 	else
@@ -973,7 +938,7 @@ simulated function DoRingExplosion5(PlayerPawn Pwner, vector HitLocation, vector
 		//for (P = Level.PawnList; P != None; P = P.NextPawn)
 		ForEach AllActors(class'PlayerPawn', P)
 			if (P != Pwner) {
-				CR = P.Spawn(class'UT_RingExplosion2',P,, HitLocation+HitNormal*8,rotator(HitNormal));
+				CR = P.Spawn(class'ut_RingExplosion5',P,, HitLocation+HitNormal*8,rotator(HitNormal));
 				CR.bOnlyOwnerSee = True;
 			}
 	}
@@ -1063,6 +1028,7 @@ defaultproperties
 {
      bNewNet=True
      hitdamage=50
+	 AmmoName=Class'ST_BlueGunAmmo'
      AltProjectileClass=Class'ST_sgShockProj'
      DownSound=Sound'Botpack.PulseGun.PulseDown'
      bInstantHit=True
@@ -1075,6 +1041,8 @@ defaultproperties
      AIRating=0.700000
      RefireRate=0.950000
      AltRefireRate=0.990000
+     FireSound=Sound'PulseFire'
+     AltFireSound=Sound'PulseBolt'
      SelectSound=Sound'Botpack.PulseGun.PulsePickup'
      DeathMessage="%o was torn to pieces by %k's %w."
      NameColor=(R=128,G=0,B=128)

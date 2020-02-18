@@ -111,7 +111,7 @@ static function ClientReceive(
             if ( (TournamentPlayer(P).Level.TimeSeconds - TournamentPlayer(P).LastKillTime < 3) && (Switch != 1) )
             {
                 TournamentPlayer(P).MultiLevel++;
-                TournamentPlayer(P).ReceiveLocalizedMessage( class'MultiKillMessage', TournamentPlayer(P).MultiLevel );
+                TournamentPlayer(P).ReceiveLocalizedMessage( class'MMultiKillMessage', TournamentPlayer(P).MultiLevel );
             }
             else
                 TournamentPlayer(P).MultiLevel = 0;

@@ -13,6 +13,9 @@ simulated function Tick(float DeltaTime)
 {
 	local Pawn P;
 	
+	if ( Owner == None )
+		return;
+	
 	if (Level.NetMode == NM_Client) {
 	
 		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
@@ -100,14 +103,13 @@ auto state Flying
 	{
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
-		if ( (Other != instigator) && !Other.IsA('Projectile') && Other != Owner && Other.Owner != Owner ) 
+		if ( (Other != instigator) && !Other.IsA('Projectile') && Other != Owner /* && Other.Owner != Owner */ ) 
 			Explode(HitLocation,Normal(HitLocation-Other.Location));
 	}
 
 	function BlowUp(vector HitLocation)
 	{
-		//Log(Class.Name$" (BlowUp) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
-		if (!bbPlayer(Owner).bNewNet)
+		if (bbPlayer(Owner) == None || !bbPlayer(Owner).bNewNet)
 			HurtRadius(Damage,220.0, MyDamageType, MomentumTransfer, HitLocation );
 		MakeNoise(1.0);
 	}

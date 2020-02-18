@@ -6,24 +6,10 @@
 
 class ST_ripper extends ripper;
 
-var ST_Mutator STM;
 var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
-var Class<NN_WeaponFunctions> nnWF;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function RenderOverlays(Canvas Canvas)
 {
@@ -73,11 +59,10 @@ simulated function bool ClientFire(float Value)
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
 	{
-		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
+ 		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
 			return false;
 		if ( (AmmoType == None) && (AmmoName != None) )
 		{
-			// ammocheck
 			GiveAmmo(Pawn(Owner));
 		}
 		if ( AmmoType.AmmoAmount > 0 )
@@ -93,7 +78,7 @@ simulated function bool ClientFire(float Value)
 			Start = Owner.Location + CDO + FireOffset.X * X + yMod * Y + FireOffset.Z * Z; 
 			AdjustedAim = pawn(owner).AdjustAim(ProjectileSpeed, Start, AimError, True, bWarnTarget);	
 			
-			Proj = Spawn(ProjectileClass, Owner,, Start, AdjustedAim);
+			Proj = Spawn(class'ST_Razor2', Owner,, Start, AdjustedAim);
 			ProjIndex = bbP.xxNN_AddProj(Proj);
 			ST_Proj = ST_Razor2(Proj);
 			if (ST_Proj != None)
@@ -103,7 +88,6 @@ simulated function bool ClientFire(float Value)
 			bbP.xxClientDemoFix(Proj, class'Razor2', Start, Proj.Velocity, Proj.Acceleration, AdjustedAim);
 		}
 	}
-		
 	return Super.ClientFire(Value);
 }
 
@@ -125,7 +109,6 @@ simulated function bool ClientAltFire( float Value )
 			return false;
 		if ( AmmoType == None )
 		{
-			// ammocheck
 			GiveAmmo(Pawn(Owner));
 		}
 		if (AmmoType.AmmoAmount > 0)
@@ -142,7 +125,7 @@ simulated function bool ClientAltFire( float Value )
 			Start = Owner.Location + CDO + FireOffset.X * X + yMod * Y + FireOffset.Z * Z; 
 			AdjustedAim = pawn(owner).AdjustAim(AltProjectileSpeed, Start, AimError, True, bAltWarnTarget);	
 		
-			Proj = Spawn(AltProjectileClass, Owner,, Start, AdjustedAim);
+			Proj = Spawn(class'ST_Razor2Alt', Owner,, Start, AdjustedAim);
 			ProjIndex = bbP.xxNN_AddProj(Proj);
 			ST_Proj = ST_Razor2Alt(Proj);
 			if (ST_Proj != None)
@@ -172,13 +155,10 @@ function Fire( float Value )
 
 	if ( (AmmoType == None) && (AmmoName != None) )
 	{
-		// ammocheck
 		GiveAmmo(Pawn(Owner));
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
-		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxAddFired(15);
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -196,7 +176,7 @@ function Fire( float Value )
 		{
 			if ( bRapidFire || (FiringSpeed > 0) )
 				Pawn(Owner).PlayRecoil(FiringSpeed);
-			ProjectileFire(ProjectileClass, ProjectileSpeed, bWarnTarget);
+			ProjectileFire(class'ST_Razor2', ProjectileSpeed, bWarnTarget);
 		}
 	}
 }
@@ -218,13 +198,10 @@ function AltFire( float Value )
 
 	if ( AmmoType == None )
 	{
-		// ammocheck
 		GiveAmmo(Pawn(Owner));
 	}
 	if (AmmoType.UseAmmo(1))
 	{
-		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxAddFired(17);
 		GotoState('AltFiring');
 		bCanClientFire = true;
 		bPointing=True;
@@ -239,11 +216,11 @@ function AltFire( float Value )
 		else
 		{
 			Pawn(Owner).PlayRecoil(FiringSpeed);
-			ProjectileFire(AltProjectileClass, AltProjectileSpeed, bAltWarnTarget);
+			ProjectileFire(class'ST_Razor2Alt', AltProjectileSpeed, bAltWarnTarget);
 		}
 	}
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -288,7 +265,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 function Projectile ProjectileFire(class<projectile> ProjClass, float ProjSpeed, bool bWarn)
 {
 	local Vector Start, X,Y,Z;
@@ -382,6 +359,11 @@ simulated function TweenDown ()
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
 state Active
 {
 	function Fire(float F) 
@@ -406,10 +388,29 @@ state Active
 	}
 }
 
+simulated function PlayFiring()
+{
+	PlayAnim( 'Fire', 0.7 + 0.6 * FireAdjust, 0.05 );
+	PlayOwnedSound(class'Razor2'.Default.SpawnSound, SLOT_None,4.2);
+}
+
+simulated function PlayAltFiring()
+{
+	PlayAnim('Fire', 0.4 + 0.3 * FireAdjust,0.05);
+	PlayOwnedSound(class'Razor2Alt'.Default.SpawnSound, SLOT_None,4.2);
+}
+
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
 defaultproperties
 {
-     bNewNet=True
-     ProjectileClass=Class'ST_Razor2'
-     AltProjectileClass=Class'ST_Razor2Alt'
-	 nnWF=Class'NN_WeaponFunctions'
+    bNewNet=True
 }

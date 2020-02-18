@@ -13,9 +13,11 @@ simulated function Tick(float DeltaTime)
 {
 	local bbPlayer bbP;
 	
-	if (Level.NetMode == NM_Client) {
+	if ( Owner == None )
+		return;
 	
-		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+	if (Level.NetMode == NM_Client) {
+		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None){
 			LightType = LT_None;
 			SetCollisionSize(0, 0);
 			bAlreadyHidden = True;
@@ -125,27 +127,15 @@ simulated function NewProcessTouch (Actor Other, vector HitLocation)
 			
 			if (bbP == None || bbO == None)
 			{
-				if (STM != None)
-					STM.PlayerHit(Instigator, 9, False);	// 9 = Plasma Sphere
-				Other.TakeDamage( Damage, instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType);	
-				if (STM != None)
-					STM.PlayerClear();
+				Other.TakeDamage( Damage, instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType);
 			}
 			else if (bbP.PlayerReplicationInfo.Team == bbO.PlayerReplicationInfo.Team)
 			{
-				if (STM != None)
-					STM.PlayerHit(Instigator, 9, False);	// 9 = Plasma Sphere
 				bbO.GiveHealth( Damage, bbP, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType);
-				if (STM != None)
-					STM.PlayerClear();
 			}
 			else
 			{
-				if (STM != None)
-					STM.PlayerHit(Instigator, 9, False);	// 9 = Plasma Sphere
 				bbO.StealHealth( Damage, bbP, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType);
-				if (STM != None)
-					STM.PlayerClear();
 			}
 		}
 	}

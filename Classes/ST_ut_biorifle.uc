@@ -6,13 +6,11 @@
 
 class ST_ut_biorifle extends ut_biorifle;
 
-var ST_Mutator STM;
 var bool bNewNet;				// Self-explanatory lol
 var Rotator GV, LastGV;
 var Vector CDO;
 var float yMod;
 var name LastState;
-var Class<NN_WeaponFunctions> nnWF;
 
 replication
 {
@@ -26,9 +24,6 @@ function PostBeginPlay()
 
 	if (ROLE == ROLE_Authority)
 	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
 		if (bNewNet)
 		{
 			ProjectileClass = Class'NN_UT_BioGelOwnerHidden';
@@ -147,7 +142,6 @@ simulated function bool ClientFire(float Value)
 			bbP.xxClientDemoFix(Proj, class'UT_BioGel', Start, Proj.Velocity, Proj.Acceleration, AdjustedAim);
 		}
 	}
-		
 	return Super.ClientFire(Value);
 }
 
@@ -169,15 +163,6 @@ simulated function bool ClientAltFire( float Value )
 		yModInit();
 		
 		Instigator = Pawn(Owner);
-		if ( (PlayerPawn(Owner) != None) 
-			&& ((Level.NetMode == NM_Standalone) || PlayerPawn(Owner).Player.IsA('ViewPort')) )
-		{
-			if ( InstFlash != 0.0 )
-				PlayerPawn(Owner).ClientInstantFlash( InstFlash, InstFog);
-			PlayerPawn(Owner).ShakeView(ShakeTime, ShakeMag, ShakeVert);
-		}
-		if ( Affector != None )
-			Affector.FireEffect();
 		PlayAltFiring();
 		if ( Role < ROLE_Authority )
 			GotoState('ClientAltFiring');
@@ -190,7 +175,7 @@ simulated function bool ClientAltFire( float Value )
 	
 	return bResult;
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -235,7 +220,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 function Fire( float Value )
 {
 	local bbPlayer bbP;
@@ -254,8 +239,6 @@ function Fire( float Value )
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
-		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxAddFired(5);
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -521,7 +504,6 @@ state ShootLoad
 		}
 
 		bbP = bbPlayer(Owner);
-		bbPlayer(Owner).xxAddFired(6);
 
 		BG = ST_BioGlob(ProjectileFire(AltProjectileClass, AltProjectileSpeed, bAltWarnTarget));
 		if (bbP != None)
@@ -672,6 +654,11 @@ simulated function TweenDown ()
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
 state Active
 {
 	function Fire(float F) 
@@ -696,10 +683,39 @@ state Active
 	}
 }
 
+simulated function PlayAltBurst()
+{
+	if ( Affector != None )
+		Affector.FireEffect();
+	if ( PlayerPawn(Owner) != None && (!bNewNet || Level.NetMode == NM_Client) )
+	{
+		PlayerPawn(Owner).ClientInstantFlash( InstFlash, InstFog);
+		PlayerPawn(Owner).ShakeView(ShakeTime, ShakeMag, ShakeVert);
+	}
+	PlayOwnedSound(FireSound, SLOT_Misc, 1.7*Pawn(Owner).SoundDampening);
+	PlayAnim('Fire',0.4, 0.05);
+}
+
+simulated function PlayIdleAnim()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	LoopAnim('Still', 1.0,0.05);
+}
+
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
 defaultproperties
 {
      bNewNet=True
      ProjectileClass=Class'ST_UT_BioGel'
      AltProjectileClass=Class'ST_BioGlob'
-	 nnWF=Class'NN_WeaponFunctions'
 }

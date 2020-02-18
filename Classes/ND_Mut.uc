@@ -1,7 +1,7 @@
 /************************************************************
  * ND_Mut
  ************************************************************/
-class ND_Mut expands Mutator config(UltimateNewNet);
+class ND_Mut expands Mutator config(UN);
 
 var NDgencli Check[128];
 var PlayerReplicationInfo yyPRI;

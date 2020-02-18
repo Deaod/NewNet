@@ -6,22 +6,9 @@
 
 class ST_RocketMk2 extends RocketMk2;
 
-var ST_Mutator STM;
 var bool bDirect;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
-
-simulated function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 auto state Flying
 {
@@ -29,7 +16,7 @@ auto state Flying
 	{
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
-		if ( (Other != instigator) && !Other.IsA('Projectile') && Other != Owner && Other.Owner != Owner )
+		if ( (Other != instigator) && !Other.IsA('Projectile') && Other != Owner /* && Other.Owner != Owner */ )
 		{
 			bDirect = Other.IsA('Pawn');
 			NN_HitOther = Other;
@@ -55,21 +42,17 @@ auto state Flying
 		local bbPlayer bbP;
 		
 		bbP = bbPlayer(Owner);
-		
-		if (STM != None)
-			STM.PlayerHit(Instigator, 16, bDirect);		// 16 = Rockets.
+
 		if (bbP != None && bbP.bNewNet)
 		{
 			if (Level.NetMode == NM_Client && !IsA('NN_rocketmk2OwnerHidden'))
-				bbP.NN_HurtRadius(self, 22, 220.0, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex );
+				bbP.NN_HurtRadius(self, class'UT_Eightball', 0, 220.0, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex );
 		}
 		else
 		{
 			HurtRadius(Damage,220.0, MyDamageType, MomentumTransfer, HitLocation );
 		}
 		NN_Momentum(220.0, MomentumTransfer, HitLocation);
-		if (STM != None)
-			STM.PlayerClear();
 		MakeNoise(1.0);
 	}
 	

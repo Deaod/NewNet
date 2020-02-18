@@ -13,15 +13,21 @@ simulated function Tick(float DeltaTime)
 {
 	local bbPlayer bbP;
 	
-	if (Level.NetMode == NM_Client) {
+	if ( Owner == None )
+		return;
 	
-		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+	if (Level.NetMode == NM_Client)
+	{
+		if (bNetOwner && !bAlreadyHidden)
+		{
 			LightType = LT_None;
 			SetCollisionSize(0, 0);
 			bAlreadyHidden = True;
 			Destroy();
 			return;
-		} else if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
+		}
+		else if (!bAlreadyHidden)
+		{
 			bAlreadyHidden = True;
 			if ( !Region.Zone.bWaterZone )
 				Trail = Spawn(class'ChunkTrail',self);
@@ -39,9 +45,7 @@ simulated function Tick(float DeltaTime)
 				NN_OwnerPing = 0;
 			}
 		}
-		
 	}
-	
 }
 
 simulated function PostBeginPlay()
@@ -73,14 +77,6 @@ simulated function PostBeginPlay()
 		R7 = FRand();
 		R8 = FRand();
 	}
-		
-	if ( Role == ROLE_Authority )
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-	
 	RandRot = Rotation;
 	RandRot.Pitch += R2 * 2000 - 1000;
 	RandRot.Yaw += R3 * 2000 - 1000;
@@ -121,7 +117,6 @@ simulated function ProcessTouch (Actor Other, vector HitLocation)
 				if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 					Other.TakeDamage(damage, instigator,HitLocation,
 						(MomentumTransfer * Velocity/speed), MyDamageType );
-				Chunkie.EndHit();
 				if ( R1 < 0.5 )
 					PlayOwnedSound(Sound 'ChunkHit',, 4.0,,200);
 			}
@@ -143,7 +138,6 @@ simulated function NewProcessTouch (Actor Other, vector HitLocation)
 				if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 					Other.TakeDamage(damage, instigator,HitLocation,
 						(MomentumTransfer * Velocity/speed), MyDamageType );
-				Chunkie.EndHit();
 				if ( R1 < 0.5 )
 					PlayOwnedSound(Sound 'ChunkHit',, 4.0,,200);
 			}
@@ -153,6 +147,8 @@ simulated function NewProcessTouch (Actor Other, vector HitLocation)
 
 simulated function HitWall( vector HitNormal, actor Wall )
 {
+	local SmallSpark s;
+	
 	if (Level.NetMode == NM_Client && NN_OwnerPing > 0) {
 		Velocity = Velocity / 2;
 		NN_OwnerPing = 0;
@@ -171,9 +167,12 @@ simulated function HitWall( vector HitNormal, actor Wall )
 		if ( !Level.bDropDetail && (Level.Netmode != NM_DedicatedServer) && !Region.Zone.bWaterZone ) 
 		{
 			if ( R6 < 0.5 )
-				DoSmallSpark(Location+HitNormal*5, rotator(HitNormal));
+			{
+				s = Spawn(Class'SmallSpark',,,Location+HitNormal*5,rotator(HitNormal));
+				s.RemoteRole = ROLE_None;
+			}
 			else
-				DoWallCrack(Location, rotator(HitNormal));
+				Spawn(class'WallCrack',,,Location, rotator(HitNormal));
 		}
 	}
 	Velocity = 0.8*(( Velocity dot HitNormal ) * HitNormal * (-1.8 + R7*0.8) + Velocity);   // Reflect off Wall w/damping
@@ -189,35 +188,6 @@ simulated function HitWall( vector HitNormal, actor Wall )
 		else
 			PlayOwnedSound(sound 'Hit5', SLOT_Misc,0.6,,1000);
 	}
-}
-
-simulated function DoSmallSpark(vector Loc, rotator Tater)
-{
-	local PlayerPawn P;
-	local SmallSpark s;
-
-	if (RemoteRole < ROLE_Authority)
-		//for (P = Level.PawnList; P != None; P = P.NextPawn)
-		ForEach AllActors(class'PlayerPawn', P)
-			if (P != Owner) {
-				s = Spawn(Class'SmallSpark',P,, Loc, Tater);
-				s.RemoteRole = ROLE_None;
-				s.bOnlyOwnerSee = True;
-			}
-}
-
-simulated function DoWallCrack(vector Loc, rotator Tater)
-{
-	local PlayerPawn P;
-	local WallCrack s;
-	
-	if (RemoteRole < ROLE_Authority)
-		//for (P = Level.PawnList; P != None; P = P.NextPawn)
-		ForEach AllActors(class'PlayerPawn', P)
-			if (P != Owner) {
-				s = Spawn(class'WallCrack',P,,Loc, Tater);
-				s.bOnlyOwnerSee = True;
-			}
 }
 
 defaultproperties

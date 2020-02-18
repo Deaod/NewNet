@@ -6,22 +6,9 @@
 
 class ST_UT_SeekingRocket extends UT_SeekingRocket;
 
-var ST_Mutator STM;
 var bool bDirect;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
-
-simulated function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function Timer()
 {
@@ -60,7 +47,7 @@ auto state Flying
 	{
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
-		if ( (Other != instigator) && !Other.IsA('Projectile') && Other != Owner && Other.Owner != Owner && NN_HitOther != Other ) 
+		if ( (Other != instigator) && !Other.IsA('Projectile') && Other != Owner /* && Other.Owner != Owner */ && NN_HitOther != Other ) 
 		{
 			bDirect = Other.IsA('Pawn');
 			NN_HitOther = Other;
@@ -89,20 +76,16 @@ auto state Flying
 		local bbPlayer bbP;
 		
 		bbP = bbPlayer(Owner);
-		if (STM != None)
-			STM.PlayerHit(Instigator, 16, bDirect);		// 16 = Rockets. No special for seeking, a seeker just means it has a larger chance of direct (yeah rite :P)
 		if (bbP != None && bbP.bNewNet)
 		{
 			if (Level.NetMode == NM_Client && !IsA('NN_UT_SeekingRocket'))
-				bbP.NN_HurtRadius(self, 22, 220.0, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex );
+				bbP.NN_HurtRadius(self, class'UT_Eightball', 0, 220.0, MyDamageType, MomentumTransfer, HitLocation, zzNN_ProjIndex );
 		}
 		else
 		{
 			HurtRadius(Damage, 220.0, MyDamageType, MomentumTransfer, HitLocation );
 		}
 		NN_Momentum(220.0, MomentumTransfer, HitLocation);
-		if (STM != None)
-			STM.PlayerClear();
 		MakeNoise(1.0);
 	}
 
@@ -140,8 +123,4 @@ auto state Flying
 			}
 		}
 	}
-}
-
-defaultproperties
-{
 }

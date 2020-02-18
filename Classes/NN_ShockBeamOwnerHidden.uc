@@ -5,7 +5,10 @@ var bool bAlreadyHidden;
 simulated function Tick(float F)
 {
     Super.Tick(F);
-    // End:0x55
+	
+	if ( Owner == None )
+		return;
+	
     if(!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None)
     {
         // End:0x55

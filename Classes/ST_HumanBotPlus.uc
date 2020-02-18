@@ -6,20 +6,6 @@
 
 class ST_HumanBotPlus extends HumanBotPlus;
 
-var ST_Mutator StatMut;
-var PureStats Stat;
-
-function AttachStats(PureStats S, ST_Mutator M)
-{
-	StatMut = M;
-	Stat = S;
-}
-
-function PureStats GetStats()
-{
-	return Stat;
-}
-
 function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, 
 						Vector momentum, name damageType)
 {
@@ -70,15 +56,6 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 
 	if ( Level.Game.DamageMutator != None )
 		Level.Game.DamageMutator.MutatorTakeDamage( ActualDamage, Self, InstigatedBy, HitLocation, Momentum, DamageType );
-
-	if (StatMut != None)
-	{	// Damn epic. Damn Damn. Why is armor handled before mutator gets it? Instead of doing it simple, I now have
-		// to do all this magic. :/ (And subclassing bots too!)
-		// If epic hadn't done this mess, I could have done this entirely in a mutator. GG epic.
-		// Also must limit damage incase player has Health < Damage
-		ModifiedDamage1 -= (ModifiedDamage2 - actualDamage);
-		StatMut.PlayerTakeDamage(Self, instigatedBy, Min(Health, ModifiedDamage1), damageType);
-	}
 
 	if (instigatedBy != Self && PlayerPawn(instigatedBy) != None)
 	{	// Send the hitsound local message
@@ -157,8 +134,6 @@ function Died(pawn Killer, name damageType, vector HitLocation)
 	if ( CarriedDecoration != None )
 		DropDecoration();
 	level.game.Killed(Killer, self, damageType);
-	if (StatMut != None)
-		StatMut.PlayerKill(Killer, Self);
 	//log(class$" dying");
 	if( Event != '' )
 		foreach AllActors( class 'Actor', A, Event )
@@ -179,8 +154,4 @@ function Died(pawn Killer, name damageType, vector HitLocation)
 	if ( RemoteRole == ROLE_AutonomousProxy )
 		ClientDying(DamageType, HitLocation);
 	GotoState('Dying');
-}
-
-defaultproperties
-{
 }

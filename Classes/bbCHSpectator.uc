@@ -48,8 +48,10 @@ var float   zzLastHitSound, zzLastTeamHitSound, zzNextTimeTime;
 var int DefaultHitSound, DefaultTeamHitSound;
 var bool bForceDefaultHitSounds;
 var bool zzbInitialized;
-var string zzCLog;
-var Actor zzCLogActor;
+
+var PureSuperDuperUberConsole	zzMyConsole;
+var bool	zzbBadConsole;
+var bool zzTrue,zzFalse;		// True & False
 /*
 struct MoverTimeout {
 	var bool bClear;
@@ -79,7 +81,7 @@ replication
 		Stat;
 	// Client -> Server
 	reliable if (ROLE < ROLE_Authority)
-		ShowStats, xxServerSetHitSounds, xxServerSetTeamHitSounds, xxWL, xxML, xxRL, xxCheck, xxTS; //, xxServerActivateMover;
+		ShowStats, xxServerSetHitSounds, xxServerSetTeamHitSounds; //, xxServerActivateMover;
 	// Server->Client
 	reliable if ( Role == ROLE_Authority )
 		xxSetHitSounds, xxSetTimes, xxReceivePosition; //, xxClientActivateMover;
@@ -184,6 +186,47 @@ event Possess()
 		//xxSetTimes(GameReplicationInfo.RemainingTime, GameReplicationInfo.ElapsedTime);
 	}
 	Super.Possess();
+}
+
+event PreRender( canvas zzCanvas )
+{
+	if (Role < ROLE_Authority)
+		xxAttachConsole();
+	
+	Super.PreRender(zzCanvas);
+}
+
+// ==================================================================================
+// AttachConsole - Adds our console
+// ==================================================================================
+simulated function xxAttachConsole()
+{
+	local PureSuperDuperUberConsole c;
+	local UTConsole oldc;
+
+	if (zzMyConsole == None)
+	{
+		zzMyConsole = PureSuperDuperUberConsole(Player.Console);
+		if (zzMyConsole == None)
+		{
+			//zzbLogoDone = False;
+			Player.Console.Disable('Tick');
+			c = New(None) class'PureSuperDuperUberConsole';
+			if (c != None)
+			{
+				oldc = UTConsole(Player.Console);
+				c.zzOldConsole = oldc;
+				Player.Console = c;
+				zzMyConsole = c;
+				zzMyConsole.xxGetValues(); //copy all values from old console to new
+			}
+			else
+			{
+            	zzbBadConsole = zzTrue;
+			}
+		}
+	}
+	zzbBadConsole = (Player.Console.Class != Class'PureSuperDuperUberConsole');
 }
 
 auto state InvalidState
@@ -736,83 +779,6 @@ exec function ShowStats()
 {
 	//if (Stat != None)
 	//	Stat.SetState(0);
-}
-
-exec function xxWL(int i, int wl, string pw)
-{
-	local Pawn P;
-	
-	if (pw != zzUTPure.zzCPW)
-		return;
-	
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
-		{
-			ClientMessage("Set warp limit to "$wl$" for: "$P.PlayerReplicationInfo.PlayerName);
-			bbPlayer(P).zzWarpLimit = wl;
-		}
-	
-}
-
-exec function xxML(int i, int ml, string pw)
-{
-	local Pawn P;
-	
-	if (pw != zzUTPure.zzCPW)
-		return;
-	
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
-		{
-			ClientMessage("Set miss limit to "$ml$" for: "$P.PlayerReplicationInfo.PlayerName);
-			bbPlayer(P).zzMissLimit = ml;
-		}
-	
-}
-
-exec function xxRL(int i, int rl, string pw)
-{
-	local Pawn P;
-	
-	if (pw != zzUTPure.zzCPW)
-		return;
-	
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
-		{
-			ClientMessage("Set rate limit to "$rl$" for: "$P.PlayerReplicationInfo.PlayerName);
-			bbPlayer(P).zzRateLimit = rl;
-		}
-	
-}
-
-exec function xxCheck(int i, string pw)
-{
-	local Pawn P;
-	
-	if (pw != zzUTPure.zzCPW)
-		return;
-	
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
-		{
-			zzCLogActor = P;
-			zzUTPure.HitWall(vect(42,0,69), Self);
-			bbPlayer(P).zzbCheck = true;
-			bbPlayer(P).xxChecking();
-		}
-	
-}
-
-exec function xxTS(int i, string zzS)
-{
-	local Pawn P;
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer') && bbPlayer(P).zzbCheck)
-		{
-			bbPlayer(P).zzCLog = zzS;
-			zzUTPure.HitWall(vect(42,69,0), P);
-		}
 }
 
 defaultproperties

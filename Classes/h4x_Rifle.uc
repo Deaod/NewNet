@@ -5,7 +5,6 @@ class h4x_Rifle expands h4x_SniperRifle;
 #exec AUDIO IMPORT NAME=zoomstart FILE=Sounds\zoomstart.WAV GROUP=h4xRifle
 #exec AUDIO IMPORT NAME=zoomstop FILE=Sounds\zoomstop.WAV GROUP=h4xRifle
 
-var ST_Mutator STM;
 var bool bNewNet;		// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
@@ -21,19 +20,6 @@ var name FireAnims[5];
 var vector OwnerLocation;
 var float StillTime, StillStart;
 var bool bZoom, bFinishZooming;
-var Class<NN_WeaponFunctions> nnWF;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function RenderOverlays(Canvas Canvas)
 {
@@ -303,12 +289,9 @@ function Fire( float Value )
 	bbP = bbPlayer(Owner);
 	if (bbP != None && bNewNet && Value < 1)
 		return;
-	
-	//bbPlayer(Owner).xxAddFired(zzWin);
-	
+		
 	if ( (AmmoType == None) && (AmmoName != None) )
 	{
-
 		GiveAmmo(Pawn(Owner));
 	}
 	if ( AmmoType.UseAmmo(1) )
@@ -330,7 +313,6 @@ function Fire( float Value )
 			Pawn(Owner).PlayRecoil(FiringSpeed);
 		TraceFire(0);
 		AimError = Default.AimError;
-		ClientFire(Value);
 	}
 }
 
@@ -343,7 +325,7 @@ function AltFire( float Value )
 	PlayOwnedSound(Misc1Sound, SLOT_Misc, 1.0*Pawn(Owner).SoundDampening,,, Level.TimeDilation-0.1);
 	ClientAltFire(Value);
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -388,7 +370,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 state Active
 {
 	function Fire(float F)
@@ -559,9 +541,6 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	PawnOwner = Pawn(Owner);
 	POther = Pawn(Other);
 	PPOther = PlayerPawn(Other);
-	if (STM != None)
-		STM.PlayerFire(PawnOwner, 18);		// 18 = Sniper
-
 	realLoc = Owner.Location + CalcDrawOffset();
 	DoShellCase(PlayerPawn(Owner), realLoc + 20 * X + FireOffset.Y * Y + Z, X,Y,Z);
 
@@ -582,25 +561,17 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 			&& (instigator.IsA('PlayerPawn') || (instigator.IsA('Bot') && !Bot(Instigator).bNovice)) )
 			&& !PPOther.bIsCrouching && PPOther.GetAnimGroup(PPOther.AnimSequence) != 'Ducking' )
 		{
-			if (STM != None)
-				STM.PlayerHit(PawnOwner, 18, True);		// 18 = Sniper, Headshot
 			if (HeadDamage > 0)
 				Other.TakeDamage(HeadDamage, PawnOwner, HitLocation, 35000 * X, AltDamageType); // was 100 (150) dmg
 			else
 				Other.TakeDamage(class'UTPure'.default.HeadshotDamage, PawnOwner, HitLocation, 35000 * X, AltDamageType);
-			if (STM != None)
-				STM.PlayerClear();
 		}
 		else
 		{
-			if (STM != None)
-				STM.PlayerHit(PawnOwner, 18, False);		// 18 = Sniper
 			if (HitDamage > 0)
 				Other.TakeDamage(HitDamage,  PawnOwner, HitLocation, 30000.0*X, MyDamageType);	 // was 45 (67) dmg
 			else
 				Other.TakeDamage(class'UTPure'.default.SniperDamagePri,  PawnOwner, HitLocation, 30000.0*X, MyDamageType);
-			if (STM != None)
-				STM.PlayerClear();
 		}
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
 		{
@@ -690,11 +661,10 @@ simulated function NN_TraceFire()
 	if (bbP == None)
 		return;
 
-//	Owner.MakeNoise(Pawn(Owner).SoundDampening);
 	GetAxes(GV,X,Y,Z);
-	StartTrace = Owner.Location + PawnOwner.Eyeheight * Z; 
-	X = vector(GV);
-	EndTrace = StartTrace + 100000 * X; 
+	StartTrace = Owner.Location + bbP.Eyeheight * vect(0,0,1);
+	EndTrace = StartTrace + (100000 * vector(GV));
+
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	if (Other.IsA('Pawn'))
 		HitDiff = HitLocation - Other.Location;
@@ -729,10 +699,10 @@ function TraceFire( float Accuracy )
 	
 	Owner.MakeNoise(bbP.SoundDampening);
 	GetAxes(bbP.zzNN_ViewRot,X,Y,Z);
-	StartTrace = Owner.Location + bbP.Eyeheight * Z;
+	StartTrace = Owner.Location + bbP.Eyeheight * vect(0,0,1);
 	AdjustedAim = bbP.AdjustAim(1000000, StartTrace, 2*AimError, False, False);	
 	X = vector(AdjustedAim);
-	EndTrace = StartTrace + 100000 * X; 
+	EndTrace = StartTrace + 100000 * X;
 	
 	if (bbP.zzNN_HitActor != None && VSize(bbP.zzNN_HitDiff) > bbP.zzNN_HitActor.CollisionRadius + bbP.zzNN_HitActor.CollisionHeight)
 		bbP.zzNN_HitDiff = vect(0,0,0);
@@ -744,7 +714,7 @@ function TraceFire( float Accuracy )
 	}
 	else
 	{
-		bbP.TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
+		bbP.zzNN_HitActor = bbP.TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
 		NN_HitLoc = bbP.zzNN_HitLoc;
 	}
 	ProcessTraceHit(bbP.zzNN_HitActor, NN_HitLoc, HitNormal, X,Y,Z);
@@ -931,5 +901,4 @@ defaultproperties
 	 Misc1Sound=Sound'zoomstart'
      Misc2Sound=Sound'zoomstop'
 	 SelectSound=Sound'RiflePickup'
-	 nnWF=Class'NN_WeaponFunctions'
 }

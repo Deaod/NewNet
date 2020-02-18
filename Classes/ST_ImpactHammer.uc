@@ -6,7 +6,6 @@
 
 class ST_ImpactHammer extends ImpactHammer;
 
-var ST_Mutator STM;
 var bool bNewNet;		// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
@@ -19,18 +18,6 @@ replication
 {
 	reliable if (Role < ROLE_Authority)
 		ServerFiring;
-}
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
 }
 
 function bool HandlePickupQuery( inventory Item )
@@ -106,7 +93,7 @@ simulated function bool ClientFire( float Value )
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
 	{
-		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
+		if (ClientCannotShoot() || bbP.Weapon != Self)
 			return false;
 		yModInit();
 		
@@ -116,14 +103,19 @@ simulated function bool ClientFire( float Value )
 		Pawn(Owner).PlayRecoil(FiringSpeed);
 		GoToState('ClientFiring');
 	}
-	
-	return Super.ClientFire(Value);
+	if ( bCanClientFire )
+	{
+		Owner.PlayOwnedSound(Misc1Sound, SLOT_Misc, 1.3*Pawn(Owner).SoundDampening);
+		PlayAnim('Pull', 0.2, 0.05);
+		if ( Role < ROLE_Authority )
+			GotoState('ClientFiring');
+		return true;
+	}
+	return false;
 }
 
 function ServerFiring()
 {
-	if (bbPlayer(Owner) != None)
-		bbPlayer(Owner).xxAddFired(1);
 	bPointing=True;
 	bCanClientFire = true;
 	GoToState('Firing');
@@ -139,7 +131,7 @@ simulated function bool ClientAltFire( float Value )
 	bbP = bbPlayer(Owner);
 	if (Role < ROLE_Authority && bbP != None && bNewNet)
 	{
-		if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
+		if (ClientCannotShoot() || bbP.Weapon != Self)
 			return false;
 		yModInit();
 		
@@ -184,26 +176,21 @@ function AltFire( float Value )
 	bPointing=True;
 	bCanClientFire = true;
 	ClientAltFire(value);
-	if (bNewNet)
-	{
-		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxAddFired(2);
-	}
-	else
+	if (!bNewNet)
 	{
 		Pawn(Owner).PlayRecoil(FiringSpeed);
 	}
 	TraceAltFire();
 	GoToState('AltFiring');
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
 	{
 		if (Owner.IsA('Bot'))
 			return Super.ClientFire(Value);
-		bForceFire = bbPlayer(Owner) == None || !bbPlayer(Owner).ClientCannotShoot();
+		bForceFire = bbPlayer(Owner) == None || !ClientCannotShoot();
 		return bForceFire;
 	}
 
@@ -211,7 +198,7 @@ State ClientActive
 	{
 		if (Owner.IsA('Bot'))
 			return Super.ClientAltFire(Value);
-		bForceAltFire = bbPlayer(Owner) == None || !bbPlayer(Owner).ClientCannotShoot();
+		bForceAltFire = bbPlayer(Owner) == None || !ClientCannotShoot();
 		return bForceAltFire;
 	}
 	
@@ -241,7 +228,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 state ClientFiring
 {
 	simulated function bool ClientFire( float Value ){}
@@ -660,7 +647,12 @@ function TraceFire(float accuracy)
 	if (bbP == None || !bNewNet)
 		Other = Pawn(Owner).TraceShot(HitLocation, HitNormal, EndTrace, StartTrace);
 	else
-		Other = bbP.zzNN_HitActor;
+	{
+		if ( bbP.zzNN_HitActor != None && (bbP.zzNN_HitActor.IsA('Pawn')) )
+			Other = bbP.zzNN_HitActor;
+		else
+			Other = Pawn(Owner).TraceShot(HitLocation, HitNormal, EndTrace, StartTrace);
+	}
 	ProcessTraceHit(Other, HitLocation, HitNormal, vector(AdjustedAim), Y, Z);
 }
 
@@ -675,36 +667,23 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 	}
 	
 	PawnOwner = Pawn(Owner);
-	if (STM != None)
-		STM.PlayerFire(PawnOwner, 1);			// 1 = Impact Hammer.
-
-	if ( (Other == None) || (Other == Owner) || (Other == self) || (Owner == None) || bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(1))
-		return;
 
 	ChargeSize = FMin(ChargeSize, 1.5);
 	if ( (Other == Level) || Other.IsA('Mover') )
 	{
 		ChargeSize = FMax(ChargeSize, 1.0);
-		if ( VSize(HitLocation - Owner.Location) < 80 && (!bNewNet || (!bNetOwner && Level.NetMode != NM_DedicatedServer)) )
-			Spawn(class'ImpactMark',,, HitLocation+HitNormal, Rotator(HitNormal));
-		if (STM != None)
-			STM.PlayerHit(PawnOwner, 1, False);	// 1 = Impact Hammer
-		Owner.TakeDamage(class'UTPure'.default.HammerDamageSelf * ChargeSize, PawnOwner, HitLocation, -66000.0 * ChargeSize * X, MyDamageType);
-		if (STM != None)
-			STM.PlayerClear();
+		if ( VSize(HitLocation - Owner.Location) < 80 )
+			Spawn(class'NN_ImpactMarkOwnerHidden',Owner,, HitLocation+HitNormal, Rotator(HitNormal));
+		Owner.TakeDamage(class'UTPure'.default.HammerDamageSelfPri, PawnOwner, HitLocation, -66000.0 * ChargeSize * X, MyDamageType);
 	}
 	if ( Other != Level )
 	{
 		if ( Other.bIsPawn && (VSize(HitLocation - Owner.Location) > 90) && !bNewNet )
 			return;
-		if (STM != None)
-			STM.PlayerHit(PawnOwner, 1, False);	// 1 = Impact Hammer
 		if (bNewNet)
 			Other.TakeDamage(class'UTPure'.default.HammerDamagePri * ChargeSize, PawnOwner, HitLocation, 66000.0 * ChargeModifier * ChargeSize * X, MyDamageType);
 		else
 			Other.TakeDamage(class'UTPure'.default.HammerDamagePri * ChargeSize, PawnOwner, HitLocation, 66000.0 * ChargeSize * X, MyDamageType);
-		if (STM != None)
-			STM.PlayerClear();
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
 		{
 			if (bNewNet)
@@ -736,19 +715,11 @@ function ProcessAltTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, V
 	scale = VSize(realLoc - HitLocation)/180;
 	if ( (Other == Level) || Other.IsA('Mover') )
 	{
-		if (STM != None)
-			STM.PlayerHit(PawnOwner, 1, False);	// 1 = IH!
-		Owner.TakeDamage(class'UTPure'.default.HammerDamageSec * scale, Pawn(Owner), HitLocation, -40000.0 * X * scale, MyDamageType);
-		if (STM != None)
-			STM.PlayerClear();
+		Owner.TakeDamage(class'UTPure'.default.HammerDamageSelfSec * scale, Pawn(Owner), HitLocation, -40000.0 * X * scale, MyDamageType);
 	}
 	else
 	{
-		if (STM != None)
-			STM.PlayerHit(PawnOwner, 1, False);	// 1 = IH!
 		Other.TakeDamage(class'UTPure'.default.HammerDamageSec * scale, Pawn(Owner), HitLocation, 30000.0 * X * scale, MyDamageType);
-		if (STM != None)
-			STM.PlayerClear();
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
 		{
 			if (bNewNet)
@@ -774,6 +745,28 @@ simulated function TweenDown ()
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
+simulated function PlayIdleAnim()
+{
+	local Bot B;
+
+	B = Bot(Owner);
+
+	if ( (B != None) && (B.Enemy != None) )
+	{
+		B.PlayFiring();
+		B.bFire = 1;
+		B.bAltFire = 0;
+		Fire(1.0);
+	}
+	else if ( Mesh != PickupViewMesh )
+		LoopAnim( 'Still', 1.0, 0.05);
+}
+
 state Active
 {
 	function Fire(float F) 
@@ -795,6 +788,54 @@ state Active
 		}
 		if (F > 0 && bbPlayer(Owner) != None)
 			Global.AltFire(F);
+	}
+}
+
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
+simulated function bool ClientCannotShoot()
+{
+  	local bool bCant;
+	local bbPlayer bbP;
+	
+	bbP = bbPlayer(Owner);
+
+ 	if (bbP.PendingWeapon != None)
+	{
+		bbP.PendingWeapon.bChangeWeapon = false;
+		bCant = true;
+	}
+	if (IsInState('ClientDown'))
+	{
+		bCant = true;
+	}
+	else if (AnimSequence == 'Down')
+	{
+		bCant = true;
+	}
+	return bCant;
+}
+
+simulated function PlayFiring()
+{
+	if (Owner != None)
+	{
+		if ( Affector != None )
+			Affector.FireEffect();
+		if ( PlayerPawn(Owner) != None && (!bNewNet || Level.NetMode == NM_Client) )
+		{
+			PlayerPawn(Owner).ShakeView(ShakeTime, ShakeMag, ShakeVert);
+		}
+		Owner.PlayOwnedSound(FireSound, SLOT_Misc, 1.7*Pawn(Owner).SoundDampening,,,);
+		PlayAnim( 'Fire', 0.65 );
 	}
 }
 

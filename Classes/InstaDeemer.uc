@@ -2,13 +2,6 @@ class InstaDeemer extends Mutator;
 
 var ST_Mutator STM;
 
-function PreBeginPlay()
-{
-	ForEach AllActors(class'ST_Mutator', STM)
-		break;
-	Super.PreBeginPlay();
-}
-
 function bool AlwaysKeep(Actor Other)
 {
     if (Other.IsA('ST_SuperShockRifleSingleShot'))
@@ -24,8 +17,4 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
 		return false;
 	}
     return true;
-}
-
-defaultproperties
-{
 }

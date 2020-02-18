@@ -35,13 +35,6 @@ simulated function PostBeginPlay()
 
 	if ( FRand() < 0.5 )
 		aimerror *= -1;
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
 }
 
 simulated function Tick(float DeltaTime)
@@ -58,8 +51,6 @@ simulated function Tick(float DeltaTime)
 		while (ShootAccum <= 0.0)
 		{	// Handle stats this way.
 			ShootAccum += 0.05;		// TR 20 = 0.05s
-			if (STM != None)
-				STM.PlayerFire(Instigator, 10);
 		}
 	}
 

@@ -6,7 +6,6 @@
 
 class ST_SniperRifle extends SniperRifle;
 
-var ST_Mutator STM;
 var bool bNewNet;		// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
@@ -16,19 +15,6 @@ var float HeadDamage;
 var float BodyHeight;
 var float SniperSpeed;
 var int zzWin;
-var Class<NN_WeaponFunctions> nnWF;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function RenderOverlays(Canvas Canvas)
 {
@@ -121,7 +107,6 @@ function Fire ( float Value )
 	bbP = bbPlayer(Owner);
 	if (bbP != None && bNewNet && Value < 1)
 		return;
-	bbPlayer(Owner).xxAddFired(zzWin);
 	Super.Fire(Value);
 }
 
@@ -140,7 +125,7 @@ function AltFire( float Value )
 		return;
 	Super.AltFire(Value);
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -185,7 +170,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 state NormalFire
 {
 	function Fire(float F) 
@@ -228,10 +213,9 @@ simulated function NN_TraceFire()
 	if (bbP == None)
 		return;
 
-//	Owner.MakeNoise(Pawn(Owner).SoundDampening);
 	GetAxes(GV,X,Y,Z);
-	StartTrace = Owner.Location + PawnOwner.Eyeheight * Z;
-	EndTrace = StartTrace + (100000 * vector(GV)); 
+	StartTrace = Owner.Location + bbP.Eyeheight * vect(0,0,1);
+	EndTrace = StartTrace + (100000 * vector(GV));
 	
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
 	if (Other.IsA('Pawn'))
@@ -314,15 +298,10 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X,Y,Z);
 		return;
 	}
-	
-	if (bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(24))
-		return;
 
 	PawnOwner = Pawn(Owner);
 	POther = Pawn(Other);
 	PPOther = PlayerPawn(Other);
-	if (STM != None)
-		STM.PlayerFire(PawnOwner, 18);		// 18 = Sniper
 
 	realLoc = Owner.Location + CalcDrawOffset();
 	DoShellCase(PlayerPawn(Owner), realLoc + 20 * X + FireOffset.Y * Y + Z, X,Y,Z);
@@ -344,25 +323,17 @@ function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vect
 			&& (instigator.IsA('PlayerPawn') || (instigator.IsA('Bot') && !Bot(Instigator).bNovice)) )
 			&& !PPOther.bIsCrouching && PPOther.GetAnimGroup(PPOther.AnimSequence) != 'Ducking' )
 		{
-			if (STM != None)
-				STM.PlayerHit(PawnOwner, 18, True);		// 18 = Sniper, Headshot
 			if (HeadDamage > 0)
 				Other.TakeDamage(HeadDamage, PawnOwner, HitLocation, 35000 * X, AltDamageType); // was 100 (150) dmg
 			else
 				Other.TakeDamage(class'UTPure'.default.HeadshotDamage, PawnOwner, HitLocation, 35000 * X, AltDamageType);
-			if (STM != None)
-				STM.PlayerClear();
 		}
 		else
 		{
-			if (STM != None)
-				STM.PlayerHit(PawnOwner, 18, False);		// 18 = Sniper
 			if (HitDamage > 0)
 				Other.TakeDamage(HitDamage,  PawnOwner, HitLocation, 30000.0*X, MyDamageType);	 // was 45 (67) dmg
 			else
 				Other.TakeDamage(class'UTPure'.default.SniperDamagePri,  PawnOwner, HitLocation, 30000.0*X, MyDamageType);
-			if (STM != None)
-				STM.PlayerClear();
 		}
 		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
 		{
@@ -404,7 +375,6 @@ simulated function DoShellCase(PlayerPawn Pwner, vector HitLoc, Vector X, Vector
 function TraceFire( float Accuracy )
 {
 	local bbPlayer bbP;
-	//local Pawn PawnOwner;
 	local vector NN_HitLoc, HitLocation, HitNormal, StartTrace, EndTrace, X,Y,Z;
 	
 	if (Owner.IsA('Bot'))
@@ -414,6 +384,7 @@ function TraceFire( float Accuracy )
 	}
 	
 	bbP = bbPlayer(Owner);
+	
 	if (bbP == None || !bNewNet)
 	{
 		Super.TraceFire(Accuracy);
@@ -428,11 +399,10 @@ function TraceFire( float Accuracy )
 	
 	Owner.MakeNoise(bbP.SoundDampening);
 	GetAxes(bbP.zzNN_ViewRot,X,Y,Z);
-	StartTrace = Owner.Location + bbP.Eyeheight * Z;
-	//StartTrace = Owner.Location + PawnOwner.Eyeheight * Z;
+	StartTrace = Owner.Location + bbP.Eyeheight * vect(0,0,1);
 	AdjustedAim = bbP.AdjustAim(1000000, StartTrace, 2*AimError, False, False);	
 	X = vector(AdjustedAim);
-	EndTrace = StartTrace + 100000 * X; 
+	EndTrace = StartTrace + 100000 * X;
 	
 	if (bbP.zzNN_HitActor != None && VSize(bbP.zzNN_HitDiff) > bbP.zzNN_HitActor.CollisionRadius + bbP.zzNN_HitActor.CollisionHeight)
 		bbP.zzNN_HitDiff = vect(0,0,0);
@@ -444,10 +414,9 @@ function TraceFire( float Accuracy )
 	}
 	else
 	{
-		bbP.TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
+		bbP.zzNN_HitActor = bbP.TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
 		NN_HitLoc = bbP.zzNN_HitLoc;
 	}
-	
 	ProcessTraceHit(bbP.zzNN_HitActor, NN_HitLoc, HitNormal, X,Y,Z);
 	bbP.zzNN_HitActor = None;
 }
@@ -465,6 +434,11 @@ simulated function PlaySelect ()
 simulated function TweenDown ()
 {
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
+}
+
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
 }
 
 simulated function PlayFiring()
@@ -506,10 +480,19 @@ state Active
 	}
 }
 
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
 defaultproperties
 {
     bNewNet=True
     BodyHeight=0.66
     zzWin=24
-	nnWF=Class'NN_WeaponFunctions'
 }

@@ -3,10 +3,15 @@ class NN_BioGlobOwnerHidden extends ST_BioGlob;
 var bool bAlreadyHidden;
 
 simulated function Tick(float DeltaTime) {
+	
+	if ( Owner == None )
+		return;
+	
 	if (Level.NetMode == NM_Client && !bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
 		LightType = LT_None;
 		Mesh = None;
 		SetCollisionSize(0, 0);
+		ImpactSound = None;
 		bAlreadyHidden = True;
 	}
 }
@@ -48,7 +53,6 @@ auto state Flying
 			NumSplash = int(2 * DrawScale) - 1;
 		SpawnPoint = Location + 5 * HitNormal;
 		DrawScale= FMin(DrawScale, 3.0);
-		//bbPlayer(Owner).xxAddFired(5);
 		if ( NumSplash > 0 )
 		{
 			SpawnSplash();
@@ -73,14 +77,10 @@ auto state Flying
 		if ( (Mover(Base) != None) && Mover(Base).bDamageTriggered )	// A Base ain't a pawn, so don't worry.
 			Base.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 		
-		if (STM != None)
-			STM.PlayerHit(Instigator, 4, bDirect);		// 4 = Bio.
 		//Log(Class.Name$" (Explode) called by"@bbPlayer(Owner).PlayerReplicationInfo.PlayerName);
 		if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 			HurtRadius(damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location);
 		//NN_Momentum(FMin(250, DrawScale * 75), MomentumTransfer * Drawscale, Location);
-		if (STM != None)
-			STM.PlayerClear();
 		Destroy();	
 	}
 }
@@ -114,6 +114,22 @@ function SpawnSplash()
 	Start = SpawnPoint + 4 * V1; 
 	BS = Spawn(class'NN_BioSplashOwnerHidden',Owner,,Start,Rotator(Start - Location));
 	BS.zzNN_ProjIndex = bbP.xxNN_AddProj(BS);
+}
+	
+simulated function SetWall(vector HitNormal, Actor Wall)
+{
+	local vector TraceNorm, TraceLoc, Extent;
+	local actor HitActor;
+	local rotator RandRot;
+
+	SurfaceNormal = HitNormal;
+	if ( Level.NetMode != NM_DedicatedServer && !bNetOwner )
+		spawn(class'NN_BioMarkOwnerHidden',Owner,,Location, rotator(SurfaceNormal));
+	RandRot = rotator(HitNormal);
+	RandRot.Roll += 32768;
+	SetRotation(RandRot);	
+	if ( Mover(Wall) != None )
+		SetBase(Wall);
 }
 
 defaultproperties

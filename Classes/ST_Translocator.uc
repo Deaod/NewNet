@@ -6,25 +6,42 @@
 
 class ST_Translocator extends Translocator;
 
-var ST_Mutator STM;
+// Right handed version
+#exec MESH  IMPORT MESH=TranslocatorR ANIVFILE=MODELS\Translocator_a.3D DATAFILE=MODELS\Translocator_d.3D UNMIRROR=1
+#exec MESH ORIGIN MESH=TranslocatorR X=0 Y=0 Z=0 YAW=-64 PITCH=0 ROLL=-5
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=All	 	 STARTFRAME=0  NUMFRAMES=110
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=Throw     STARTFRAME=32 NUMFRAMES=19
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=PreReset  STARTFRAME=46 NUMFRAMES=5
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=Idle      STARTFRAME=51 NUMFRAMES=2 RATE=3
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=Still     STARTFRAME=51 NUMFRAMES=2 RATE=3
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=Down 	 STARTFRAME=66 NUMFRAMES=7
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=Select	 STARTFRAME=18 NUMFRAMES=12
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=Thrown	 STARTFRAME=53 NUMFRAMES=12
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=ThrownFrame	STARTFRAME=52 NUMFRAMES=1
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=Down2 	STARTFRAME=77 NUMFRAMES=7
+#exec MESH SEQUENCE MESH=TranslocatorR SEQ=Idle2	STARTFRAME=88 NUMFRAMES=19
+
+#exec MESHMAP SCALE MESHMAP=TranslocatorR X=0.0065 Y=0.0045 Z=0.011
+#exec MESHMAP SETTEXTURE MESHMAP=TranslocatorR NUM=0 TEXTURE=tloc1
+#exec MESHMAP SETTEXTURE MESHMAP=TranslocatorR NUM=1 TEXTURE=tloc2
+#exec MESHMAP SETTEXTURE MESHMAP=TranslocatorR NUM=2 TEXTURE=tloc3
+#exec MESHMAP SETTEXTURE MESHMAP=TranslocatorR NUM=3 TEXTURE=tloc4
+
 var bool bNewNet;		// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
 var bool bClientTTargetOut, bPlayTeleportEffect;
 var NN_TranslocatorTarget zzClientTTarget;
-var Class<NN_WeaponFunctions> nnWF;
+var() mesh PlayerViewMeshL;
 
-function PostBeginPlay()
+function setHand(float Hand)
 {
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
+	Super(TournamentWeapon).SetHand(Hand);
+	if (Hand == 1)
+		Mesh = PlayerViewMeshL;
+	else
+		Mesh = PlayerViewMesh;
 }
 
 simulated function RenderOverlays(Canvas Canvas)
@@ -76,7 +93,7 @@ function AltFire( float Value )
 		return;
 	Super.AltFire(Value);
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -121,7 +138,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 simulated function bool ClientFire(float Value)
 {
 	local bbPlayer bbP;
@@ -333,11 +350,7 @@ function ThrowTarget()
 	yModInit();
 	
 	bbP = bbPlayer(Owner);
-	//bbPlayer(Owner).xxAddFired(0);
-	
-	if (STM != None)
-		STM.PlayerFire(Pawn(Owner), 2);		// 2 = Translocator
-	
+
 	if (Level.Game.LocalLog != None)
 		Level.Game.LocalLog.LogSpecialEvent("throw_translocator", Pawn(Owner).PlayerReplicationInfo.PlayerID);
 	if (Level.Game.WorldLog != None)
@@ -414,7 +427,6 @@ function Fire( float Value )
 			Pawn(Owner).gibbedBy(TTarget.disruptor);
 			return;
 		}
-		//bbPlayer(Owner).xxAddFired(0);
 		if (!bNewNet)
 			Owner.PlaySound(AltFireSound, SLOT_Misc, 4 * Pawn(Owner).SoundDampening);
 		bTTargetOut = false;
@@ -440,10 +452,6 @@ function Translocate()
 		return;
 	}
 
-	//bbPlayer(Owner).xxAddFired(0);
-	if (STM != None)
-		STM.PlayerHit(Pawn(Owner), 2, False);			// 2 = Translocator
-	
 	bBotMoveFire = false;
 	PlayAnim('Thrown', 1.2, 0.1);
 	Dest = TTarget.Location;
@@ -538,8 +546,6 @@ function Translocate()
 		TTarget = None;
 	}
 	bPointing=True;
-	if (STM != None)
-		STM.PlayerClear();
 }
 
 simulated function PlayIdleAnim()
@@ -660,8 +666,19 @@ function SetSwitchPriority(pawn Other)
 	Class'NN_WeaponFunctions'.static.SetSwitchPriority( Other, self, 'Translocator');
 }
 
-simulated function PlaySelect()
+simulated function AnimEnd ()
 {
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
+simulated function PlaySelect ()
+{
+	local float PScale;
+
+	Class'NN_WeaponFunctions'.static.PlaySelect( self);
+	PScale = Pawn(Owner).PlayerReplicationInfo.Ping;
+	PScale = FMax(PScale,1.0);
+	PScale /= 1000;
 	bForceFire = false;
 	bForceAltFire = false;
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);	
@@ -669,14 +686,13 @@ simulated function PlaySelect()
 		if ( bClientTTargetOut )
 			TweenAnim('ThrownFrame', 0.27);
 		else
-			PlayAnim('Select',1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
+			PlayAnim('Select',1.5 + PScale,0.00);
 	} else {
 		if ( bTTargetOut )
 			TweenAnim('ThrownFrame', 0.27);
 		else
-			PlayAnim('Select',1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.0);
-	}
-	PlaySound(SelectSound, SLOT_Misc,Pawn(Owner).SoundDampening);		
+			PlayAnim('Select',1.5 + PScale,0.00);
+	}		
 }
 
 simulated function TweenDown()
@@ -724,9 +740,20 @@ state Active
 	}
 }
 
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
 defaultproperties
 {
      bNewNet=True
      bPlayTeleportEffect=True
-	 nnWF=Class'NN_WeaponFunctions'
+	 PlayerViewMeshL=Transloc
+	 PlayerViewMesh=TranslocatorR
 }

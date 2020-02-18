@@ -6,23 +6,8 @@
 
 class ST_Razor2Alt extends Razor2Alt;
 
-var ST_Mutator STM;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
-
-simulated function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-		if (STM != None)
-			STM.PlayerFire(Instigator, 12);		// 11 = Ripper Secondary
-	}
-}
 
 auto state Flying
 {
@@ -32,7 +17,7 @@ auto state Flying
 		local bbPlayer bbP;
 		
 		bbP = bbPlayer(Owner);
-		
+
 		if (bDeleteMe || Other == None || Other.bDeleteMe)
 			return;
 		if ( Other != Instigator && Other != Owner /* && Other.Owner != Owner  */) 
@@ -42,7 +27,7 @@ auto state Flying
 				NN_HitOther = Other;
 				if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client)
 				{
-					bbP.xxNN_TakeDamage(Other, 17, instigator,HitLocation,
+					bbP.xxNN_TakeDamage(Other, class'Ripper', 1, instigator,HitLocation,
 						(MomentumTransfer * Normal(Velocity)), MyDamageType, zzNN_ProjIndex );
 					bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, (MomentumTransfer * Normal(Velocity)));
 				}
@@ -50,12 +35,8 @@ auto state Flying
 				
 			if ( Role == ROLE_Authority && !bbPlayer(Owner).bNewNet )
 			{
-				if (STM != None)
-					STM.PlayerHit(Instigator, 12, Other.IsA('Pawn'));	// 12 = Ripper Secondary, Direct if Pawn
 				Other.TakeDamage(damage, instigator,HitLocation,
 					(MomentumTransfer * Normal(Velocity)), MyDamageType );
-				if (STM != None)
-					STM.PlayerClear();
 			}
 			s = spawn(class'RipperPulse',,,HitLocation);	
  			s.RemoteRole = ROLE_None;
@@ -117,7 +98,8 @@ auto state Flying
 						bbP.xxNN_TakeDamage
 						(
 							Victims,
-							17,
+							class'Ripper',
+							1,
 							Instigator, 
 							VictimHitLocation,
 							VictimMomentum,
@@ -155,7 +137,7 @@ auto state Flying
 					continue;
 				dir = dir/dist; 
 				damageScale = 1 - FMax(0,(dist - M.CollisionRadius)/DamageRadius);
-				bbP.xxNN_ServerTakeDamage( M, 17, Instigator, HitLocation, bbP.GetBetterVector(damageScale * MomentumTransfer * dir), MyDamageType, zzNN_ProjIndex, damageScale * Damage);
+				bbP.xxNN_ServerTakeDamage( M, class'Ripper', 1, Instigator, HitLocation, bbP.GetBetterVector(damageScale * MomentumTransfer * dir), MyDamageType, zzNN_ProjIndex, damageScale * Damage);
 				//bbP.xxMover_TakeDamage( M, damageScale * Damage, bbP, M.Location - 0.5 * (M.CollisionHeight + M.CollisionRadius) * dir, damageScale * MomentumTransfer * dir, MyDamageType );
 			}
 		}

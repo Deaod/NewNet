@@ -6,23 +6,9 @@
 
 class ST_UT_BioGel extends UT_BioGel;
 
-var ST_Mutator STM;
 var bool bDirect;
 var actor NN_HitOther;
 var int zzNN_ProjIndex;
-
-simulated function PostBeginPlay()
-{
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-		if (STM != None)
-			STM.PlayerFire(Instigator, 4);			// 4 = Bio. (Each Potential Damage giver is 1 shot! Not ammo!)
-	}
-	Super.PostBeginPlay();
-}
 
 simulated function Timer()
 {
@@ -39,15 +25,14 @@ simulated function Timer()
 	if ( (Mover(Base) != None) && Mover(Base).bDamageTriggered )	// A Base ain't a pawn, so don't worry.
 		Base.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 
-	if (STM != None)
-		STM.PlayerHit(Instigator, 4, bDirect);		// 4 = Bio.
 	if (bbP != None && bbP.bNewNet)
 	{
-		if (Level.NetMode == NM_Client && !bOwnerNoSee) {
-			if (IsA('ST_BioGlob'))
-				bbP.NN_HurtRadius(self, 6, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
+		if (Level.NetMode == NM_Client && !bOwnerNoSee)
+		{
+			if (IsA('BioGlob'))
+				bbP.NN_HurtRadius(self, class'UT_BioRifle', 1, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
 			else
-				bbP.NN_HurtRadius(self, 5, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
+				bbP.NN_HurtRadius(self, class'UT_BioRifle', 0, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location, zzNN_ProjIndex, false, damage * Drawscale);
 		}
 	}
 	else
@@ -55,8 +40,6 @@ simulated function Timer()
 		HurtRadius(damage * Drawscale, FMin(250, DrawScale * 75), MyDamageType, MomentumTransfer * Drawscale, Location);
 	}
 	NN_Momentum(FMin(250, DrawScale * 75), MomentumTransfer * Drawscale, Location);
-	if (STM != None)
-		STM.PlayerClear();
 	Destroy();
 }
 
@@ -113,7 +96,7 @@ auto state Flying
 	
 			if (bbP != None && bbP.bNewNet && Level.NetMode == NM_Client)
 			{
-				bbP.xxNN_TakeDamage(Other, 5, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex);
+				bbP.xxNN_TakeDamage(Other, class'UT_BioRifle', 0, Instigator, HitLocation, MomentumTransfer*Vector(Rotation), MyDamageType, zzNN_ProjIndex);
 				bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, Normal(HitLocation - Other.Location));
 			}
 		}
@@ -134,5 +117,5 @@ state OnSurface
 
 defaultproperties
 {
-     //Damage=0.000000
+    Damage=0.000000
 }

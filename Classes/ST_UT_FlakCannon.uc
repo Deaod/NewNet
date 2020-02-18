@@ -6,24 +6,10 @@
 
 class ST_UT_FlakCannon extends UT_FlakCannon;
 
-var ST_Mutator STM;
 var bool bNewNet;				// Self-explanatory lol
 var Rotator GV;
 var Vector CDO;
 var float yMod;
-var Class<NN_WeaponFunctions> nnWF;
-
-function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if (ROLE == ROLE_Authority)
-	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
-	}
-}
 
 simulated function RenderOverlays(Canvas Canvas)
 {
@@ -142,7 +128,6 @@ simulated function bool ClientFire( float Value )
 			GoToState('NormalFire');
 		}
 	}
-	
 	return Super.ClientFire(Value);
 }
 
@@ -193,7 +178,6 @@ simulated function bool ClientAltFire( float Value )
             bbP.xxClientDemoFix(Proj, Class'FlakSlug', Start, Proj.Velocity, Proj.Acceleration, AdjustedAim);
 		}
 	}
-	
 	return Super.ClientAltFire(Value);
 }
 
@@ -227,7 +211,6 @@ function Fire( float Value )
 	}
 	if (AmmoType.UseAmmo(1))
 	{
-		bbPlayer(Owner).xxAddFired(20);
 		bCanClientFire = true;
 		bPointing=True;
 		
@@ -258,7 +241,6 @@ function Fire( float Value )
 			Spawn(class'WeaponLight',,'',Start+X*20,rot(0,0,0));		
 		}
 		CI = Spawn(class'ST_UTChunkInfo', PawnOwner);
-		CI.STM = STM;
 		OwnerPing = float(Owner.ConsoleCommand("GETPING"));
 		// My comment
 		// I am not sure why EPIC has decided to do flak (or rockets) this way, as they could
@@ -354,7 +336,7 @@ function AltFire( float Value )
 	
 	if (Owner.IsA('Bot'))
 	{
-		Super.Fire(Value);
+		Super.AltFire(Value);
 		return;
 	}
 	
@@ -371,8 +353,6 @@ function AltFire( float Value )
 	}
 	if (AmmoType.UseAmmo(1))
 	{
-		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxAddFired(21);
 		bPointing=True;
 		bCanClientFire = true;
 		PawnOwner.MakeNoise(PawnOwner.SoundDampening);
@@ -397,19 +377,15 @@ function AltFire( float Value )
 			NNFS = Spawn(class'NN_FlakSlugOwnerHidden',Owner,, Start,AdjustedAim);
 			if (bbP != None)
 				NNFS.zzNN_ProjIndex = bbP.xxNN_AddProj(NNFS);
-			NNFS.STM = STM;
 		} else {
 			PawnOwner.PlayRecoil(FiringSpeed);
 			Spawn(class'WeaponLight',,'',Start+X*20,rot(0,0,0));
 			Slug = Spawn(class'ST_FlakSlug',,, Start,AdjustedAim);
-			Slug.STM = STM;
 		}
-		if (STM != None)
-			STM.PlayerFire(PawnOwner, 15);				// 15 = Flak Slug
 		GoToState('AltFiring');
 	}
 }
-/* 
+
 State ClientActive
 {
 	simulated function bool ClientFire(float Value)
@@ -454,7 +430,7 @@ State ClientActive
 		}
 	}
 }
- */
+
 state NormalFire
 {
 	function Fire(float F) 
@@ -518,6 +494,11 @@ simulated function TweenDown ()
 	Class'NN_WeaponFunctions'.static.TweenDown( self);
 }
 
+simulated function AnimEnd ()
+{
+	Class'NN_WeaponFunctions'.static.AnimEnd( self);
+}
+
 simulated function PlayPostSelect()
 {
 	PlayAnim('Loading', 1.5 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000, 0.05);
@@ -548,8 +529,24 @@ state Active
 	}
 }
 
+auto state Pickup
+{
+	ignores AnimEnd;
+	
+	simulated function Landed(Vector HitNormal)
+	{
+		Super(Inventory).Landed(HitNormal);
+	}
+}
+
+simulated function PlayIdleAnim()
+{
+	if ( Mesh == PickupViewMesh )
+		return;
+	LoopAnim('Still',1.0,0.0);
+}
+
 defaultproperties
 {
      bNewNet=True
-	 nnWF=Class'NN_WeaponFunctions'
 }

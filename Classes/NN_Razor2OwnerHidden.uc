@@ -14,6 +14,9 @@ simulated function Tick(float DeltaTime)
 {
 	local bbPlayer bbP;
 	
+	if ( Owner == None )
+		return;
+	
 	if (Level.NetMode == NM_Client) {
 	
 		if (!bAlreadyHidden && Owner.IsA('bbPlayer') && bbPlayer(Owner).Player != None) {
@@ -83,23 +86,15 @@ auto state Flying
 				if ( Other.bIsPawn && (HitLocation.Z - Other.Location.Z > 0.62 * Other.CollisionHeight) 
 					&& (!Instigator.IsA('Bot') || !Bot(Instigator).bNovice) )
 				{
-					if (STM != None)
-						STM.PlayerHit(Instigator, 11, True);		// 11 = Ripper Primary Headshot
 					if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 						Other.TakeDamage(3.5 * damage, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'decapitated' );
-					if (STM != None)
-						STM.PlayerClear();
 				}
 				else			 
 				{
-					if (STM != None)
-						STM.PlayerHit(Instigator, 11, False);		// 11 = Ripper Primary
 					if (bbPlayer(Owner) != None && !bbPlayer(Owner).bNewNet)
 						Other.TakeDamage(damage, instigator,HitLocation,
 							(MomentumTransfer * Normal(Velocity)), 'shredded' );
-					if (STM != None)
-						STM.PlayerClear();
 				}
 			}
 			if ( Other.bIsPawn )
@@ -120,7 +115,7 @@ auto state Flying
 			bSlowed = true;
 		}
 		bCanHitInstigator = true;
-		DoWallHit(PlayerPawn(Owner), HitNormal);
+		Spawn(class'WallCrack',,,Location, rotator(HitNormal));
 		PlayOwnedSound(ImpactSound, SLOT_Misc, 2.0);
 		LoopAnim('Spin',1.0);
 		if ( (Mover(Wall) != None) && Mover(Wall).bDamageTriggered )
@@ -166,23 +161,6 @@ auto state Flying
 		}
 		Velocity -= 2 * (Velocity dot HitNormal) * HitNormal;  
 		SetRoll(Velocity);
-	}
-}
-
-simulated function DoWallHit(PlayerPawn Pwner, vector HitNormal)
-{
-	local PlayerPawn P;
-	local Actor WC;
-
-	if (RemoteRole < ROLE_Authority) {
-		//for (P = Level.PawnList; P != None; P = P.NextPawn)
-		ForEach AllActors(class'PlayerPawn', P)
-			if (P != Pwner) {
-				if (NumWallHits < 1) {
-					WC = P.Spawn(class'WallCrack',P,,Location, rotator(HitNormal));
-					WC.bOnlyOwnerSee = True;
-				}
-			}
 	}
 }
 

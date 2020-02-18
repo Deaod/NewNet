@@ -1,3 +1,6 @@
+//=============================================================================
+// bbPlayer.
+//=============================================================================
 class bbPlayer extends TournamentPlayer
 	config(User) abstract;
 
@@ -27,7 +30,7 @@ var bool	zzbForcedTick;		// True on server if Tick was forced (Called more than 
 var bool	zzbBadCanvas;		// True on server if Canvas is NOT engine.canvas
 var bool	zzbVRChanged;		// True on server if client changed viewrotation at wrong time.
 var bool	zzbDemoRecording;	// True if client is recording demos.
-//var bool	zzbBadLighting;		// True if Lighting is not good on client (HAX!)
+var bool	zzbBadLighting;		// True if Lighting is not good on client (HAX!)
 var float	zzClientTD;		// Client TimeDilation (Should always be same as server or HAX!)
 
 // Replicated settings Server -> Client
@@ -84,9 +87,9 @@ var actor   zzNN_HitActor, zzNN_HitActorLast, zzOldBase;
 var Vector  zzNN_HitLoc, zzNN_HitDiff, zzNN_HitLocLast, zzNN_HitNormalLast, zzNN_ClientLoc, zzNN_ClientVel;
 var bool    zzbIsWarmingUp, zzbFakeUpdate, zzbForceUpdate, zzbOnMover, zzbNN_Special, zzbNN_ReleasedFire, zzbNN_ReleasedAltFire;
 var float   zzNN_Accuracy, zzLastStuffUpdate, zzNextTimeTime, zzLastFallVelZ, zzLastClientErr, zzForceUpdateUntil, zzIgnoreUpdateUntil, zzLastLocDiff, zzSpawnedTime;
-var NN_Teleporter zzLastPortal, zzLastPortalDest;
+var Teleporter LastPortal, LastPortalDest;
 var Trigger zzLastTrigger;
-var float zzLastPortalTime, zzLastTriggerTime;
+var float LastPortalTime, zzLastTriggerTime;
 var TournamentWeapon zzGrappling;
 var float zzGrappleTime;
 var Weapon zzKilledWithWeapon;
@@ -96,7 +99,8 @@ var int zzPositionIndex;
 var float zzNextPositionTime;
 var bool zzbInitialized;
 var int DefaultHitSound, DefaultTeamHitSound;
-var bool bForceDefaultHitSounds, AutoKicks, zzbCheckingHighPerf, zzbNN_Tracing;
+var float zzAceCheckedTime;
+var bool bForceDefaultHitSounds, zzbAceFinish, zzbAceChecked, zzbNN_Tracing;
 var int zzAddVelocityCount;
 var vector zzExpectedVelocity;
 var PlayerStart zzDisabledPS[64];
@@ -107,35 +111,6 @@ var bool zzbClientRestartedPlayer;
 var string zzKeys[1024], zzAliases[1024], zzActorNames[2048];
 var int zzNumActorNames;
 var byte zzPressing[1024];
-var int zzFired[64];
-var float zzFiredTimes[64];
-var float zzHighPerfTime;
-var int zzTooFast[64];
-var int zzNotCloseEnough;
-var int zzWarps, zzWarpSec, zzWarpLimit, zzMissLimit, zzRateLimit;
-
-struct BetterVector {
-	var int X;
-	var int Y;
-	var int Z;
-};
-
-struct zzConfirm {
-	var bool bConfirm;
-	var Actor Other;
-	var int zzWin;
-	var Pawn InstigatedBy;
-	var Vector HitLocation;
-	var BetterVector BetterMomentum;
-	var name DamageType;
-	var int ProjIndex;
-	var int ClientDamage;
-	var int DamageRadius;
-	var int Which;
-	var vector HitNormal;
-	var bool bSpecial;
-};
-var zzConfirm zzConfirming[64];
 
 var globalconfig float MinDodgeClickTime;
 var float zzLastTimeForward, zzLastTimeBack, zzLastTimeLeft, zzLastTimeRight;
@@ -183,18 +158,24 @@ struct StoredCollisionInfo {                       // Actor collision attributes
 };
 var StoredCollisionInfo zzStoredCollision; */
 
+struct BetterVector {
+	var int X;
+	var int Y;
+	var int Z;
+};
+
 // HUD stuff
-//var Mutator	zzHudMutes[50];		// Accepted Hud Mutators
-//var Mutator	zzWaitMutes[50];	// Hud Mutes waiting to be accepted
-//var float	zzWMCheck[50];		// Key value
-//var int		zzFailedMutes;		// How many denied Mutes have been tried to add
-//var int		zzHMCnt;		// Counts of HudMutes and WaitMutes
+var Mutator	zzHudMutes[50];		// Accepted Hud Mutators
+var Mutator	zzWaitMutes[50];	// Hud Mutes waiting to be accepted
+var float	zzWMCheck[50];		// Key value
+var int		zzFailedMutes;		// How many denied Mutes have been tried to add
+var int		zzHMCnt;		// Counts of HudMutes and WaitMutes
 var HUD		zzmyHud;		// our own personal hud
-//var Class<HUD>	zzHUDType;		// The HUD Type
+var Class<HUD>	zzHUDType;		// The HUD Type
 var Scoreboard	zzScoring;		// The scoreboard.
-//var Class<Scoreboard> zzSBType;		// The Scoreboard Type
-//var Class<ServerInfo> zzSIType;		// The ServerInfo Type
-//var int		zzHUDWarnings;		// Counts the # of times the HUD has been changed
+var Class<Scoreboard> zzSBType;		// The Scoreboard Type
+var Class<ServerInfo> zzSIType;		// The ServerInfo Type
+var int		zzHUDWarnings;		// Counts the # of times the HUD has been changed
 var bool	zzbRenderHUD;		// Do not start rendering HUD until logo has been displayed for a while
 
 // Logo Display
@@ -257,11 +238,6 @@ var UTPure zzUTPure;		// The UTPure mutator.
 var bool zzbDoScreenshot;	// True when we are about to do screenshot
 var bool zzbReportScreenshot;	// True when reporting the screenshot.
 var string zzMagicCode;		// The magic code to display.
-var string zzCLog;
-var Actor zzCLogActor;
-var int zzCKI, zzCAI;
-var string zzTS;
-var bool zzbDebugger, zzbCheck, zzbCheckActors;	// if Client wishes to receive special debug messages
 
 var string zzPrevClientMessage;	// To log client messages...
 
@@ -277,12 +253,12 @@ var float LastTick, AvgTickDiff;
 
 var bool bDoubleJump;
 var int   maxJumps;
+var float jumpHeight;
 var int nofJumps;
 
 var bool MMSupport;
+var bool DisablePortals;
 var bool SetPendingWeapon;
-var() editconst Weapon PlayingSelect;
-var() editconst Weapon zzWeapon;
 
 /*
 var byte RecentPings[100];	// 100 most recent ping results (In pixels, not actual ping)
@@ -312,15 +288,15 @@ replication
 	
 	// Server->Client
 	reliable if ( bNetOwner && Role == ROLE_Authority )
-		/*zzHUDType, zzSBType, zzSIType, xxClientAcceptMutator, zzbWeaponTracer, */ zzForceSettingsLevel,
+		/* zzHUDType, zzSBType, zzSIType, xxClientAcceptMutator, zzbWeaponTracer, */ zzForceSettingsLevel,
 		zzbForceModels, zzbForceDemo, zzbGameStarted, zzbUsingTranslocator, HUDInfo;
 	
 	// Server->Client
 	reliable if ( Role == ROLE_Authority )
 		zzbIsWarmingUp, zzFRandVals, zzVRandVals,
-		xxNN_MoveClientTTarget, xxSetPendingWeapon, xxCheckHighPerf, //xxReceiveNextStartSpot,
+		xxNN_MoveClientTTarget, xxSetPendingWeapon, SetPendingWeapon, //xxReceiveNextStartSpot,
 		xxSetTeleRadius, xxSetDefaultWeapon, xxSetSniperSpeed, xxSetHitSounds, xxSetDoubleJump, xxSetTimes,	// xxReceivePosition,
-		xxClientKicker, xxClientSetVelocity, xxChecking, SetPendingWeapon; //, xxClientTrigger, xxClientActivateMover;
+		xxClientKicker, xxClientSetVelocity; //, xxClientTrigger, xxClientActivateMover;
 
 	//Server->Client function reliable.. no demo propogate! .. bNetOwner? ...
 	reliable if ( bNetOwner && Role == ROLE_Authority && !bDemoRecording )
@@ -339,12 +315,12 @@ replication
 	unreliable if ( Role < ROLE_Authority )
 		xxServerMove, xxServerCheater,
 		zzbConsoleInvalid, zzFalse, zzTrue, zzNetspeed, zzbBadConsole, zzbBadCanvas, zzbVRChanged,
-		zzbStoppingTraceBot, zzbForcedTick, zzbDemoRecording, /* zzbBadLighting,  */zzClientTD;
+		zzbStoppingTraceBot, zzbForcedTick, zzbDemoRecording, zzbBadLighting, zzClientTD;
 
 	// Client->Server
 	reliable if ( Role < ROLE_Authority )
-		/* xxServerCheckMutator, */xxServerTestMD5,xxServerSetNetCode,xxSet, xxCLog, xxServerSetInput, xxServerCheckInput, //,xxCmd;
-		xxServerReceiveMenuItems,xxServerSetNoRevert,xxServerSetReadyToPlay,xxWL,xxML,xxRL,xxCheck,xxTS,xxChecked,Hold,Go,
+		/* xxServerCheckMutator, */xxServerTestMD5,xxServerSetNetCode,xxSet, //,xxCmd;
+		xxServerReceiveMenuItems,xxServerSetNoRevert,xxServerSetReadyToPlay,Hold,Go,
 		xxServerSetForceModels, xxServerSetHitSounds, xxServerSetTeamHitSounds, xxServerDisableForceHitSounds, xxServerSetMinDodgeClickTime, xxServerSetTeamInfo, ShowStats,
 		xxServerAckScreenshot, xxServerReceiveConsole, xxServerReceiveKeys, xxServerReceiveINT, xxServerReceiveStuff,
 		xxSendHeadshotToSpecs, xxSendDeathMessageToSpecs, xxSendMultiKillToSpecs, xxSendSpreeToSpecs, xxServerDemoReply,
@@ -352,7 +328,7 @@ replication
 	
 	reliable if ((Role < ROLE_Authority) && !bClientDemoRecording)
 		xxNN_ProjExplode, xxNN_ServerTakeDamage, xxNN_RadiusDamage, xxNN_TeleFrag, xxNN_TransFrag,
-		xxNN_Fire, xxNN_AltFire, xxNN_ReleaseFire, xxNN_ReleaseAltFire, xxNN_MoveTTarget, xxServerPreTeleport;
+		xxNN_Fire, xxNN_AltFire, xxNN_ReleaseFire, xxNN_ReleaseAltFire, xxNN_MoveTTarget, ServerPreTeleport;
 }
 
 //XC_Engine interface
@@ -417,22 +393,45 @@ simulated function xxCollisionTick()
 	//	zzStoredCollision.TickCount++;
 }
 */
+	
+exec function Fly()
+{
+	zzForceUpdateUntil = Level.TimeSeconds + 0.5;
+	zzbForceUpdate = true;
+	Super.Fly();
+}
+
+exec function Ghost()
+{
+	zzForceUpdateUntil = Level.TimeSeconds + 0.5;
+	zzbForceUpdate = true;
+	Super.Ghost();
+}
+
+simulated function xxSetPortals(bool DP)
+{
+	DisablePortals = DP;
+}
+
 simulated function Touch( actor Other )
 {
-	if (Level.NetMode != NM_Client)
+	if (DisablePortals)
 	{
-		if (
-			Other.IsA('Teleporter') && Other.Class.Name != 'NN_Teleporter' ||
-			Other.IsA('Kicker') && Other.Class.Name != 'Kicker'
-		)
+		if (Level.NetMode != NM_Client)
 		{
-			zzForceUpdateUntil = Level.TimeSeconds + 0.15 + float(Other.GetPropertyText("ToggleTime"));
-			zzbForceUpdate = true;
+			if (Other.IsA('Kicker'))
+				zzbForceUpdate = true;
+				zzForceUpdateUntil = ServerTimeStamp + 0.15;
+				Disable('Touch');
+			if ( Physics == PHYS_Falling )
+				Enable('Touch');
 		}
+		Super.Touch(Other);
 	}
-	
-	Super.Touch(Other);
-	
+	else
+	{
+		Super.Touch(Other);
+	}
 }
 
 simulated function bool xxNewSetLocation(vector NewLoc, vector NewVel, optional EPhysics EndPhysics)
@@ -452,7 +451,7 @@ simulated function bool xxNewMoveSmooth(vector NewLoc, vector NewVel)
 	return bSuccess;
 }
 
-function xxServerPreTeleport(NN_Teleporter Other, NN_Teleporter Dest, vector ClientLoc, vector ClientVel, rotator ClientRot)
+function ServerPreTeleport(Teleporter Other, Teleporter Dest, vector ClientLoc, rotator ClientRot, vector ClientVel)
 {
 	local bool bUnblocked;
 	
@@ -558,12 +557,12 @@ event PostBeginPlay()
 	
 	if ( Level.NetMode != NM_Client )
 	{
-		//zzHUDType = HUDType;
-		//zzSBType  = ScoringType;
-		//zzSIType  = zzUTPure.zzSI;
+		zzHUDType = HUDType;
+		zzSBType  = ScoringType;
+		zzSIType  = zzUTPure.zzSI;
 		zzbCanCSL = True;
 		zzMinimumNetspeed = Class'UTPure'.Default.MinClientRate;
-		//zzWaitTime = 3.0;
+		zzWaitTime = 3.0;
 	}
 	SetPendingWeapon = class'UTPure'.Default.SetPendingWeapon;
 }
@@ -597,8 +596,6 @@ simulated event PostNetBeginPlay()
 		PlayerReplicationInfo.SetOwner(self);
 	
 }
-
-
 
 event Possess()
 {
@@ -683,15 +680,18 @@ event Possess()
 		TeleRadius = zzUTPure.Default.TeleRadius;
 		xxSetTeleRadius(TeleRadius);
 		
+		xxSetPortals(DisablePortals);
+		DisablePortals = zzUTPure.Default.DisablePortals;
+		
 		DefaultHitSound = zzUTPure.Default.DefaultHitSound;
 		DefaultTeamHitSound = zzUTPure.Default.DefaultTeamHitSound;
 		bForceDefaultHitSounds = zzUTPure.Default.bForceDefaultHitSounds;
-		AutoKicks = zzUTPure.Default.AutoKicks;
-		xxSetHitSounds(DefaultHitSound, DefaultTeamHitSound, bForceDefaultHitSounds, AutoKicks);
+		xxSetHitSounds(DefaultHitSound, DefaultTeamHitSound, bForceDefaultHitSounds);
 		
 		bDoubleJump = zzUTPure.Default.bDoubleJump;
 		maxJumps = zzUTPure.Default.maxJumps;
-		xxSetDoubleJump(bDoubleJump, maxJumps);
+		jumpHeight = zzUTPure.Default.jumpHeight;
+		xxSetDoubleJump(bDoubleJump, maxJumps, jumpHeight);
 		
 		xxSetSniperSpeed(class'UTPure'.default.SniperSpeed, class'UTPure'.default.H4xSpeed);
 		xxSetDefaultWeapon(Level.Game.BaseMutator.MutatedDefaultWeapon().name);
@@ -783,17 +783,17 @@ event ReceiveLocalizedMessage( class<LocalMessage> Message, optional int Sw, opt
 		else if (HitSound == 0)
 			return;
 	}
- 	else if (Message == class'DecapitationMessage')
+	else if (Message == class'DecapitationMessage')
 	{
 		xxSendHeadshotToSpecs(Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject);
 	}
 	else if (RelatedPRI_1 == PlayerReplicationInfo || RelatedPRI_2 == PlayerReplicationInfo)
 	{
-		if (Message == class'DeathMessagePlus'  || Message == class'DDeathMessagePlus')
+		if (Message == class'DeathMessagePlus' || Message == class'DDeathMessagePlus')
 		{
 			xxSendDeathMessageToSpecs(Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject);
 		}
-		else if (Message == class'MultiKillMessage')
+		else if (Message == class'MultiKillMessage' || Message == class'MMultiKillMessage')
 		{
 			xxSendMultiKillToSpecs(Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject);
 		}
@@ -801,9 +801,8 @@ event ReceiveLocalizedMessage( class<LocalMessage> Message, optional int Sw, opt
 		{
 			xxSendSpreeToSpecs(Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject);
 		}
-	} else if (zzbCheck) {
-		xxCLog(Message.Static.GetString(Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject));
 	}
+	
 	Super.ReceiveLocalizedMessage(Message, Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject);
 }
 
@@ -828,7 +827,7 @@ function xxSendMultiKillToSpecs(optional int Sw, optional PlayerReplicationInfo 
 	local Pawn P;
 	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
 		if (P.IsA('bbCHSpectator') && bbCHSpectator(P).ViewTarget == Self)
-			P.ReceiveLocalizedMessage( class'MultiKillMessage', Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject );
+			P.ReceiveLocalizedMessage( class'MMultiKillMessage', Sw, RelatedPRI_1, RelatedPRI_2, OptionalObject );
 }
 
 function xxSendSpreeToSpecs(optional int Sw, optional PlayerReplicationInfo RelatedPRI_1, optional PlayerReplicationInfo RelatedPRI_2, optional Object OptionalObject)
@@ -872,67 +871,69 @@ event ClientMessage( coerce string zzS, optional Name zzType, optional bool zzbB
 	Super.ClientMessage(zzS, zzType, zzbBeep);
 	zzPrevClientMessage = "";
 	
-	xxFinishHighPerf(zzS);
+	//xxFinishAce(zzS);
 }
 
-simulated function xxCheckHighPerf()
+simulated function xxCheckAce()
 {
-	local Actor A;	
-	if (Level.NetMode == NM_Client)
+	local float Now;
+	local Actor A;
+	
+	Now = Level.TimeSeconds;
+	if (zzbAceChecked || Now - zzAceCheckedTime < 15 || Level.NetMode != NM_Client)
+		return;
+	
+	if (Now < 60)
 	{
 		ForEach AllActors(class'Actor', A)
 		{
 			if (Caps(string(A.Class.Name)) == "ACEREPLICATIONINFO")
 			{
-				zzbCheckingHighPerf = true;
+				zzAceCheckedTime = Now;
+				zzbAceFinish = true;
 				ConsoleCommand("mutate ace highperftoggle");
 			}
 		}
 	}
+	else
+	{
+		zzbAceChecked = true;
+	}
 }
 
-simulated function xxFinishHighPerf( string zzS )
+simulated function xxFinishAce( string zzS )
 {
-	if (AutoKicks)
+	if (!zzbAceFinish || Level.NetMode != NM_Client)
+		return;
+	
+	zzbAceFinish = false;
+	zzS = Caps(zzS);
+	if (zzS == "ACE PERFORMANCE MODE IS NOW TOGGLED ON.")
 	{
-		if (!zzbCheckingHighPerf || Level.NetMode != NM_Client)
-			return;
-		
-		zzS = Caps(zzS);
-		if (zzS == "ACE PERFORMANCE MODE IS NOW TOGGLED ON.")
-		{
-			zzbCheckingHighPerf = false;
-			ClientMessage("ACE's high performance mode is now auto-enabled and you're being reconnected.", 'UTPure', true);
-			ConsoleCommand("disconnect");
-			ConsoleCommand("reconnect");
-		}
-		else if (zzS == "ACE PERFORMANCE MODE IS NOW TOGGLED OFF.")
-		{
-			zzbCheckingHighPerf = false;
-			ClientMessage("Please fix your connection and/or gamespeed.", 'UTPure', true);
-			ConsoleCommand("mutate ace highperftoggle");
-			xxServerCheater("RF");
-		}
+		ConsoleCommand("disconnect");
+		ConsoleCommand("reconnect");
+		zzbAceChecked = true;
+	}
+	else if (zzS == "ACE PERFORMANCE MODE IS NOW TOGGLED OFF.")
+	{
+		ConsoleCommand("mutate ace highperftoggle");
+		zzbAceChecked = true;
 	}
 }
 
 simulated event bool PreTeleport( Teleporter zzInTeleporter )
 {
-	local NN_Teleporter Source, Dest;
-	
-	Source = NN_Teleporter(zzInTeleporter);
-	if (Level.NetMode == NM_Client && Source != None)
+	local Teleporter Dest;
+
+	if (Level.NetMode == NM_Client && zzInTeleporter != LastPortal)
 	{
-		zzLastPortal = Source;
-		Dest = TeleporterTouch(Source);
-		zzLastPortalDest = Dest;
+		LastPortal = zzInTeleporter;
+		LastPortalTime = Level.TimeSeconds + 0.2;
+		Dest = TeleporterTouch(zzInTeleporter);
 		if (Dest != None)
-		{
-			zzLastPortalTime = Level.TimeSeconds;
-			xxServerPreTeleport(Source, Dest, Location, Velocity, Rotation);
-		}
+			ServerPreTeleport(zzInTeleporter, Dest, Location, Rotation, Velocity);
+		return true;
 	}
-	
 	zzTP = zzInTeleporter;
 	zzTPE = zzTP.Event;
 	zzTP.Event = 'UTPure';
@@ -960,94 +961,95 @@ event Trigger( Actor zzOther, Pawn zzEventInstigator )
 }
 
 // Teleporter was touched by an actor.
-simulated function NN_Teleporter TeleporterTouch( NN_Teleporter T )
+simulated function Teleporter TeleporterTouch( Teleporter T )
 {
-	local NN_Teleporter Dest;
+	local Teleporter Dest;
 	local int i;
 	local Actor A;
 	
-	if ( !T.zzbEnabled || IsInState('Dying') || Mesh == None )
+	if ( !T.bEnabled )
 		return Dest;
 
-	if( (InStr( T.zzURL, "/" ) >= 0) || (InStr( T.zzURL, "#" ) >= 0) )
+	if( (InStr( T.URL, "/" ) >= 0) || (InStr( T.URL, "#" ) >= 0) )
 	{
 		// Teleport to a level on the net.
-		Level.Game.SendPlayer(Self, T.zzURL);
+		Level.Game.SendPlayer(Self, T.URL);
 	}
 	else
 	{
 		// Teleport to a random teleporter in this local level, if more than one pick random.
 
-		foreach AllActors( class 'NN_Teleporter', Dest )
-			if( string(Dest.zzTag)~=T.zzURL && Dest!=T )
+		foreach AllActors( class 'Teleporter', Dest )
+			if( string(Dest.tag)~=T.URL && Dest!=T )
 				i++;
 		i = rand(i);
-		foreach AllActors( class 'NN_Teleporter', Dest )
-			if( string(Dest.zzTag)~=T.zzURL && Dest!=T && i-- == 0 )
+		foreach AllActors( class 'Teleporter', Dest )
+			if( string(Dest.tag)~=T.URL && Dest!=T && i-- == 0 )
 				break;
 		if( Dest != None )
 		{
 			// Teleport the actor into the other teleporter.
-			if (!TeleporterAccept( Dest, T ))
-				return None;
 			T.PlayTeleportEffect( Self, false);
-			if (T.zzEvent != '')
-				foreach AllActors( class 'Actor', A, T.zzEvent )
-				{
-					//if (A.IsA('Mover'))
-					//	xxMover_DoTrigger(Mover(A), Self, Self.Instigator);
-					//else
-						A.Trigger( Self, Self.Instigator );
-				}
+			TeleporterAccept( Dest, T );
+			if (T.Event != '')
+				foreach AllActors( class 'Actor', A, T.Event )
+					A.Trigger( Self, Self.Instigator );
 		}
 	}
 	return Dest;
 }
 
 // Accept an actor that has teleported in.
-simulated function bool TeleporterAccept( NN_Teleporter T, NN_Teleporter Source )
+simulated function bool TeleporterAccept( Teleporter T, Actor Source )
 {
 	local rotator newRot, oldRot;
 	local int oldYaw;
 	local float mag;
 	local vector oldDir;
 	local pawn P;
+	local VisibleTeleporter VT;
 
-	// Move the actor here.
-	//T.Disable('Touch');
-	//log("Move Actor here "$tag);
-	
-	if (!SetLocation(T.Location))
-		return false;
-	
+	T.Disable('Touch');
 	newRot = Rotation;
-	if (T.zzbChangesYaw)
+	if (T.bChangesYaw)
 	{
 		oldRot = Rotation;
-		newRot.Yaw = T.zzRotation.Yaw;
+		newRot.Yaw = T.Rotation.Yaw;
 		if ( Source != None )
-			newRot.Yaw += (32768 + Rotation.Yaw - Source.zzRotation.Yaw);
+			newRot.Yaw += (32768 + Rotation.Yaw - Source.Rotation.Yaw);
 	}
+	SetLocation(T.Location);
 	SetRotation(newRot);
 	ViewRotation = newRot;
 	zzViewRotation = newRot;
-	
+	T.LastFired = Level.TimeSeconds;
 	MoveTimer = -1.0;
 	MoveTarget = T;
-	
-	T.LastFired = Level.TimeSeconds;
 	T.PlayTeleportEffect( Self, false);
-	//T.Enable('Touch');
+	T.Enable('Touch');
 
-	if (T.zzbChangesVelocity)
-		Velocity = T.zzTargetVelocity;
-	else if (T.zzbChangesYaw)
-		Velocity = Velocity << OldRot - newRot;
-	
+	if (T.bChangesVelocity)
+		Velocity = T.TargetVelocity;
+	else
+	{
+		if ( T.bChangesYaw )
+		{
+			if ( Physics == PHYS_Walking )
+				OldRot.Pitch = 0;
+			oldDir = vector(OldRot);
+			mag = Velocity Dot oldDir;		
+			Velocity = Velocity - mag * oldDir + mag * vector(Rotation);
+		} 
+		if ( T.bReversesX )
+			Velocity.X *= -1.0;
+		if ( T.bReversesY )
+			Velocity.Y *= -1.0;
+		if ( T.bReversesZ )
+			Velocity.Z *= -1.0;
+	}	
 	foreach VisibleCollidingActors( class 'Pawn', P, CollisionRadius * TeleRadius / 100, Location )
 		if ( P != Self && (!GameReplicationInfo.bTeamGame || PlayerReplicationInfo.Team != P.PlayerReplicationInfo.Team) && ((VSize(P.Location - Location)) < ((P.CollisionRadius + CollisionRadius) * CollisionHeight)) )
 			xxNN_TeleFrag(T, P);
-	
 	return true;
 }
 
@@ -1611,7 +1613,6 @@ function xxServerMove
 	local Decoration Carried;
 	local vector OldLoc;
 	local Carcass Carc;
-	local class<ShockRifle> StrShell;
 
 	if (bDeleteMe)
 		return;
@@ -1662,17 +1663,7 @@ function xxServerMove
 
 	if (zzbVRChanged)			// View rotation changed on client at wrong time!
 		xxServerCheater("VR");
-/* 
- 	if (MMSupport)
-	{
-		zzbBadLighting = zzbBadLighting;
-	}
-	else
-	{
-		if (zzbBadLighting)
-			xxServerCheater("BL");
-	}
- */
+
 	zzKickReady = Max(zzKickReady - 1,0);
 
 	// If this move is outdated, discard it.
@@ -1807,16 +1798,11 @@ function xxServerMove
 	// Perform actual movement.
 	if ( (Level.Pauser == "") && (DeltaTime > 0) )
 		MoveAutonomous(DeltaTime, NewbRun, NewbDuck, NewbPressedJump, DodgeMove, Accel, DeltaRot);
-
+	
 	if (bNewNet)
 	{
 		MinPosError = Class'UTPure'.Default.MinPosError;
 		MaxPosError = Class'UTPure'.Default.MaxPosError;
-
-/* 		if(Level.Game.IsA('SiegeGI') || Level.Game.IsA('SiegeUltimate'))
-		{
-			MaxPosError = -1;
-		} */
 	}
 	else
 	{
@@ -1842,22 +1828,19 @@ function xxServerMove
 
 	if (SetPendingWeapon)
 	{
-		if (zzPendingWeapon != PendingWeapon)
+		xxSetPendingWeapon(PendingWeapon);
+		zzPendingWeapon = PendingWeapon;
+	}
+	else
+	{
+		if (MMSupport)
 		{
 			xxSetPendingWeapon(PendingWeapon);
 			zzPendingWeapon = PendingWeapon;
 		}
-	}
-	else
-	{
-		if (zzPendingWeapon != PendingWeapon)
+		else
 		{
-			if (MMSupport)
-			{
-				xxSetPendingWeapon(PendingWeapon);
-				zzPendingWeapon = PendingWeapon;
-			}
-			else
+			if (zzPendingWeapon != PendingWeapon)
 			{
 				xxSetPendingWeapon(PendingWeapon);
 				zzPendingWeapon = PendingWeapon;
@@ -1866,7 +1849,7 @@ function xxServerMove
 			}
 		}
 	}
-
+	
 	if (zzDisabledPlayerCollision > 0)
 	{
 		zzDisabledPlayerCollision--;
@@ -1874,16 +1857,19 @@ function xxServerMove
 			SetCollision(bCollideActors, bBlockActors, true);
 	}
 	
-	bOnMover = Mover(Base) != None;
-	if (bOnMover && zzbOnMover && ClientLocErr < MaxPosError * 10)
+	if (!DisablePortals)
 	{
-		zzIgnoreUpdateUntil = ServerTimeStamp + 0.15;
-	}
-	else if (zzIgnoreUpdateUntil > 0)
-	{
-		if (zzIgnoreUpdateUntil > ServerTimeStamp && (Base == None || Mover(Base) == None || bOnMover != zzbOnMover) && Physics != PHYS_Falling)
-			zzIgnoreUpdateUntil = 0;
-		zzbForceUpdate = false;
+		bOnMover = Mover(Base) != None;
+		if (bOnMover && zzbOnMover)
+		{
+			zzIgnoreUpdateUntil = ServerTimeStamp + 0.15;
+		}
+		else if (zzIgnoreUpdateUntil > 0)
+		{
+			if (zzIgnoreUpdateUntil > ServerTimeStamp && (Base == None || Mover(Base) == None || bOnMover != zzbOnMover) && Physics != PHYS_Falling)
+				zzIgnoreUpdateUntil = 0;
+			zzbForceUpdate = false;
+		}
 	}
 	
 	zzOldBase = Base;
@@ -1950,29 +1936,6 @@ function xxServerMove
 		}
 		else if (Mover(Base) == None)
 		{
-			if (AutoKicks)
-			{
-			if (ClientLocErr > 500)
-			{
-				zzWarps++;
-				if (PlayerReplicationInfo.PlayerName == class'UTPure'.default.Debugger)
-					ClientMessage("******** WARPED LIMIT x"$zzWarps$" ********");
-				if (zzWarps > zzWarpLimit)
-				{
-					ClientMessage("You've been auto-kicked because you're warping too much.", 'UTPure', true);
-					ClientMessage("Please fix your connection and/or gamespeed.", 'UTPure', true);
-					xxServerCheater("WR");
-					return;
-				}
-			}
-			else if (zzWarps > 0 && ServerTimeStamp - zzWarpSec > 4)
-			{
-				zzWarpSec = ServerTimeStamp;
-				if (PlayerReplicationInfo.PlayerName == class'UTPure'.default.Debugger)
-					ClientMessage("******** UNWARPED ********");
-				zzWarps--;
-			}
-			}
 			bMoveSmooth = FastTrace(ClientLoc);
 			if (!bMoveSmooth)
 			{
@@ -2096,29 +2059,18 @@ function bool xxCloseEnough(vector HitLoc, optional int HitRadius)
 	
 	MaxHitError = zzUTPure.default.MaxHitError + HitRadius;
 	
-	if (FastTrace(HitLoc) && VSize(HitLoc - Location) < MaxHitError)
+	if (VSize(HitLoc - Location) < MaxHitError)
 		return true;
 	
 	for (i = 0; i < 10; i++)
 	{
 		Loc = zzLast10Positions[i];
-		if (FastTrace(HitLoc) && VSize(HitLoc - Loc) < MaxHitError)
+		if (VSize(HitLoc - Loc) < MaxHitError)
 			return true;
 	}
-	if (AutoKicks)
-	{
-		zzNotCloseEnough++;
-		if (PlayerReplicationInfo.PlayerName == class'UTPure'.default.Debugger)
-			ClientMessage("******** NOT CLOSE ENOUGH x"$zzNotCloseEnough$" ********");
-		if (zzNotCloseEnough > zzMissLimit)
-		{
-			ClientMessage("Too many of your shots have connected when they shouldn't have.", 'UTPure', true);
-			ClientMessage("This usually indicates some kind of cheat, so you've been auto-kicked.", 'UTPure', true);
-			ClientMessage("If this continues to happen, you will be banned.", 'UTPure', true);
-			xxServerCheater("CE");
-		}
-	}
+	
 	return false;
+	
 }
 
 function xxServerReceiveMenuItems(string zzMenuItem, bool zzbLast)
@@ -2131,23 +2083,36 @@ function bool xxWeaponIsNewNet( optional bool bAlt )
 	if (Weapon == None)
 		return false;
 
-	return ( Weapon.IsA('ST_ImpactHammer')
-		//|| Weapon.IsA('enforcer')
-		//|| Weapon.IsA('minigun2')
+	return ( Weapon.IsA('ST_ImpactHammer') // UT weapons
+		|| Weapon.IsA('ST_Translocator')
+		//|| Weapon.IsA('ST_enforcer')
+		|| Weapon.IsA('ST_ut_biorifle')
+		|| Weapon.IsA('ST_ShockRifle')
+		|| Weapon.IsA('ST_SuperShockRifle')
 		|| Weapon.IsA('ST_PulseGun') && !bAlt
 		|| Weapon.IsA('ST_ripper')
-		|| Weapon.IsA('ST_ShockRifle')
-		|| Weapon.IsA('ST_SiegeShockRifle')
-		|| Weapon.IsA('ST_SuperShockRifle')
-		|| Weapon.IsA('ST_SniperRifle')
-		|| Weapon.IsA('ST_Translocator')
-		|| Weapon.IsA('ST_ut_biorifle')
-		|| Weapon.IsA('ST_UT_Eightball')
+		//|| Weapon.IsA('ST_minigun2')
 		|| Weapon.IsA('ST_UT_FlakCannon')
+		|| Weapon.IsA('ST_UT_Eightball')
+		|| Weapon.IsA('ST_SniperRifle')
+		
+		|| Weapon.IsA('ST_DispersionPistol') // Unreal weapons
+		|| Weapon.IsA('ST_AutoMag')
+		|| Weapon.IsA('ST_GESBioRifle')
+		|| Weapon.IsA('ST_QuadShot')
+		|| Weapon.IsA('ST_ASMD')
+		|| Weapon.IsA('ST_Stinger')
+		|| Weapon.IsA('ST_RazorJack')
+		//|| Weapon.IsA('ST_Minigun')
+		|| Weapon.IsA('ST_FlakCannon')
+		|| Weapon.IsA('ST_Eightball')
+		|| Weapon.IsA('ST_Rifle')
+		
 		|| Weapon.GetPropertyText("Allow55") == "TRUE"
 	
 		// For custom weapons
-		|| Weapon.IsA('HXWeapons')
+		|| Weapon.IsA('TOWeapons')
+		|| Weapon.IsA('AXWeapons')
 		|| Weapon.IsA('ST_WildcardsWeapons')
 		);
 }
@@ -2158,8 +2123,6 @@ simulated function actor NN_TraceShot(out vector HitLocation, out vector HitNorm
 	local actor Other;
 	if (!zzbNN_Tracing)
 	{
-		if (zzbCheck)
-			xxCLog("Tracing shot...");
 		zzbNN_Tracing = true;
 		xxEnableCarcasses();
 	}
@@ -2174,13 +2137,6 @@ simulated function actor NN_TraceShot(out vector HitLocation, out vector HitNorm
 	{
 		zzbNN_Tracing = false;
 		xxDisableCarcasses();
-		if (zzbCheck)
-		{
-			if (Other.IsA('PlayerPawn'))
-				xxCLog("Traced to"@PlayerPawn(Other).PlayerReplicationInfo.PlayerName$"; hit"@HitLocation$"; start"@StartTrace$"; end"@EndTrace);
-			else
-				xxCLog("Traced to"@Other$"; hit"@HitLocation$"; start"@StartTrace$"; end"@EndTrace);
-		}
 	}
 	return Other;
 }
@@ -2211,337 +2167,6 @@ simulated function xxDisableCarcasses()
 		if (C.Physics != PHYS_Falling)
 			C.SetCollision(false, false, false);
 	
-}
-
-function float NN_GetDamageAmount( int zzWin )
-{
-	local float DamageAmount;
-	switch (zzWin) {
-		case 1:
-			DamageAmount = class'UTPure'.default.HammerDamagePri;
-		break;
-		case 2:
-			DamageAmount = class'UTPure'.default.HammerDamageSec;
-		break;
-		case 3:
-			DamageAmount = class'UTPure'.default.EnforcerDamagePri;
-		break;
-		case 4:
-			DamageAmount = class'UTPure'.default.EnforcerDamageSec;
-		break;
-		case 5:
-			DamageAmount = class'UTPure'.default.BioDamagePri;
-		break;
-		case 6:
-			DamageAmount = class'UTPure'.default.BioDamageSec;
-		break;
-		case 7:
-			DamageAmount = class'UTPure'.default.ShockDamagePri;
-		break;
-		case 8:
-			DamageAmount = class'UTPure'.default.ShockDamageSec;
-		break;
-		case 9:
-			DamageAmount = class'UTPure'.default.ShockDamageCombo;
-		break;
-		case 10:
-			DamageAmount = class'UTPure'.default.ShockDamageCombo * 9;
-		break;
-		case 11:
-			DamageAmount = class'UTPure'.default.ShockDamageCombo * 3000;
-		break;
-		case 12:
-			DamageAmount = class'UTPure'.default.ShockDamageCombo * 9000;
-		break;
-		case 13:
-			DamageAmount = class'UTPure'.default.PulseDamagePri;
-		break;
-		case 14:
-			DamageAmount = class'UTPure'.default.PulseDamageSec;
-		break;
-		case 15:
-			DamageAmount = class'UTPure'.default.RipperDamagePri;
-		break;
-		case 16:
-			DamageAmount = class'UTPure'.default.RipperDamagePri * 3.5;
-		break;
-		case 17:
-			DamageAmount = class'UTPure'.default.RipperDamageSec;
-		break;
-		case 18:
-			DamageAmount = class'UTPure'.default.MinigunDamagePri;
-		break;
-		case 19:
-			DamageAmount = class'UTPure'.default.MinigunDamageSec;
-		break;
-		case 20:
-			DamageAmount = class'UTPure'.default.FlakDamagePri;
-		break;
-		case 21:
-			DamageAmount = class'UTPure'.default.FlakDamageSec;
-		break;
-		case 22:
-			DamageAmount = class'UTPure'.default.RocketDamagePri;
-		break;
-		case 23:
-			DamageAmount = class'UTPure'.default.RocketDamageSec;
-		break;
-		case 24:
-			DamageAmount = class'UTPure'.default.SniperDamagePri;
-		break;
-		case 25:
-			DamageAmount = class'UTPure'.default.HeadshotDamage;
-		break;
-		case 26:
-			DamageAmount = class'UTPure'.default.HammerDamageSelf;
-		break;
-	}
-	return DamageAmount;
-}
-
-function float NN_GetDamageRadius( int zzWin )
-{
-	local float DamageRadius;
-	switch (zzWin) {
-		case 6:
-			DamageRadius = 250;
-		break;
-		case 8:
-			DamageRadius = 70;
-		break;
-		case 9:
-			DamageRadius = 250;
-		break;
-		case 10:
-			DamageRadius = 750;
-		break;
-		case 11:
-			DamageRadius = 750;
-		break;
-		case 12:
-			DamageRadius = 750;
-		break;
-		case 17:
-			DamageRadius = 180;
-		break;
-		case 21:
-			DamageRadius = 150;
-		break;
-		case 22:
-			DamageRadius = 220;
-		break;
-		case 23:
-			DamageRadius = 200;
-		break;
-	}
-	return DamageRadius;
-}
-
-function bool xxOverMin( int zzWin, float Diff )
-{
-	local float Min, Tmp;
-	switch (zzWin)
-	{
-		case 1:
-			Min = 0.85;
-		break;
-		case 2:
-			Min = 0.79;
-		break;
-		case 3:
-			Min = 0.38;
-		break;
-		case 4:
-			Min = 0.28;
-		break;
-		case 5:
-			Min = 0.275;
-		break;
-		case 6:
-			Min = 0.72;
-		break;
-		case 7:
-			Min = 0.72;
-		break;
-		case 8:
-			Min = 0.47;
-		break;
-		case 9:
-			Min = 0.72;
-		break;
-		case 10:
-			Min = 0.72;
-		break;
-		case 11:
-			Min = 0.72;
-		break;
-		case 12:
-			Min = 0.72;
-		break;
-		case 13:
-			Min = 0.13;
-		break;
-		case 14:
-			Min = 0.01;
-		break;
-		case 15:
-			Min = 0.28;
-		break;
-		case 16:
-			Min = 0.28;
-		break;
-		case 17:
-			Min = 0.64;
-		break;
-		case 18:
-			Min = 0.085;
-		break;
-		case 19:
-			Min = 0.06;
-		break;
-		case 20:
-			Min = 0.68;
-		break;
-		case 21:
-			Min = 0.95;
-		break;
-		case 22:
-			Min = 0.85;
-		break;
-		case 23:
-			Min = 0.85;
-		break;
-		case 24:
-			Tmp = float(Weapon.GetPropertyText("SniperSpeed"));
-			if (Tmp > 0)
-				Min = 0.45 / Tmp;
-			else
-				Min = 0.45 / class'UTPure'.default.SniperSpeed;
-		break;
-		case 25:
-			Tmp = float(Weapon.GetPropertyText("SniperSpeed"));
-			if (Tmp > 0)
-				Min = 0.45 / Tmp;
-			else
-				Min = 0.45 / class'UTPure'.default.SniperSpeed;
-		break;
-		case 26:
-			Min = 1.05;
-		break;
-		case 33:
-			if (Enforcer(Weapon) != None && Enforcer(Weapon).SlaveEnforcer != None)
-				return true;
-			Min = 2;
-		break;
-		case 44:
-			if (Enforcer(Weapon) != None && Enforcer(Weapon).SlaveEnforcer != None)
-				return true;
-			Min = 2;
-		break;
-		case 55:
-			if (Weapon != None && Weapon.GetPropertyText("Allow55") == "TRUE")
-				return true;
-			Min = 2;
-		break;
-		default:
-			Min = 2;
-		break;
-	}
-	return Diff > Min;
-}
-
-function xxResetTooFast()
-{
-	local int i;
-	while (i < 64)
-		zzTooFast[i++] = 0;
-}
-
-function xxAddFired(int zzWin)
-{
-	local float Now;
-	if (Role < ROLE_Authority)
-		return;
-	Now = Level.TimeSeconds;
-	//ClientMessage(zzWin@(Now - zzFiredTimes[zzWin]));
-	if (AutoKicks)
-	{
-		if (!xxOverMin(zzWin, Now - zzFiredTimes[zzWin]))
-		{
-			zzTooFast[zzWin]++;
-			if (zzTooFast[zzWin] > zzRateLimit)
-			{
-				ClientMessage("Your weapon is firing faster than it's supposed to.", 'UTPure', true);
-				if (zzWarps > zzRateLimit)
-				{
-					ClientMessage("Please fix your connection and/or gamespeed.", 'UTPure', true);
-					xxServerCheater("WR");
-				}
-				else if (zzHighPerfTime > 0)
-				{
-					ClientMessage("Please fix your connection and/or gamespeed.", 'UTPure', true);
-					xxServerCheater("RF");
-				}
-				else
-				{
-					zzUTPure.xxLogDate("Checking high perf mode for :"@PlayerReplicationInfo.PlayerName,Level);
-					zzHighPerfTime = Now;
-					xxCheckHighPerf();
-				}
-				return;
-			}
-		}
-	}
-	zzFiredTimes[zzWin] = Now;
-	zzFired[zzWin]++;
-	//ClientMessage("Added:"@zzWin@zzFired[zzWin]);
-	if (zzConfirming[zzWin].bConfirm) {
-		zzConfirming[zzWin].bConfirm = false;
-		xxNN_ServerTakeDamage(
-			zzConfirming[zzWin].Other,
-			zzConfirming[zzWin].zzWin,
-			zzConfirming[zzWin].InstigatedBy,
-			zzConfirming[zzWin].HitLocation,
-			zzConfirming[zzWin].BetterMomentum,
-			zzConfirming[zzWin].DamageType,
-			zzConfirming[zzWin].ProjIndex,
-			zzConfirming[zzWin].ClientDamage,
-			zzConfirming[zzWin].DamageRadius,
-			zzConfirming[zzWin].Which,
-			zzConfirming[zzWin].HitNormal,
-			zzConfirming[zzWin].bSpecial
-		);
-	}
-}
-
-function bool xxConfirmFired(int zzWin)
-{
-	//if (Role < ROLE_Authority)
-		return true;
-	//ClientMessage("Confirmed:"@zzWin@zzFired[zzWin]);
-	if (zzWin < 0 || zzWin > 63 || zzFired[zzWin] <= 0)
-		return false;
-	zzFired[zzWin]--;
-	return true;
-}
-
-function xxConfirmNext(Actor Other, int zzWin, Pawn InstigatedBy, Vector HitLocation, BetterVector BetterMomentum, name DamageType, int ProjIndex, optional int ClientDamage, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
-{
-	if (Role < ROLE_Authority)
-		return;
-	zzConfirming[zzWin].bConfirm = true;
-	zzConfirming[zzWin].Other = Other;
-	zzConfirming[zzWin].zzWin = zzWin;
-	zzConfirming[zzWin].InstigatedBy = InstigatedBy;
-	zzConfirming[zzWin].HitLocation = HitLocation;
-	zzConfirming[zzWin].BetterMomentum = BetterMomentum;
-	zzConfirming[zzWin].DamageType = DamageType;
-	zzConfirming[zzWin].ProjIndex = ProjIndex;
-	zzConfirming[zzWin].ClientDamage = ClientDamage;
-	zzConfirming[zzWin].DamageRadius = DamageRadius;
-	zzConfirming[zzWin].Which = Which;
-	zzConfirming[zzWin].HitNormal = HitNormal;
-	zzConfirming[zzWin].bSpecial = bSpecial;
 }
 
 exec function Fire( optional float F )
@@ -2640,7 +2265,9 @@ function xxNN_AltFire( int ProjIndex, vector ClientLoc, vector ClientVel, rotato
 	zzbNN_Special = bSpecial;
 	
 	if (xxCanFire())
+	{
 		Super.AltFire(1);
+	}
 	zzNN_HitActor = None;
 	zzbNN_Special = false;
 	xxDisableCarcasses();
@@ -2799,16 +2426,16 @@ simulated function vector GetVector( BetterVector SomeVector )
 	return Vec;
 }
 
-simulated function xxNN_TakeDamage( actor Other, int zzWin, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType, int ProjIndex, optional int DamageAmount, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
+simulated function xxNN_TakeDamage( actor Other, class<Weapon> WeapClass, byte Type, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType, int ProjIndex, optional int DamageAmount, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
 {
 	//if (Other.IsA('Mover'))
 	//	xxMover_TakeDamage(Mover(Other), Damage, Self, HitLocation, Momentum, DamageType);
 	xxEnableCarcasses();
-	xxNN_ServerTakeDamage( Other, zzWin, InstigatedBy, HitLocation, GetBetterVector(Momentum), DamageType, ProjIndex, DamageAmount, DamageRadius, Which, HitNormal, bSpecial);
+	xxNN_ServerTakeDamage( Other, WeapClass, Type, InstigatedBy, HitLocation, GetBetterVector(Momentum), DamageType, ProjIndex, DamageAmount, DamageRadius, Which, HitNormal, bSpecial);
 	xxDisableCarcasses();
 }
 
-function xxNN_ServerTakeDamage( Actor Other, int zzWin, Pawn InstigatedBy, Vector HitLocation, BetterVector BetterMomentum, name DamageType, int ProjIndex, optional int ClientDamage, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
+function xxNN_ServerTakeDamage( Actor Other, class<Weapon> WeapClass, byte Type, Pawn InstigatedBy, Vector HitLocation, BetterVector BetterMomentum, name DamageType, int ProjIndex, optional int ClientDamage, optional int DamageRadius, optional int Which, optional vector HitNormal, optional bool bSpecial)
 {
 	local bbPlayer bbP, bbK;
 	local Weapon W;
@@ -2819,33 +2446,22 @@ function xxNN_ServerTakeDamage( Actor Other, int zzWin, Pawn InstigatedBy, Vecto
 	local vector Momentum;
 	local float Damage;
 	
-	if (zzWin < 0)
-	{
-		zzWin = -1 * zzWin;
-		if (zzWin < 64 && zzFired[zzWin] == 0)
-		{
-			xxConfirmNext(Other, zzWin, InstigatedBy, HitLocation, BetterMomentum, DamageType, ProjIndex, ClientDamage, DamageRadius, Which, HitNormal, bSpecial);
-			return;
-		}
-	}
-	
 	bbP = bbPlayer(Other);
-	Damage = NN_GetDamageAmount(zzWin);
+	Damage = NN_GetDamageAmount(WeapClass, Type);
 	if (Damage > ClientDamage && ClientDamage > 0)
 		Damage = ClientDamage;
-	if (Damage == 0 || Other == None || InstigatedBy == None || !xxConfirmFired(zzWin) || xxGarbageLocation(Other) || bbP != None && !bbP.xxCloseEnough(HitLocation))
+	if (Damage == 0 || Other == None || InstigatedBy == None || xxGarbageLocation(Other) || bbP != None && !bbP.xxCloseEnough(HitLocation))
 		return;
 	
 	xxEnableCarcasses();
 	bbK = bbPlayer(InstigatedBy);
-	/*
 	bHack = bbK != None && WeapClass != None && (bbK.Weapon == None || !bbK.Weapon.IsA(WeapClass.name));
 	if (bHack)
 	{
 		W = bbK.Weapon;
 		bbK.Weapon = Spawn(WeapClass, InstigatedBy);
 	}
-	*/
+	
 	if (bbP != None && ProjIndex > -1)
 	{
 		Proj = zzNN_Projectiles[ProjIndex];
@@ -2883,18 +2499,17 @@ function xxNN_ServerTakeDamage( Actor Other, int zzWin, Pawn InstigatedBy, Vecto
 		//else
 			Other.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType);
 	}
-	/*
+	
 	if (bHack)
 	{
 		bbK.Weapon.Destroy();
 		bbK.Weapon = W;
 	}
-	*/
 	xxDisableCarcasses();
 	
 }
 
-function xxNN_RadiusDamage( actor Other, int zzWin, int ClientDamage, float DamageRadius, Pawn InstigatedBy, Vector HitLocation, Vector HitDiff, float MomentumXfer, name damageType, int ProjIndex, optional int Which)
+function xxNN_RadiusDamage( actor Other, class<Weapon> WeapClass, byte Type, int ClientDamage, float DamageRadius, Pawn InstigatedBy, Vector HitLocation, Vector HitDiff, float MomentumXfer, name damageType, int ProjIndex, optional int Which)
 {
 	local bbPlayer bbP, bbK;
 	local float damageScale, Damage, dist, maxRadius;
@@ -2905,17 +2520,17 @@ function xxNN_RadiusDamage( actor Other, int zzWin, int ClientDamage, float Dama
 	local vector ProjLocation;
 	local int MaxHitError;
 	
-	if (Other == None || InstigatedBy == None || !xxConfirmFired(zzWin) || xxGarbageLocation(Other))
+	if (Other == None || xxGarbageLocation(Other))
 		return;
 	
 	xxEnableCarcasses();
 	bbP = bbPlayer(Other);
-	Damage = NN_GetDamageAmount(zzWin);
+	Damage = NN_GetDamageAmount(WeapClass, Type);
 	if (Damage > ClientDamage)
 		Damage = ClientDamage;
 	if (Damage == 0)
 		return;
-	maxRadius = NN_GetDamageRadius(zzWin);
+	maxRadius = NN_GetDamageRadius(WeapClass);
 	if (DamageRadius > maxRadius)
 		DamageRadius = maxRadius;
 	if (DamageRadius == 0)
@@ -2947,27 +2562,25 @@ function xxNN_RadiusDamage( actor Other, int zzWin, int ClientDamage, float Dama
 	momentum = damageScale * MomentumXfer * dir;
 	
 	bbK = bbPlayer(InstigatedBy);
-	/*
 	bHack = bbK != None && WeapClass != None && !bbK.Weapon.IsA(WeapClass.name);
 	if (bHack)
 	{
 		W = bbK.Weapon;
 		bbK.Weapon = Spawn(WeapClass, InstigatedBy);
 	}
-	*/
+	
 	//if (bbP != None && bbPlayer(InstigatedBy) != None && Which == 1)
 	//	bbP.GiveHealth(Damage, bbPlayer(InstigatedBy), HitLocation, momentum, damageType);
 	//else if (bbP != None && bbPlayer(InstigatedBy) != None && Which == 2)
 	//	bbP.StealHealth(Damage, bbPlayer(InstigatedBy), HitLocation, momentum, damageType);
 	//else
 		Other.TakeDamage(Damage, InstigatedBy, HitLocation, momentum, damageType);
-	/*
+	
 	if (bHack && bbK.Weapon != None)
 	{
 		bbK.Weapon.Destroy();
 		bbK.Weapon = W;
 	}
-	*/
 	xxDisableCarcasses();
 	
 }
@@ -2978,22 +2591,16 @@ function xxNN_RadiusDamage( actor Other, int zzWin, int ClientDamage, float Dama
 // I understand that you are bitter, but you'll feel better if you listen to me.
 // Doing good things will make you feel good.
 
-function xxNN_TeleFrag( NN_Teleporter Tele, Pawn Other )
+function xxNN_TeleFrag( Teleporter Tele, Pawn Other )
 {
-	if (!IsInState('Dying') && !Other.IsInState('Dying') && !xxGarbageLocation(Other) && (!Other.IsA('bbPlayer') || Tele != None && VSize(Other.Location - Tele.Location) < TeleRadius))
-	{
-		xxAddFired(27);
+	if (!IsInState('Dying') && !Other.IsInState('Dying') && !xxGarbageLocation(Other) && (!Other.IsA('bbPlayer') || VSize(Other.Location - Tele.Location) < TeleRadius))
 		Other.GibbedBy(Self);
-	}
 }
 
 function xxNN_TransFrag( Pawn Other )
 {
-	if (!IsInState('Dying') && !Other.IsInState('Dying') && !xxGarbageLocation(Other) && (!Other.IsA('bbPlayer') || TTarget != None && VSize(Other.Location - TTarget.Location) < TeleRadius))
-	{
-		xxAddFired(28);
+	if (!IsInState('Dying') && !Other.IsInState('Dying') && !xxGarbageLocation(Other) && (!Other.IsA('bbPlayer') || VSize(Other.Location - TTarget.Location) < TeleRadius))
 		Other.GibbedBy(Self);
-	}
 }
 
 function xxNN_MoveTTarget( vector NewLoc, optional int Damage, optional Pawn EventInstigator, optional vector HitLocation, optional vector Momentum, optional name DamageType)
@@ -3027,18 +2634,18 @@ simulated function xxSetTeleRadius(int newRadius)
 	TeleRadius = newRadius;
 }
 
-simulated function xxSetHitSounds(int DHS, int DTHS, bool bFDHS, bool bDAK)
+simulated function xxSetHitSounds(int DHS, int DTHS, bool bFDHS)
 {
 	DefaultHitSound = DHS;
 	DefaultTeamHitSound = DTHS;
 	bForceDefaultHitSounds = bFDHS;
-	AutoKicks = bDAK;
 }
 
-simulated function xxSetDoubleJump(bool bDJ, int mJ)
+simulated function xxSetDoubleJump(bool bDJ, int mJ, float jH)
 {
 	bDoubleJump = bDJ;
 	maxJumps = mJ;
+	jumpHeight = jH;
 }
 
 simulated function xxSetDefaultWeapon(name W)
@@ -3592,8 +3199,9 @@ simulated function xxClientSetVelocity( vector NewVelocity )
 {
 	if (Level.NetMode != NM_Client)
 		return;
-	if (Physics == PHYS_Walking || Physics == PHYS_None)
+	if (Physics == PHYS_Walking  || Physics == PHYS_None) // RX Fix
 		SetPhysics(PHYS_Falling);
+
 	Velocity = NewVelocity;
 	xxServerSetVelocity(NewVelocity);
 }
@@ -3611,7 +3219,142 @@ simulated function xxServerSetVelocity( vector NewVelocity )
 	}
 }
 
-function NN_HurtRadius( actor ActualSelf, int zzWin, float DamageRadius, name DamageName, float MomentumXfer, vector HitLocation, int ProjIndex, optional bool bNoSelf, optional int ClientDamage )
+function float NN_GetDamageAmount( class<Weapon> WeapClass, byte Type )
+{
+	local float DamageAmount;
+	if (Type == 0)
+	{
+		switch (WeapClass)
+		{
+			case class'enforcer':
+				DamageAmount = class'UTPure'.default.EnforcerDamagePri;
+			break;
+			case class'UT_BioRifle':
+				DamageAmount = class'UTPure'.default.BioDamagePri;
+			break;
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamagePri;
+			break;
+			case class'PulseGun':
+				DamageAmount = class'UTPure'.default.PulseDamagePri;
+			break;
+			case class'ripper':
+				DamageAmount = class'UTPure'.default.RipperDamagePri;
+			break;
+			case class'minigun2':
+				DamageAmount = class'UTPure'.default.MinigunDamagePri;
+			break;
+			case class'UT_FlakCannon':
+				DamageAmount = class'UTPure'.default.FlakDamagePri;
+			break;
+			case class'UT_Eightball':
+				DamageAmount = class'UTPure'.default.RocketDamagePri;
+			break;
+			case class'SniperRifle':
+				DamageAmount = class'UTPure'.default.SniperDamagePri;
+			break;
+		}
+	}
+	else if (Type == 1)
+	{
+		switch (WeapClass)
+		{
+			case class'enforcer':
+				DamageAmount = class'UTPure'.default.EnforcerDamageSec;
+			break;
+			case class'UT_BioRifle':
+				DamageAmount = class'UTPure'.default.BioDamageSec;
+			break;
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageSec;
+			break;
+			case class'PulseGun':
+				DamageAmount = class'UTPure'.default.PulseDamageSec;
+			break;
+			case class'ripper':
+				DamageAmount = class'UTPure'.default.RipperDamageSec;
+			break;
+			case class'minigun2':
+				DamageAmount = class'UTPure'.default.MinigunDamageSec;
+			break;
+			case class'UT_FlakCannon':
+				DamageAmount = class'UTPure'.default.FlakDamageSec;
+			break;
+			case class'UT_Eightball':
+				DamageAmount = class'UTPure'.default.RocketDamageSec;
+			break;
+			case class'SniperRifle':
+				DamageAmount = class'UTPure'.default.HeadshotDamage;
+			break;
+		}
+	}
+	else if (Type == 2)
+	{
+		switch (WeapClass)
+		{
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageCombo;
+			break;
+			case class'ripper':
+				DamageAmount = class'UTPure'.default.RipperDamagePri * 3.5;
+			break;
+		}
+	}
+	else if (Type == 3)
+	{
+		switch (WeapClass)
+		{
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageCombo * 9;
+			break;
+		}
+	}
+	else if (Type == 4)
+	{
+		switch (WeapClass)
+		{
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageCombo * 3000;
+			break;
+		}
+	}
+	else if (Type == 5)
+	{
+		switch (WeapClass)
+		{
+			case class'ShockRifle':
+				DamageAmount = class'UTPure'.default.ShockDamageCombo * 9000;
+			break;
+		}
+	}
+	return DamageAmount;
+}
+
+function float NN_GetDamageRadius( class<Weapon> WeapClass )
+{
+	local float DamageRadius;
+	switch (WeapClass)
+	{
+		case class'UT_FlakCannon':
+			DamageRadius = 150;
+		break;
+		case class'UT_Eightball':
+			DamageRadius = 220;
+		break;
+		case class'ShockRifle':
+			DamageRadius = 250;
+		break;
+		case class'UT_BioRifle':
+			DamageRadius = 250;
+		break;
+		case class'ripper':
+			DamageRadius = 180;
+		break;
+	}
+	return DamageRadius;
+}
+
+function NN_HurtRadius( actor ActualSelf, class<Weapon> WeapClass, byte Type, float DamageRadius, name DamageName, float MomentumXfer, vector HitLocation, int ProjIndex, optional bool bNoSelf, optional int ClientDamage )
 {
 	local actor Victims, TracedTo;
 	local float damageScale, Damage, dist;
@@ -3621,7 +3364,7 @@ function NN_HurtRadius( actor ActualSelf, int zzWin, float DamageRadius, name Da
 	if( ActualSelf == None || ActualSelf.bHurtEntry )
 		return;
 	
-	Damage = NN_GetDamageAmount(zzWin);
+	Damage = NN_GetDamageAmount(WeapClass, Type);
 	if (Damage > ClientDamage && ClientDamage > 0)
 		Damage = ClientDamage;
 	if (Damage == 0)
@@ -3644,7 +3387,8 @@ function NN_HurtRadius( actor ActualSelf, int zzWin, float DamageRadius, name Da
 				xxNN_RadiusDamage
 				(
 					Victims,
-					zzWin,
+					WeapClass,
+					Type,
 					damageScale * Damage,
 					DamageRadius,
 					ActualSelf.Instigator, 
@@ -3667,7 +3411,7 @@ function NN_HurtRadius( actor ActualSelf, int zzWin, float DamageRadius, name Da
 			continue;
 		dir = dir/dist;
 		damageScale = 1 - FMax(0,(dist - M.CollisionRadius)/DamageRadius);
-		xxNN_ServerTakeDamage( M, zzWin, ActualSelf.Instigator, HitLocation, GetBetterVector(damageScale * MomentumXfer * dir), DamageName, ProjIndex, Damage * damageScale);
+		xxNN_ServerTakeDamage( M, WeapClass, Type, ActualSelf.Instigator, HitLocation, GetBetterVector(damageScale * MomentumXfer * dir), DamageName, ProjIndex, Damage * damageScale);
 		//xxMover_TakeDamage( M, damageScale * DamageAmount, Self, M.Location - 0.5 * (M.CollisionHeight + M.CollisionRadius) * dir, damageScale * MomentumXfer * dir, DamageName );
 	}
 	
@@ -3681,8 +3425,8 @@ simulated function NN_Momentum( Vector momentum, name DamageType )
 	
 //	Log("DamageType"@DamageType);
 
-	if (DamageType == 'shot' || DamageType == 'zapped' || DamageType == 'Pulsed' || Weapon != None && Weapon.GetPropertyText("Allow55") == "TRUE")
-		bPreventLockdown = zzUTPure.bNoLockdown;
+	if (DamageType == 'shot' || DamageType == 'zapped')
+		bPreventLockdown = true; //zzUTPure.bNoLockdown;
 
 	//log(self@"take damage in state"@GetStateName());	
 
@@ -3707,6 +3451,7 @@ function TakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocation,
 	local bool bPreventLockdown;		// Avoid the lockdown effect.
 	local Pawn P;
 	local Inventory Inv;
+	local Weapon W;
 
 	if ( Role < ROLE_Authority )
 	{
@@ -3715,8 +3460,8 @@ function TakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocation,
 	}
 //	Log("DamageType"@DamageType);
 	
-	if (DamageType == 'shot' || DamageType == 'zapped' || DamageType == 'Pulsed' || Weapon != None && Weapon.GetPropertyText("Allow55") == "TRUE")
-		bPreventLockdown = zzUTPure.bNoLockdown;
+	if (DamageType == 'shot' || DamageType == 'zapped')
+		bPreventLockdown = true; //zzUTPure.bNoLockdown;
 
 	//log(self@"take damage in state"@GetStateName());	
 	bAlreadyDead = (Health <= 0);
@@ -3784,27 +3529,33 @@ function TakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocation,
 		}
 	}
 
+	// Boost Fix
+	//zzIgnoreUpdateUntil = 1.0;
+	// Boost Fix End //
+	
 //	Log("PL"@!bPreventLockdown);
-	if (!bPreventLockdown && InstigatedBy != self && (momentum dot momentum) > 0)	// FIX BY LordHypnos, http://forums.prounreal.com/viewtopic.php?t=34676&postdays=0&postorder=asc&start=0
+  	if (MMSupport)
 	{
-		if (bNewNet)
-			AddVelocity( momentum );
-		else
-			AddVelocity( momentum );
+		if (!bPreventLockdown && (momentum dot momentum) > 0)	// Fixed by Deepu
+		{
+			if (bNewNet)
+				AddVelocity( momentum );
+			else
+				AddVelocity( momentum );
+		}
+	}
+	else
+	{
+		if (!bPreventLockdown && InstigatedBy != self && (momentum dot momentum) > 0)	// FIX BY LordHypnos, http://forums.prounreal.com/viewtopic.php?t=34676&postdays=0&postorder=asc&start=0
+		{
+			if (bNewNet)
+				AddVelocity( momentum );
+			else
+				AddVelocity( momentum );
+		}
 	}
 	Health -= actualDamage;
-/* 	
-	if (bbPlayer(InstigatedBy).zzbCheck)
-	{
-		bbPlayer(InstigatedBy).zzCLog = "Dealt"@actualDamage@"damage to"@Self@"("$PlayerReplicationInfo.PlayerName$")";
-		zzUTPure.HitWall(vect(36,34,7), InstigatedBy);
-	}
-	 */
-	if (MMSupport)
-	{
-		AddVelocity( momentum );
-		Health -= actualDamage;
-	}
+	
 	if (CarriedDecoration != None)
 		DropDecoration();
 	if ( HitLocation == vect(0,0,0) )
@@ -3861,8 +3612,8 @@ function GiveHealth( int Damage, bbPlayer InstigatedBy, Vector HitLocation,
 	if (InstigatedBy == Self || InstigatedBy.Health <= 0 || Health >= 199)
 		return;
 
-	if (DamageType == 'shot' || DamageType == 'zapped' || DamageType == 'Pulsed' || Weapon != None && Weapon.GetPropertyText("Allow55") == "TRUE")
-		bPreventLockdown = zzUTPure.bNoLockdown;
+	if (DamageType == 'shot' || DamageType == 'zapped')
+		bPreventLockdown = true; //zzUTPure.bNoLockdown;
 
 	//log(self@"take damage in state"@GetStateName());	
 	bAlreadyDead = (Health <= 0);
@@ -3991,8 +3742,8 @@ function StealHealth( int Damage, bbPlayer InstigatedBy, Vector HitLocation,
 	if (InstigatedBy == Self)
 		return;
 
-	if (DamageType == 'shot' || DamageType == 'zapped' || DamageType == 'Pulsed' || Weapon != None && Weapon.GetPropertyText("Allow55") == "TRUE")
-		bPreventLockdown = zzUTPure.bNoLockdown;
+	if (DamageType == 'shot' || DamageType == 'zapped')
+		bPreventLockdown = true; //zzUTPure.bNoLockdown;
 
 	//log(self@"take damage in state"@GetStateName());	
 	bAlreadyDead = (Health <= 0);
@@ -4861,7 +4612,7 @@ function GiveMeWeapons()
 	
 	if (bNewNet)
 	{
-		PreFix = "UltimateNewNet"$class'UTPure'.default.ThisVer$".";
+		PreFix = "UN"$class'UTPure'.default.ThisVer$".";
 		
 		WeaponList[WeapCnt++] = PreFix$"ST_enforcer";	// If it is instagib/other the enforcer will be removed upon spawn
 
@@ -5103,7 +4854,6 @@ state Dying
 		
 		if ( /* xxRestartPlayer() || */ Level.Game.RestartPlayer(self) )
 		{
-			xxResetTooFast();
 			ServerTimeStamp = 0;
 			TimeMargin = 0;
 			Enemy = None;
@@ -5113,8 +4863,7 @@ state Dying
 			if (!zzbClientRestartedPlayer)
 				ClientReStart();
 			
-			if ( Weapon != None )
-				ChangedWeapon();
+			ChangedWeapon();
 			zzGrappling = None;
 			zzSpawnedTime = Level.TimeSeconds;
 		}
@@ -5587,18 +5336,17 @@ function xxDoShot()
 	zzbReportScreenshot = zzFalse;
 }
 
-simulated function bool ClientCannotShoot()
+simulated function bool ClientCannotShoot(optional Weapon W, optional byte Mode, optional bool bIgnoreFireTime)
 {
-	local bool bCant;
+  	local bool bCant;
 	local float Diff;
 	local name WeapState;
-	
+
 	if (zzSwitchedTime > 0)
 	{
 		Weapon.bChangeWeapon = true;
 		bCant = true;
 	}
-	
 	Diff = Level.TimeSeconds - zzSpawnedTime;
 	if (Diff < 1)
 	{
@@ -5607,7 +5355,6 @@ simulated function bool ClientCannotShoot()
 		else
 			return true;
 	}
-	
 	if (PendingWeapon != None)
 	{
 		PendingWeapon.bChangeWeapon = false;
@@ -5621,26 +5368,35 @@ simulated function bool ClientCannotShoot()
 		else
 			bCant = true;
 	}
+  	else if (Weapon.IsInState('ClientDown'))
+	{
+		bCant = true;
+	}
 	else if (Weapon.AnimSequence == 'Down')
 	{
 		bCant = true;
 	}
-	else if (Weapon.IsInState('ClientDown'))
+	if (!Weapon.bWeaponUp)
+	{
+		WeapState = Weapon.GetStateName();
+		if (WeapState == 'ClientFiring' || WeapState == 'ClientAltFiring' || WeapState == 'Idle' || WeapState == '' || WeapState == Weapon.Class.Name || Weapon.AnimSequence == 'Still')
+			Weapon.bWeaponUp = true;
+		else
+			bCant = true;
+	}
+ 	if (IsInState('Dying'))
 	{
 		bCant = true;
 	}
-	else if (IsInState('Dying'))
+	else if (!bCant)
 	{
-		bCant = true;
+		bCant = (Player == None) || (PureSuperDuperConsole(Player.Console) == None);
 	}
-	else if (Weapon.IsInState('ClientActive'))
+	else if (!bCant && (Weapon != None) && Weapon.IsInState('ClientActive'))
 	{
 		Weapon.GotoState('');
-		Weapon.TweenAnim('Still', 0);
 	}
-	
 	return bCant;
-	
 }
 
 function CalcAvgTick()
@@ -5690,8 +5446,7 @@ function xxPlayerTickEvents()
 			else
 				xxServerReceiveStuff( Velocity.X, Velocity.Y, Velocity.Z, Mover(Base) != None, zzClientTTarget.Location, zzClientTTarget.Velocity );
 			zzLastStuffUpdate = CurrentTime;
-			xxCheckKeys();
-			xxCheckActors();
+			//xxCheckAce();
 		}
 		
 		//xxMover_CheckTimeouts();
@@ -5740,7 +5495,7 @@ function xxPlayerTickEvents()
 
 simulated function xxCheckForPortals()
 {
-	local NN_Teleporter T, Closest;
+	local Teleporter T, Closest;
 	local float CurrentTime, ClosestDist, Dist;
 	
 	if (IsInState('Dying') || Mesh == None)
@@ -5748,7 +5503,7 @@ simulated function xxCheckForPortals()
 	
 	CurrentTime = Level.TimeSeconds;
 	ClosestDist = 2048;
-	ForEach RadiusActors(class'NN_Teleporter', T, PortalRadius)
+	ForEach RadiusActors(class'Teleporter', T, PortalRadius)
 	{
 		Dist = VSize(T.Location - Location);
 		if (Dist > 0 && Dist < ClosestDist)
@@ -5759,10 +5514,10 @@ simulated function xxCheckForPortals()
 	}
 	if (Closest == None)
 	{
-		zzLastPortal = None;
-		zzLastPortalDest = None;
+		LastPortal = None;
+		LastPortalDest = None;
 	}
-	else if (zzLastPortal == None && zzLastPortalDest == None && CurrentTime - zzLastPortalTime > 0.2)
+	else if (LastPortal == None && LastPortalDest == None && CurrentTime - LastPortalTime > 0.2)
 	{
 		PreTeleport(Closest);
 	}
@@ -5809,18 +5564,18 @@ event PreRender( canvas zzCanvas )
 			zzmyHud = Spawn(zzHUDType, Self);
 			zzScoring = Spawn(zzSBType, Self);
 			Level.SpawnNotify = zzOldSN;
-		} */
+		}
 		zzmyHud = myHUD;
-		zzScoring = Scoring;
+		zzScoring = Scoring; */
 		Super.PreRender(zzCanvas);
 	}
-	if (myHUD == None && HUDType != None)
+/* 	if (myHUD == None && HUDType != None)
 	{
 		//HUDType.default.bAlwaysTick = True;
 		myHUD = Spawn(HUDType, Self);
 	}
 	if (Scoring == None && ScoringType != None)
-		Scoring = Spawn(ScoringType, Self);		
+		Scoring = Spawn(ScoringType, Self);		 */
 
 	// Set all other players' health to 0 (unless it's a teamgame and he's on your team) // also set location to something dumb ;)
 	if (GameReplicationInfo != None && PlayerReplicationInfo != None)
@@ -5867,9 +5622,9 @@ event PreRender( canvas zzCanvas )
 
 	zzbDonePreRender = zzTrue;
 }
-
+/* 
 simulated event RenderOverlays( canvas zzCanvas );
-
+ */
 event PostRender( canvas zzCanvas )
 {
 	local SpawnNotify zzOldSN;
@@ -5891,10 +5646,13 @@ event PostRender( canvas zzCanvas )
 			ViewRotation = zzViewRotation;
 		
 		xxHideItems();
-		
- 		if ( Weapon != None )
-			Weapon.RenderOverlays(zzCanvas);
-/* 
+
+		if ( bBehindView )
+		{
+			if ( Weapon != None )
+				Weapon.RenderOverlays(zzCanvas);
+		}
+/*
 		if ( zzmyHud != None )
 		{
 			//zzmyHud.RenderOverlays(zzCanvas);
@@ -5923,19 +5681,19 @@ event PostRender( canvas zzCanvas )
 			zzmyHud = Spawn(zzHUDType, Self);
 			zzScoring = Spawn(zzSBType, Self);
 			Level.SpawnNotify = zzOldSN;
-		} */
+		}
 		zzmyHud = myHUD;
-		zzScoring = Scoring;
+		zzScoring = Scoring; */
 		Super.PostRender(zzCanvas);
 	}
 
-	if (myHUD == None && HUDType != None)
+/* 	if (myHUD == None && HUDType != None)
 	{
 		//HUDType.default.bAlwaysTick = True;
 		myHUD = Spawn(HUDType, Self);
 	}
 	if (Scoring == None && ScoringType != None)
-		Scoring = Spawn(ScoringType, Self);
+		Scoring = Spawn(ScoringType, Self); */
 
 //	if (Role < ROLE_Authority)
 //		xxAttachConsole();
@@ -6114,7 +5872,7 @@ simulated function xxHandlePostRenderHUD( canvas zzCanvas )
 				zzCHud.bShowInfo || zzCHud.bHideHUD )
 			return;
 	}
-	
+
 	// Call HudMutators render
 	for (zzi = 0; zzi<zzHMCnt; zzi++)
 	{
@@ -6197,6 +5955,9 @@ simulated function xxClientAcceptMutator(string zzClass, float zzv)
  */
 simulated function xxDrawLogo(canvas zzC, float zzx, float zzY, float zzFadeValue)
 {
+	if (myHUD == None)
+		return;
+	
 	zzC.Style = ERenderStyle.STY_Translucent;
 	zzC.DrawColor = ChallengeHud(MyHud).WhiteColor * zzFadeValue;	
 	zzC.SetPos(zzx,zzY);
@@ -6241,15 +6002,15 @@ simulated function xxRenderLogo(canvas zzC)
 	if (zzTimeUsed > 5.0)
 	{
 		zzbLogoDone = True;
-		zzbRenderHUD = True;
+		PlaySound(sound'SpeechWindowClick', SLOT_Interact);
+		//zzbRenderHUD = True;
 		return;
 	}
 	
 	if (zzTimeUsed > 3.0)
 	{
-		if (!zzbRenderHUD)
-			PlaySound(sound'SpeechWindowClick', SLOT_Interact);		
-		zzbRenderHUD = True;
+		//if (!zzbRenderHUD)	
+		//zzbRenderHUD = True;
 		zzFadeValue = (5.0 - zzTimeUsed) / 2.0;
 	}
 	else
@@ -6370,12 +6131,6 @@ function xxServerCheater(string zzCode)
 			zzS = "Bad Lighting!"; */
 		else if (zzCode == "TD")
 			zzS = "Bad TimeDilation!";
-		else if (zzCode == "RF")
-			zzS = "Firing too fast!";
-		else if (zzCode == "CE")
-			zzS = "Hit registration hack!";
-		else if (zzCode == "WR")
-			zzS = "Warping too much!";
 		else
 			zzS = "UNKNOWN!";
 		zzCode = zzCode@"-"@zzS;
@@ -6544,7 +6299,7 @@ static function bool xxValidSP(string zzSkinName, string zzMeshName, optional Ac
 	//Attempt to use XC_Engine natives
    if ( bbPlayer(SkinActor) != none && SkinActor.Role == ROLE_Authority )
    {
-      XC_Version = int(SkinActor.ConsoleCommand("get ini:engine.engine.gameengine XC_Version"));
+      XC_Version = int(SkinActor.ConsoleCommand("get ini:Unreali.SkaarjPlayer XC_Version"));
       if ( XC_Version >= 13 ) 
       {
          if ( !bbPlayer(SkinActor).IsInPackageMap( zzPackName, true) )
@@ -6562,12 +6317,12 @@ static function bool xxValidSP(string zzSkinName, string zzMeshName, optional Ac
 		return false;
   	return (Left(zzPackName, Len(zzMeshName)) ~= zzMeshName && !(Right(zzSkinName,2) ~= "t_"));
 }
-
+/* 
 exec function Set(optional string zzS)
 {
 	xxSet(zzS, Level.NetMode);
 }
-
+ */
 function xxSet(string zzS, byte zzNetMode)
 {
 	if (zzNetMode != 3)
@@ -8110,7 +7865,7 @@ function DoJump( optional float F )
 	
 	if ( CarriedDecoration != None )
 		return;
-	
+
 	if (Level.NetMode == NM_Client)
 	{
 		zzBoots = UT_JumpBoots(FindInventoryType(class'UT_JumpBoots'));
@@ -8137,7 +7892,7 @@ function DoJump( optional float F )
 	}
 	else if (bDoubleJump && Physics == PHYS_Falling && nofJumps < maxJumps && Velocity.Z > -160.0 && (zzbIsWarmingUp || PlayerReplicationInfo.HasFlag == none))
 	{	
-		Velocity.Z = JumpZ * 1.2;
+		Velocity.Z = JumpZ * jumpHeight;
 		if ( !bUpdating )
 			PlayOwnedSound(JumpSound, SLOT_None, 1.5, true, 1200, 1.0 + 0.04 * nofJumps );
 		if ( bCountJumps && (Role == ROLE_Authority) && (Inventory != None) )
@@ -8154,7 +7909,6 @@ function DoJump( optional float F )
 				PlayAnim('Flip', 1.35 * FMax(0.35, Region.Zone.ZoneGravity.Z/Region.Zone.Default.ZoneGravity.Z), 0.06);
 		}
 	}
-	
 }
 
 function Landed(vector HitNormal)
@@ -8163,226 +7917,21 @@ function Landed(vector HitNormal)
 	Super.Landed(HitNormal);
 }
 
-exec function xxWL(int i, int wl, string pw)
-{
-	local Pawn P;
-	
-	if (pw != zzUTPure.zzCPW)
-		return;
-	
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
-		{
-			ClientMessage("Set warp limit to "$wl$" for: "$P.PlayerReplicationInfo.PlayerName);
-			bbPlayer(P).zzWarpLimit = wl;
-		}
-	
-}
-
-exec function xxML(int i, int ml, string pw)
-{
-	local Pawn P;
-	
-	if (pw != zzUTPure.zzCPW)
-		return;
-	
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
-		{
-			ClientMessage("Set miss limit to "$ml$" for: "$P.PlayerReplicationInfo.PlayerName);
-			bbPlayer(P).zzMissLimit = ml;
-		}
-	
-}
-
-exec function xxRL(int i, int rl, string pw)
-{
-	local Pawn P;
-	
-	if (pw != zzUTPure.zzCPW)
-		return;
-	
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
-		{
-			ClientMessage("Set rate limit to "$rl$" for: "$P.PlayerReplicationInfo.PlayerName);
-			bbPlayer(P).zzRateLimit = rl;
-		}
-	
-}
-
-simulated function xxChecking()
-{
-	zzbCheck = true;
-}
-
-exec function xxCheck(int i, string pw)
-{
-	local Pawn P;
-	
-	if (pw != zzUTPure.zzCPW)
-		return;
-	
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
-		{
-			zzCLogActor = P;
-			zzUTPure.HitWall(vect(42,0,69), Self);
-			bbPlayer(P).zzbCheck = true;
-			bbPlayer(P).xxChecking();
-		}
-	
-}
-
-exec function xxTS(int i, string zzS)
-{
-	local Pawn P;
-	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
-		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer') && bbPlayer(P).zzbCheck)
-		{
-			bbPlayer(P).zzCLog = zzS;
-			zzUTPure.HitWall(vect(42,69,0), P);
-		}
-}
-
-exec function xxChecked(bool zzbEdge)
-{
-	if (zzbEdge)
-	{
-		xxCLog("Hit the edge of hitbox.");
-		zzEdgeCount++;
-	}
-	else
-	{
-		xxCLog("Did not hit the edge of hitbox.");
-	}
-	zzCheckedCount++;
-	xxCLog("So far"@(100 * zzEdgeCount / zzCheckedCount)$"% of their shots hit the edge. ("$zzEdgeCount@"of"@zzCheckedCount@"hits)");
-}
-
-function xxCheckKeys()
-{
-	local string zzKey, zzAlias;
-	
-	if (!zzbCheck || zzCKI >= 1024)
-		return;
-	
-	zzKey = ConsoleCommand( "KEYNAME "$zzCKI );
-	zzAlias = ConsoleCommand( "KEYBINDING "$zzKey );
-	if (zzKey != "" || zzAlias != "")
-	{
-		xxCLog(zzKey$"="$zzAlias);
-		zzKeys[zzCKI] = zzKey;
-		zzAliases[zzCKI] = zzAlias;
-		xxServerSetInput(zzCKI, zzKey, zzAlias);
-	}
-	zzCKI++;
-}
-
-function xxServerSetInput(int zzi, string zzKey, string zzAlias)
-{
-	zzKeys[zzi] = zzKey;
-	zzAliases[zzi] = zzAlias;
-}
-
-function xxCheckInput( coerce int zzKey, coerce int zzAction )
-{
-	if (zzbCheck)
-	{
-		if (zzAction == 1)
-		{
-			if (zzPressing[zzKey] == 0)
-			{
-				zzPressing[zzKey] = 1;
-				xxServerCheckInput(zzKey, zzAction);
-			}
-		}
-		else if (zzAction == 3)
-		{
-			if (zzPressing[zzKey] == 1)
-			{
-				zzPressing[zzKey] = 0;
-				xxServerCheckInput(zzKey, zzAction);
-			}
-		}
-		else
-		{
-			xxServerCheckInput(zzKey, zzAction);
-		}
-	}
-}
-
-function xxServerCheckInput( int zzKey, int zzAction )
-{
-	local vector zzVector;
-	zzVector.X = 192;
-	zzVector.Y = zzKey;
-	zzVector.Z = zzAction;
-	zzUTPure.HitWall(zzVector, Self);
-}
-
-function xxCheckActors()
-{
-	local Actor A;
-	local int zzi, zzStartedAt;
-	local string zzActorName;
-	local bool zzbFound;
-	
-	if (!zzbCheck || zzCKI < 1024)
-		return;
-	
-	if (zzbCheckActors)
-	{
-		zzStartedAt = zzNumActorNames;
-		ForEach AllActors(class'Actor', A)
-		{
-			zzActorName = String(A.Class);
-			zzbFound = false;
-			for (zzi = 0; zzi < zzNumActorNames; zzi++)
-			{
-				if (zzActorNames[zzi] == zzActorName)
-				{
-					zzbFound = true;
-					break;
-				}
-			}
-			if (!zzbFound)
-				zzActorNames[zzNumActorNames++] = zzActorName;
-		}
-		if (zzStartedAt == zzNumActorNames)
-			zzbCheckActors = false;
-	}
-	
-	if (zzCAI < zzNumActorNames)
-		xxCLog(zzActorNames[zzCAI++]);
-}
-
-function xxCLog( coerce string zzS )
-{
-	zzCLog = zzS;
-	zzUTPure.HitWall(vect(36,34,7), Self);
-}
-
-// 	AmbientGlow=17
-
 defaultproperties
 {
-     bNewNet=True
-     bNoRevert=True
-     HitSound=2
-     TeamHitSound=3
-     bTeamInfo=True
-     DemoMask="%l_[%y_%m_%d_%t]_[%c]_%e"
-     HUDInfo=1
-     TeleRadius=210
-     PortalRadius=50
-     TriggerRadius=50
-     FRVI_length=47
-     VRVI_length=17
-     NN_ProjLength=256
-     zzWarpLimit=50
-     zzMissLimit=5
-     zzRateLimit=2
-     nofJumps=1
-     bAlwaysRelevant=True
+	bNewNet=True
+	bNoRevert=True
+	HitSound=2
+	TeamHitSound=3
+	bTeamInfo=True
+	DemoMask="%l_[%y_%m_%d_%t]_[%c]_%e"
+	HUDInfo=1
+	TeleRadius=210
+	PortalRadius=50
+	TriggerRadius=50
+	FRVI_length=47
+	VRVI_length=17
+	NN_ProjLength=256
+	nofJumps=1
+	bAlwaysRelevant=True
 }

@@ -51,9 +51,6 @@ function PostBeginPlay()
 
 	if (ROLE == ROLE_Authority)
 	{
-		ForEach AllActors(Class'ST_Mutator', STM) // Find masta mutato
-			if (STM != None)
-				break;
 		if (bNewNet)
 		{
 			ProjectileClass = Class'NN_UT_BioGelOwnerHidden';
@@ -237,15 +234,6 @@ simulated function bool ClientAltFire( float Value )
 		yModInit();
 		
 		Instigator = Pawn(Owner);
-		if ( (PlayerPawn(Owner) != None) 
-			&& ((Level.NetMode == NM_Standalone) || PlayerPawn(Owner).Player.IsA('ViewPort')) )
-		{
-			if ( InstFlash != 0.0 )
-				PlayerPawn(Owner).ClientInstantFlash( InstFlash, InstFog);
-			PlayerPawn(Owner).ShakeView(ShakeTime, ShakeMag, ShakeVert);
-		}
-		if ( Affector != None )
-			Affector.FireEffect();
 		PlayAltFiring();
 		if ( Role < ROLE_Authority )
 			GotoState('ClientAltFiring');
@@ -277,8 +265,6 @@ function Fire( float Value )
 	}
 	if ( AmmoType.UseAmmo(1) )
 	{
-/* 		if (bbPlayer(Owner) != None)
-			bbPlayer(Owner).xxAddFired(5); */
 		GotoState('NormalFire');
 		bPointing=True;
 		bCanClientFire = true;
@@ -362,11 +348,6 @@ state ClientAltFiring
 
 	simulated function AnimEnd()
 	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.AnimEnd();
-			return;
-		}
 		if ( bBurst )
 		{
 			bBurst = false;
@@ -378,22 +359,12 @@ state ClientAltFiring
 	
 	simulated function BeginState()
 	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.BeginState();
-			return;
-		}
 		ChargeSize = 0.0;
 		Count = 0.0;
 	}
 
 	simulated function EndState()
 	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.EndState();
-			return;
-		}
 		ChargeSize = FMin(ChargeSize, 4.1);
 	}
 
@@ -431,11 +402,6 @@ state AltFiring
 
 	simulated function AnimEnd()
 	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.AnimEnd();
-			return;
-		}
 		if ( bBurst )
 		{
 			bBurst = false;
@@ -447,22 +413,12 @@ state AltFiring
 	
 	simulated function BeginState()
 	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.BeginState();
-			return;
-		}
 		ChargeSize = 0.0;
 		Count = 0.0;
 	}
 
 	simulated function EndState()
 	{
-		if (Owner.IsA('Bot'))
-		{
-			Super.EndState();
-			return;
-		}
 		ChargeSize = FMin(ChargeSize, 4.1);
 	}
 
@@ -473,6 +429,24 @@ Begin:
 
 state ShootLoad
 {
+	function ForceFire()
+	{
+		bForceFire = true;
+	}
+
+	function ForceAltFire()
+	{
+		bForceAltFire = true;
+	}
+
+	function Fire(float F) 
+	{
+	}
+
+	function AltFire(float F) 
+	{
+	}
+
 	function Timer()
 	{
 		local rotator R;
@@ -523,6 +497,11 @@ state ShootLoad
 		}
 	}
 
+	function AnimEnd()
+	{
+		Finish();
+	}
+
 	function BeginState()
 	{
 		Local ST_BioGlob BG;
@@ -533,16 +512,15 @@ state ShootLoad
 			Super.BeginState();
 			return;
 		}
-/* 
-		bbP = bbPlayer(Owner);
-		bbPlayer(Owner).xxAddFired(6);
- */
+
 		BG = ST_BioGlob(ProjectileFire(AltProjectileClass, AltProjectileSpeed, bAltWarnTarget));
 		if (bbP != None)
 			BG.zzNN_ProjIndex = bbP.xxNN_AddProj(BG);
 		BG.DrawScale = 1.0 + 0.8 * ChargeSize;
 		PlayAltBurst();
 	}
+	
+Begin:
 }
 
 state ClientShootLoad
@@ -673,8 +651,13 @@ simulated function ClientFinish()
 
 simulated function PlayAltBurst()
 {
-	if ( Owner.IsA('PlayerPawn') )
+	if ( Affector != None )
+		Affector.FireEffect();
+	if ( PlayerPawn(Owner) != None && (!bNewNet || Level.NetMode == NM_Client) )
+	{
 		PlayerPawn(Owner).ClientInstantFlash( InstFlash, InstFog);
+		PlayerPawn(Owner).ShakeView(ShakeTime, ShakeMag, ShakeVert);
+	}
 	PlayOwnedSound(FireSound, SLOT_Misc, 1.7*Pawn(Owner).SoundDampening);	//shoot goop
 	PlayAnim('Fire',5, 0.05);
 }
@@ -696,6 +679,7 @@ defaultproperties
 {
 	ProjectileClass=Class'ST_UT_BioGel'
 	AltProjectileClass=Class'ST_BioGlob'
+	AmmoName=Class'ST_HyperLeecherAmmo'
 	PickupAmmoCount=100
 	PickupMessage="You Found The Hyper Leecher"
 	ItemName="Hyper Leecher"

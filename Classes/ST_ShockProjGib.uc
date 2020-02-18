@@ -5,17 +5,12 @@ function SuperExplosion()	// aka, combo.
 	local bbPlayer bbP;
 	
 	bbP = bbPlayer(Owner);
-	if (STM != None)
-	{
-		STM.PlayerUnfire(Instigator, 6);			// 6 = Shock Ball -> remove this
-		STM.PlayerFire(Instigator, 7);				// 7 = Shock Combo -> Instigator gets +1 Combo
-		STM.PlayerHit(Instigator, 7, Instigator.Location == StartLocation);	// 7 = Shock Combo, bSpecial if Standstill.
-	}
+
 	if (bbP != None && bbP.bNewNet)
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_ShockProjOwnerHidden'))
 		{
-			bbP.NN_HurtRadius(self, 11, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex, true );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 4, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex, true );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
@@ -23,8 +18,6 @@ function SuperExplosion()	// aka, combo.
 	{
 		HurtRadius(Damage*3000, 250, MyDamageType, MomentumTransfer*2, Location );
 	}
-	if (STM != None)
-		STM.PlayerClear();
 	
 	Spawn(Class'ut_ComboRing',,'',Location, Instigator.ViewRotation);
 	PlayOwnedSound(ExploSound,,20.0,,2000,0.6);
@@ -38,17 +31,12 @@ function SuperDuperExplosion()	// aka, combo.
     local UT_SuperComboRing Ring;
 	
 	bbP = bbPlayer(Owner);
-	if (STM != None)
-	{
-		STM.PlayerUnfire(Instigator, 6);			// 6 = Shock Ball -> remove this
-		STM.PlayerFire(Instigator, 7);				// 7 = Shock Combo -> Instigator gets +1 Combo
-		STM.PlayerHit(Instigator, 7, Instigator.Location == StartLocation);	// 7 = Shock Combo, bSpecial if Standstill.
-	}
+
 	if (bbP != None && bbP.bNewNet)
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_ShockProjOwnerHidden'))
 		{
-			bbP.NN_HurtRadius(self, 12, 750, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex, true );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 5, 750, MyDamageType, MomentumTransfer*6, Location, zzNN_ProjIndex, true );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
@@ -56,9 +44,7 @@ function SuperDuperExplosion()	// aka, combo.
 	{
 		HurtRadius(Damage*9000, 750, MyDamageType, MomentumTransfer*6, Location );
 	}
-	if (STM != None)
-		STM.PlayerClear();
-	
+
 	Ring = Spawn(Class'UT_SuperComboRing',,'',Location, Instigator.ViewRotation);
 	PlayOwnedSound(ExploSound,,20.0,,2000,0.6);
 	
@@ -82,7 +68,7 @@ simulated function NN_SuperExplosion(Pawn Pwner)	// aka, combo.
 	{
 		if (Level.NetMode == NM_Client)
 		{
-			bbP.NN_HurtRadius(self, 11, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex, true );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 4, 250, MyDamageType, MomentumTransfer*2, Location, zzNN_ProjIndex, true );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, Location, vect(0,0,0), true);
 		}
 	}
@@ -109,13 +95,11 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	if (bDeleteMe)
 		return;
 	
-	if (STM != None)
-		STM.PlayerHit(Instigator, 6, False);	// 6 = Shock Ball
 	if (bbP != None && bbP.bNewNet)
 	{
 		if (Level.NetMode == NM_Client && !IsA('NN_ShockProjOwnerHidden'))
 		{
-			bbP.NN_HurtRadius(self, -1, 70, MyDamageType, MomentumTransfer, Location, zzNN_ProjIndex, true );
+			bbP.NN_HurtRadius(self, class'ShockRifle', 6, 70, MyDamageType, MomentumTransfer, Location, zzNN_ProjIndex, true );
 			bbP.xxNN_RemoveProj(zzNN_ProjIndex, HitLocation, HitNormal);
 		}
 	}
@@ -124,9 +108,6 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 		HurtRadius(0, 70, MyDamageType, MomentumTransfer, Location );
 	}
 	NN_Momentum( 70, MomentumTransfer, Location );
-	if (STM != None)
-		STM.PlayerClear();
-
 	if (Damage > 60)
 		Spawn(class'ut_RingExplosion3',,, HitLocation+HitNormal*8,rotator(HitNormal));
 	else
