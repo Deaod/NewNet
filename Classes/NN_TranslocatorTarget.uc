@@ -141,5 +141,5 @@ auto state Pickup
 
 defaultproperties
 {
-	bAlwaysRelevant=True
+     bAlwaysRelevant=True
 }

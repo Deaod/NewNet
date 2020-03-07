@@ -201,5 +201,6 @@ simulated function ProcessTouch( actor Other, vector HitLocation )
 	}
 }
 
-defaultproperties {
+defaultproperties
+{
 }

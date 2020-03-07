@@ -6,7 +6,8 @@
 
 class ST_UTChunk4 extends ST_UTChunk;
 
-defaultproperties {
-	LifeSpan=3.000000
-	Mesh=LodMesh'Botpack.chunk4M'
+defaultproperties
+{
+     LifeSpan=3.000000
+     Mesh=LodMesh'Botpack.chunk4M'
 }

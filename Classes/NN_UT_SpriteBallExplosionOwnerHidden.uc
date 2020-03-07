@@ -34,5 +34,5 @@ function MakeSound()
 
 defaultproperties
 {
-	bOwnerNoSee=True
+     bOwnerNoSee=True
 }

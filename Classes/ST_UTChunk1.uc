@@ -6,6 +6,7 @@
 
 class ST_UTChunk1 extends ST_UTChunk;
 
-defaultproperties {
-	Mesh=LodMesh'Botpack.chunkM'
+defaultproperties
+{
+     Mesh=LodMesh'Botpack.chunkM'
 }

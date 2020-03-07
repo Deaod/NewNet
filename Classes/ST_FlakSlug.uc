@@ -141,5 +141,6 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	NewExplode(HitLocation, HitNormal, False);
 }
 
-defaultproperties {
+defaultproperties
+{
 }

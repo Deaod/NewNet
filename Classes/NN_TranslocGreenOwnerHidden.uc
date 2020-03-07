@@ -12,5 +12,5 @@ simulated function Tick(float DeltaTime) {
 
 defaultproperties
 {
-	bOwnerNoSee=true
+     bOwnerNoSee=True
 }

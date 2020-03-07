@@ -8,26 +8,12 @@ class ST_BioSplash extends ST_UT_BioGel;
 
 auto state Flying
 {
-	simulated function ProcessTouch (Actor Other, vector HitLocation) 
+	function ProcessTouch (Actor Other, vector HitLocation) 
 	{ 
-		if (bDeleteMe || Other == None || Other.bDeleteMe)
-			return;
-		if ( Other.IsA('ST_UT_BioGel') && Other.Owner == Owner )
+		if ( Other.IsA('ST_UT_BioGel') && (LifeSpan > Default.LifeSpan - 0.2) )
 			return;
 		if ( Pawn(Other)!=Instigator || bOnGround) 
 			Global.Timer(); 
-	}
-}
-
-state OnSurface
-{
-	simulated function ProcessTouch (Actor Other, vector HitLocation) 
-	{
-		if (bDeleteMe || Other == None || Other.bDeleteMe)
-			return;
-		if ( Other.IsA('ST_UT_BioGel') && Other.Owner == Owner)
-			return;
-		GotoState('Exploding');
 	}
 }
 

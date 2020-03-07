@@ -11,6 +11,7 @@ function PreBeginPlay()
 function ModifyPlayer(Pawn Other)
 {
 	DeathMatchPlus(Level.Game).GiveWeapon(Other,Prefix$"h4x_Rifle");
+	DeathMatchPlus(Level.Game).GiveWeapon(Other,Prefix$"h4x_Xloc");
 
 	if ( NextMutator != None )
 		NextMutator.ModifyPlayer(Other);
@@ -26,7 +27,7 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
 			return false;
 		}
 
-		if ( !Other.IsA('h4x_Deemer') && !Other.IsA('h4x_Rifle') )
+		if ( !Other.IsA('h4x_Deemer') && !Other.IsA('h4x_Rifle') && !Other.IsA('h4x_Xloc') )
 		{
 			if ( Weapon(Other).Owner == None )
 				ReplaceWith(Other,Prefix$"h4x_Rifle");

@@ -916,8 +916,9 @@ state Active
 	}
 }
 
-defaultproperties {
-	FireInterval=0.120
-	NextFireInterval=0.111
-	bNewNet=True
+defaultproperties
+{
+     bNewNet=True
+     FireInterval=0.120000
+     NextFireInterval=0.111000
 }

@@ -174,5 +174,6 @@ simulated function CheckBeam(vector X, float DeltaTime)
 	
 }
 
-defaultproperties {
+defaultproperties
+{
 }

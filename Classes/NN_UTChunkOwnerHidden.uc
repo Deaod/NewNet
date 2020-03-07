@@ -214,7 +214,7 @@ simulated function DoWallCrack(vector Loc, rotator Tater)
 			}
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }
-

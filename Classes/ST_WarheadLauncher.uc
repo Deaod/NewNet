@@ -140,8 +140,9 @@ state Active
 	}
 }
 
-defaultproperties {
-	ProjectileClass=Class'ST_WarShell'
-	AltProjectileClass=Class'ST_GuidedWarshell'
-	bNewNet=True
+defaultproperties
+{
+     bNewNet=True
+     ProjectileClass=Class'NewNetWeaponsv0_9_17.ST_WarShell'
+     AltProjectileClass=Class'NewNetWeaponsv0_9_17.ST_GuidedWarshell'
 }

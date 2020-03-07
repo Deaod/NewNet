@@ -32,7 +32,7 @@ ignores Touch, Timer, BeginState, EndState;
 
 defaultproperties
 {
-	Skin=Texture'NewNetLogo'
-	bCollideWorld=false
-	LightType=LT_None
+     Skin=Texture'NewNetUnrealv0_9_17.NewNetLogo'
+     bCollideWorld=False
+     LightType=LT_None
 }

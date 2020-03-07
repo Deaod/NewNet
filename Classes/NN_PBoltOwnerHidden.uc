@@ -176,7 +176,8 @@ simulated function DoAmbientSound(PlayerPawn Pwner)
 			PlasmaBeam.AmbientSound = Sound'Botpack.PulseGun.PulseBolt';
 }
 
-defaultproperties {
-	bOwnerNoSee=True
-	AmbientSound=None
+defaultproperties
+{
+     bOwnerNoSee=True
+     AmbientSound=None
 }

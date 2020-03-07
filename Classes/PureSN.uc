@@ -16,5 +16,6 @@ simulated event Actor SpawnNotification(Actor A)
 	return A;
 }
 
-defaultproperties {
+defaultproperties
+{
 }

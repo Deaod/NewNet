@@ -834,6 +834,6 @@ state Active
 
 defaultproperties
 {
-    bNewNet=True
-    ChargeModifier=0.70
+     bNewNet=True
+     ChargeModifier=0.700000
 }

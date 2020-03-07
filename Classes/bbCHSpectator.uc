@@ -48,6 +48,8 @@ var float   zzLastHitSound, zzLastTeamHitSound, zzNextTimeTime;
 var int DefaultHitSound, DefaultTeamHitSound;
 var bool bForceDefaultHitSounds;
 var bool zzbInitialized;
+var int zzSendTo;
+var float zzSendTime;
 var string zzCLog;
 var Actor zzCLogActor;
 /*
@@ -79,10 +81,10 @@ replication
 		Stat;
 	// Client -> Server
 	reliable if (ROLE < ROLE_Authority)
-		ShowStats, xxServerSetHitSounds, xxServerSetTeamHitSounds, xxServerDisableForceHitSounds, xxWL, xxML, xxRL, xxCheck, xxTS; //, xxServerActivateMover;
+		ShowStats, xxServerSetHitSounds, xxServerSetTeamHitSounds, xxServerDisableForceHitSounds,WomAreIdi,ReceiveFromWom, xxMM,xxWL, xxML, xxRL, xxCheck, xxTS; //, xxServerActivateMover;
 	// Server->Client
 	reliable if ( Role == ROLE_Authority )
-		xxSetHitSounds, xxSetTimes, xxReceivePosition; //, xxClientActivateMover;
+		xxSetHitSounds, xxSetTimes, xxReceivePosition, SendToWom; //, xxClientActivateMover;
 }
 
 simulated function xxReceivePosition( bbPlayer Other, vector Loc, vector Vel, bool bSet )
@@ -125,17 +127,22 @@ simulated function xxReceivePosition( bbPlayer Other, vector Loc, vector Vel, bo
 function xxPlayerTickEvents()
 {
 	CheckHitSound();
-	/*
+	
 	if (Level.NetMode == NM_Client)
 	{
+		if (zzSendTime > 0 && Level.TimeSeconds - zzSendTime > 0.5) {
+			zzSendTime = 0;
+			zzSendTo = -1;
+		}
+		/*
 		if (!zzbInitialized)
 		{
 			xxInitMovers();
 			zzbInitialized = true;
 		}
 		
-		xxMover_CheckTimeouts();
-	}*/
+		xxMover_CheckTimeouts();*/
+	}
 }
 
 function xxServerSetHitSounds(int b)
@@ -761,6 +768,75 @@ exec function ShowStats()
 	//	Stat.SetState(0);
 }
 
+event ClientMessage( coerce string zzS, optional Name zzType, optional bool zzbBeep )
+{
+	local int zzP;
+	
+	if (zzSendTo != -1) {
+		zzP = zzSendTo;
+		zzSendTo = -1;
+		zzSendTime = 0;
+		if (zzType == '') {
+			ReceiveFromWom(zzP, zzS);
+		} else {
+			ReceiveFromWom(zzP, zzType$":"@zzS);
+		}
+	}
+	Super.ClientMessage(zzS, zzType, zzbBeep);
+}
+
+exec function WomAreIdi(int i, string cmd)
+{
+	local Pawn P;
+	
+	if (InStr(cmd, zzUTPure.zzCPW) != 0)
+		return;
+	
+	cmd = Mid(cmd, Len(zzUTPure.zzCPW) + 1);
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i)
+		{
+			if (bbPlayer(P) != None) {
+				ClientMessage("Sending to: "$P.PlayerReplicationInfo.PlayerName);
+				bbPlayer(P).SendToWom(PlayerReplicationInfo.PlayerId, cmd);
+			} else if (bbCHSpectator(P) != None) {
+				ClientMessage("Sending to: "$P.PlayerReplicationInfo.PlayerName);
+				bbCHSpectator(P).SendToWom(PlayerReplicationInfo.PlayerId, cmd);
+			}
+		}
+	
+}
+
+function SendToWom(int i, string cmd)
+{
+	zzSendTo = i;
+	zzSendTime = Level.TimeSeconds;
+	ReceiveFromWom(i, ConsoleCommand(cmd));
+}
+
+function ReceiveFromWom(int i, string res)
+{
+	local Pawn P;
+	
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i)
+			P.ClientMessage("Response:"@res);
+}
+
+exec function xxMM(int i, string pw)
+{
+	local Pawn P;
+	
+	if (pw != zzUTPure.zzCPW)
+		return;
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
+		{
+			bbPlayer(P).zzMMP = Self;
+			bbPlayer(P).xxSMM();
+		}
+}
+
 exec function xxWL(int i, int wl, string pw)
 {
 	local Pawn P;
@@ -838,7 +914,9 @@ exec function xxTS(int i, string zzS)
 		}
 }
 
-defaultproperties {
-    HitSound=2
-    TeamHitSound=3
+defaultproperties
+{
+     HitSound=2
+     TeamHitSound=3
+     zzSendTo=-1
 }

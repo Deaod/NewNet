@@ -16,6 +16,7 @@ function Tick( float Delta )
 	}
 }
 
-defaultProperties {
-	maxJumps=2
+defaultproperties
+{
+     maxJumps=2
 }

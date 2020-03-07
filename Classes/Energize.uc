@@ -27,13 +27,13 @@ auto state Explode
 
 defaultproperties
 {
-    LifeSpan=2.00
-    AnimSequence=All
-    Texture=Texture'Botpack.FlareFX.utflare4'
-    DrawScale=0.60
-    bParticles=True
-    LightBrightness=255
-    LightHue=120
-    LightSaturation=100
-    LightRadius=6
+     LifeSpan=2.000000
+     AnimSequence=All
+     Texture=Texture'Botpack.FlareFX.utflare4'
+     DrawScale=0.600000
+     bParticles=True
+     LightBrightness=255
+     LightHue=120
+     LightSaturation=100
+     LightRadius=6
 }

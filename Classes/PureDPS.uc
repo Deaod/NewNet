@@ -63,5 +63,6 @@ function Timer()
 	Destroy();			// Now our job is completely done.
 }
 
-defaultproperties {
+defaultproperties
+{
 }

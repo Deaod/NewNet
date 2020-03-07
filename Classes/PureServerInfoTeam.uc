@@ -6,5 +6,6 @@
 
 class PureServerInfoTeam extends PureServerInfo;
 
-defaultproperties {
+defaultproperties
+{
 }

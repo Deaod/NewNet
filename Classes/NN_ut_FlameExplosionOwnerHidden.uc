@@ -31,6 +31,7 @@ function MakeSound()
 	PlayOwnedSound (EffectSound1,,3.0);	
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

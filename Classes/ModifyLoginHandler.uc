@@ -59,5 +59,5 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 
 defaultproperties
 {
-	bHidden=true
+     bHidden=True
 }

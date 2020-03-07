@@ -181,6 +181,7 @@ function NewProcessTouch (Actor Other, Vector HitLocation)
 	}
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

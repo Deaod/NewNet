@@ -1239,6 +1239,7 @@ state Active
 	}
 }
 
-defaultproperties {
-	bNewNet=True
+defaultproperties
+{
+     bNewNet=True
 }

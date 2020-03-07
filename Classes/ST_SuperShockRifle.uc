@@ -250,7 +250,7 @@ simulated function NN_TraceFire()
 		HitDiff = HitLocation - Other.Location;
 		
 		zzbbP = bbPlayer(Other);
-		if (bbP.zzbCheck && zzbbP != None)
+		if (zzbbP != None)
 		{
 			GetAxes(GV,zzX,zzY,zzZ);
 			zzStartTrace = Owner.Location + CDO + yMod * zzY + FireOffset.Z * zzZ;
@@ -610,8 +610,9 @@ state Active
 	}
 }
 
-defaultproperties {
-    PickupViewMesh=LodMesh'Botpack.SASMD2hand'
-	PickupViewScale=1.75
-	bNewNet=True
+defaultproperties
+{
+     bNewNet=True
+     PickupViewMesh=LodMesh'Botpack.SASMD2hand'
+     PickupViewScale=1.750000
 }

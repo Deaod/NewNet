@@ -19,6 +19,7 @@ simulated function Tick(float F)
     return;
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

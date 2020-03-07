@@ -37,7 +37,8 @@ function PostBeginPlay()
 	Destroy();
 }
 
-defaultproperties {
-	cM=Class'ST_Mutator'
-	bEnabled=True
+defaultproperties
+{
+     cm=Class'NewNetWeaponsv0_9_17.ST_Mutator'
+     bEnabled=True
 }

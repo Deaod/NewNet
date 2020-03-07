@@ -273,7 +273,6 @@ function TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vecto
 	}
 }
 
-
 defaultproperties
 {
 }

@@ -513,8 +513,9 @@ state Active
 	}
 }
 
-defaultproperties {
-	bNewNet=True
-	BodyHeight=0.66
-	zzWin=24
+defaultproperties
+{
+     bNewNet=True
+     BodyHeight=0.660000
+     zzWin=24
 }

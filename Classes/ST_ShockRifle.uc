@@ -129,7 +129,7 @@ simulated function NN_TraceFire()
 		HitDiff = HitLocation - Other.Location;
 		
 		zzbbP = bbPlayer(Other);
-		if (bbP.zzbCheck && zzbbP != None)
+		if (zzbbP != None)
 		{
 			GetAxes(GV,zzX,zzY,zzZ);
 			zzStartTrace = Owner.Location + CDO + yMod * zzY + FireOffset.Z * zzZ;
@@ -857,9 +857,10 @@ state Active
 	}
 }
 
-defaultproperties {
-	HitDamage=0
-    PickupAmmoCount=16
-	AltProjectileClass=Class'ST_ShockProj'
-	bNewNet=True
+defaultproperties
+{
+     bNewNet=True
+     hitdamage=0
+     PickupAmmoCount=16
+     AltProjectileClass=Class'NewNetWeaponsv0_9_17.ST_ShockProj'
 }

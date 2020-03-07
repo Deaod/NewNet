@@ -60,6 +60,8 @@ function EndHit()
 }
 
 // The chunks have a lifespan of 1.5-1.8 seconds, so this is sufficient.
-defaultproperties {
-	LifeSpan=2.0
+
+defaultproperties
+{
+     LifeSpan=2.000000
 }

@@ -58,6 +58,6 @@ auto state Flying
 	}
 }
 
-
-defaultproperties {
+defaultproperties
+{
 }

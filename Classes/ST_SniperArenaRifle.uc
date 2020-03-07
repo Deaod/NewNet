@@ -12,9 +12,10 @@ simulated function PlayFiring()
 		bMuzzleFlash++;
 }
 
-defaultproperties {
-	HitDamage=45
-	HeadDamage=100
-	BodyHeight=0.62
-	SniperSpeed=1
+defaultproperties
+{
+     hitdamage=45.000000
+     HeadDamage=100.000000
+     BodyHeight=0.620000
+     SniperSpeed=1.000000
 }

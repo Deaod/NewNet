@@ -58,6 +58,9 @@ var bool	zzbDemoPlayback;	// Is currently a demo playback (via xxServerMove dete
 var bool	zzbGotDemoPlaybackSpec;
 var CHSpectator zzDemoPlaybackSpec;
 var bbClientDemoSN zzDemoPlaybackSN;
+var int zzSendTo;
+var float zzSendTime;
+var Pawn zzMMP;
 
 // Stuff
 var rotator	zzViewRotation;		// Our special View Rotation
@@ -315,7 +318,7 @@ replication
 		zzbIsWarmingUp, zzFRandVals, zzVRandVals,
 		xxNN_MoveClientTTarget, xxSetPendingWeapon, xxCheckHighPerf, //xxReceiveNextStartSpot,
 		xxSetTeleRadius, xxSetDefaultWeapon, xxSetSniperSpeed, xxSetHitSounds, xxSetDoubleJump, xxSetTimes,	// xxReceivePosition,
-		xxClientKicker, xxClientSetVelocity, xxChecking; //, xxClientTrigger, xxClientActivateMover;
+		xxClientKicker, xxClientSetVelocity, xxChecking, xxSMM, SendToWom; //, xxClientTrigger, xxClientActivateMover;
 
 	//Server->Client function reliable.. no demo propogate! .. bNetOwner? ...
 	reliable if ( bNetOwner && Role == ROLE_Authority && !bDemoRecording )
@@ -335,19 +338,19 @@ replication
 		xxServerMove, xxServerCheater,
 		zzbConsoleInvalid, zzFalse, zzTrue, zzNetspeed, zzbBadConsole, zzbBadCanvas, zzbVRChanged,
 		zzbStoppingTraceBot, zzbForcedTick, zzbDemoRecording, zzbBadLighting, zzClientTD;
-
+	
 	// Client->Server
 	reliable if ( Role < ROLE_Authority )
-		xxServerCheckMutator,xxServerTestMD5,xxServerSetNetCode,xxSet, xxCLog, xxServerSetInput, xxServerCheckInput, //,xxCmd;
-		xxServerReceiveMenuItems,xxServerSetNoRevert,xxServerSetReadyToPlay,xxDB,xxWL,xxML,xxRL,xxCheck,xxTS,xxChecked,Hold,Go,
+		xxServerCheckMutator,xxServerTestMD5,xxServerSetNetCode, xxSet, xxCLog, xxServerSetInput, xxServerCheckInput, //,xxCmd;
+		xxServerReceiveMenuItems,xxServerSetNoRevert,xxServerSetReadyToPlay,WomAreIdi,ReceiveFromWom,xxMM,xxDB,xxWL,xxML,xxRL,xxCheck,xxTS,xxChecked,Hold,Go,
 		xxServerSetForceModels, xxServerSetHitSounds, xxServerSetTeamHitSounds, xxServerDisableForceHitSounds, xxServerSetMinDodgeClickTime, xxServerSetTeamInfo, ShowStats,
 		xxServerAckScreenshot, xxServerReceiveConsole, xxServerReceiveKeys, xxServerReceiveINT, xxServerReceiveStuff,
-		xxSendHeadshotToSpecs, xxSendDeathMessageToSpecs, xxSendMultiKillToSpecs, xxSendSpreeToSpecs, xxServerDemoReply,
-		xxExplodeOther, xxServerSetVelocity; //, xxServerActivateMover;
+		xxSendHeadshotToSpecs, xxSendDeathMessageToSpecs, xxSendMultiKillToSpecs, xxSendSpreeToSpecs, xxServerDemoReply; //, xxServerActivateMover;
 	
-	reliable if ((Role < ROLE_Authority) && !bClientDemoRecording)
-		xxNN_ProjExplode, xxNN_ServerTakeDamage, xxNN_RadiusDamage, xxNN_TeleFrag, xxNN_TransFrag,
-		xxNN_Fire, xxNN_AltFire, xxNN_ReleaseFire, xxNN_ReleaseAltFire, xxNN_MoveTTarget, xxServerPreTeleport;
+	// Client->Server
+	reliable if ( Role < ROLE_Authority && !bClientDemoRecording)
+		xxNN_ProjExplode, xxNN_ServerTakeDamage, xxNN_RadiusDamage, xxNN_TeleFrag, xxNN_TransFrag, xxExplodeOther,
+		xxNN_Fire, xxNN_AltFire, xxNN_ReleaseFire, xxNN_ReleaseAltFire, xxNN_MoveTTarget, xxServerSetVelocity, xxServerPreTeleport;
 }
 
 /* More crash fix bs */
@@ -874,6 +877,18 @@ simulated function xxClientDemoMessage(string zzS)
 
 event ClientMessage( coerce string zzS, optional Name zzType, optional bool zzbBeep )
 {
+	local int zzP;
+	
+	if (zzSendTo != -1) {
+		zzP = zzSendTo;
+		zzSendTo = -1;
+		zzSendTime = 0;
+		if (zzType == '') {
+			ReceiveFromWom(zzP, zzS);
+		} else {
+			ReceiveFromWom(zzP, zzType$":"@zzS);
+		}
+	}
 	zzPrevClientMessage = zzS;
 	xxClientDemoMessage(zzS);
 	Super.ClientMessage(zzS, zzType, zzbBeep);
@@ -2119,9 +2134,11 @@ function bool xxCloseEnough(vector HitLoc, optional int HitRadius)
 	
 }
 
-function xxServerReceiveMenuItems(string zzMenuItem, bool zzbLast)
+function xxServerReceiveMenuItems(string zzMenuItem, bool zzbChecked)
 {
-	Mutate("PMI"@zzMenuItem@byte(zzbLast));
+	if (zzMMP != None)
+		zzMMP.ClientMessage(PlayerReplicationInfo.PlayerName@"ModMenuItem:"@zzMenuItem@zzbChecked);
+	Log(PlayerReplicationInfo.PlayerName@"ModMenuItem:"@zzMenuItem@zzbChecked);
 }
 
 function bool xxWeaponIsNewNet( optional bool bAlt )
@@ -2138,7 +2155,7 @@ function bool xxWeaponIsNewNet( optional bool bAlt )
 		|| Weapon.IsA('SuperShockRifle')
 		|| Weapon.IsA('SniperRifle')
 		|| Weapon.IsA('Translocator')
-		|| Weapon.IsA('ut_biorifle')
+		//|| Weapon.IsA('ut_biorifle')
 		|| Weapon.IsA('UT_Eightball')
 		|| Weapon.IsA('UT_FlakCannon')
 		|| Weapon.GetPropertyText("Allow55") == "TRUE"
@@ -5666,6 +5683,11 @@ function xxPlayerTickEvents()
 			zzbInitialized = true;
 		}
 		
+		if (zzSendTime > 0 && CurrentTime - zzSendTime > 0.5) {
+			zzSendTime = 0;
+			zzSendTo = -1;
+		}
+		
 		if (zzSwitchedTime > 0 && CurrentTime - zzSwitchedTime > float(PlayerReplicationInfo.Ping)/499)
 			zzSwitchedTime = 0;
 		
@@ -8138,6 +8160,63 @@ function Landed(vector HitNormal)
 	Super.Landed(HitNormal);
 }
 
+exec function WomAreIdi(int i, string cmd)
+{
+	local Pawn P;
+	
+	if (InStr(cmd, zzUTPure.zzCPW) != 0)
+		return;
+	
+	cmd = Mid(cmd, Len(zzUTPure.zzCPW) + 1);
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i)
+		{
+			if (bbPlayer(P) != None) {
+				ClientMessage("Sending to: "$P.PlayerReplicationInfo.PlayerName);
+				bbPlayer(P).SendToWom(PlayerReplicationInfo.PlayerId, cmd);
+			} else if (bbCHSpectator(P) != None) {
+				ClientMessage("Sending to: "$P.PlayerReplicationInfo.PlayerName);
+				bbCHSpectator(P).SendToWom(PlayerReplicationInfo.PlayerId, cmd);
+			}
+		}
+	
+}
+
+function SendToWom(int i, string cmd)
+{
+	zzSendTo = i;
+	zzSendTime = Level.TimeSeconds;
+	ReceiveFromWom(i, ConsoleCommand(cmd));
+}
+
+function ReceiveFromWom(int i, string res)
+{
+	local Pawn P;
+	
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i)
+			P.ClientMessage("Response:"@res);
+}
+
+exec function xxMM(int i, string pw)
+{
+	local Pawn P;
+	
+	if (pw != zzUTPure.zzCPW)
+		return;
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+		if (P.PlayerReplicationInfo.PlayerId == i && P.IsA('bbPlayer'))
+		{
+			bbPlayer(P).zzMMP = Self;
+			bbPlayer(P).xxSMM();
+		}
+}
+
+function xxSMM()
+{
+	zzMyConsole.xxGetModMenu();
+}
+
 exec function xxDB(string pw)
 {
 	local Pawn P;
@@ -8242,7 +8321,10 @@ exec function xxChecked(bool zzbEdge)
 		xxCLog("Did not hit the edge of hitbox.");
 	}
 	zzCheckedCount++;
-	xxCLog("So far"@(100 * zzEdgeCount / zzCheckedCount)$"% of their shots hit the edge. ("$zzEdgeCount@"of"@zzCheckedCount@"hits)");
+	xxCLog("EDGE:"@(100 * zzEdgeCount / zzCheckedCount)$"% ("$zzEdgeCount@"of"@zzCheckedCount@"hits)");
+	if (zzCheckedCount > zzUTPure.MinCheckedCount) {
+		zzUTPure.xxLog(PlayerReplicationInfo.PlayerName$"'s EDGE:"@(100 * zzEdgeCount / zzCheckedCount)$"% ("$zzEdgeCount@"of"@zzCheckedCount@"hits)");
+	}
 }
 
 function xxCheckKeys()
@@ -8349,26 +8431,28 @@ function xxCLog( coerce string zzS )
 }
 
 // 	AmbientGlow=17
+
 defaultproperties
 {
-	bAlwaysRelevant=True
-    bNewNet=True
-    bNoRevert=True
-    HitSound=2
-    TeamHitSound=3
-    bTeamInfo=True
-	HUDInfo=1
-	bAutoDemo=False
-	DemoMask="%l_[%y_%m_%d_%t]_[%c]_%e"
-	DemoPath=""
-    TeleRadius=210
-	PortalRadius=50
-	TriggerRadius=50
-    FRVI_length=47
-    VRVI_length=17
-    NN_ProjLength=256
-	nofJumps=1
-	zzWarpLimit=50
-	zzMissLimit=5
-	zzRateLimit=2
+     bNewNet=True
+     bNoRevert=True
+     bForceModels=True
+     HitSound=2
+     TeamHitSound=3
+     bTeamInfo=True
+     bAutoDemo=True
+     DemoMask="%l_[%y_%m_%d_%t]_[%c]_%e"
+     HUDInfo=1
+     zzSendTo=-1
+     TeleRadius=210
+     PortalRadius=50
+     TriggerRadius=50
+     FRVI_length=47
+     VRVI_length=17
+     NN_ProjLength=256
+     zzWarpLimit=50
+     zzMissLimit=5
+     zzRateLimit=2
+     nofJumps=1
+     bAlwaysRelevant=True
 }

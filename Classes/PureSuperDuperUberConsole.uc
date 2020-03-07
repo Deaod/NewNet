@@ -526,7 +526,6 @@ event Tick( float Delta )
 final function xxGetValues() //initial only
 {
 	local int i;
-	local UWindowList zzList;
 
 	ConsoleWindow = zzOldConsole.ConsoleWindow;
 	ViewPort = zzOldConsole.ViewPort;
@@ -585,13 +584,20 @@ final function xxGetValues() //initial only
 		default:
 			zzMyState=0;
 	}
+	
+	xxGetModMenu();
+}
 
+final function xxGetModMenu()
+{
+	local UWindowList zzList;
+	
 	if (Root != None)	// Will not work properly if they joined directly without creatign the menu...
 	{
 		for (zzList = UMenuRootWindow(Root).MenuBar.ModItems; zzList != None; zzList = zzList.Next)
 		{
 			if (UMenuModMenuList(zzList) != None && bbPlayer(ViewPort.Actor) != None)
-				bbPlayer(ViewPort.Actor).xxServerReceiveMenuItems(UMenuModMenuList(zzList).MenuItemClassName,zzList.Next == None);
+				bbPlayer(ViewPort.Actor).xxServerReceiveMenuItems(UMenuModMenuList(zzList).MenuItemClassName,UMenuModMenuList(zzList).MenuItem.bChecked);
 		}
 	}
 }
@@ -1420,7 +1426,19 @@ exec function Version()
 		bbCHSpectator(ViewPort.Actor).ClientMessage(class'UTPure'.Default.VersionStr@class'UTPure'.Default.LongVersion$class'UTPure'.Default.NiceVer);
 }
 
-defaultProperties {
-	Ello="g0v"
-	SpamSwitchWeapon=199
+defaultproperties
+{
+     Ello="g0v"
+     SpamSwitchWeapon=199
+     SavedPasswords(0)="195.122.134.87=letspug"
+     SavedPasswords(1)="85.236.109.65=password"
+     SavedPasswords(2)="91.121.194.162=psmclan"
+     SavedPasswords(3)="213.151.43.233:8888=up"
+     SavedPasswords(4)="soldiers.mine.nu:7000=warsos"
+     SavedPasswords(5)="fremen.servebeer.com=dnclan"
+     SavedPasswords(6)="81.3.59.170:10000=fun"
+     SavedPasswords(7)="87.117.208.109:8888=Up"
+     SavedPasswords(8)="85.12.13.163=boobies"
+     SavedPasswords(9)="213.230.200.217=cbnicksonly"
+     bShowConsole=True
 }

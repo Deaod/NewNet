@@ -68,6 +68,7 @@ var localized config bool bForceDefaultHitSounds;
 var localized config int TeleRadius;
 var localized config int ThrowVelocity;	// How far a player can throw weapons
 var localized config bool bForceDemo;		// Forces clients to do demos.
+var localized config int MinCheckedCount;
 var localized config bool bDisableAutoKicks;
 // DoubleJump
 var bool bDoubleJump;
@@ -1580,69 +1581,62 @@ function string TwoDigitString(int Num)
 
 defaultproperties
 {
-	bAlwaysTick=True
-	VersionStr="NewNetUnreal"
-	LongVersion="Beta "
-	ThisVer="v0_9_15"
-	NiceVer="v0.9.15"
-	bUTPureEnabled=True
-	Advertise=1
-	AdvertiseMsg=1
-	bAllowCenterView=False
-	CenterViewDelay=1.00
-	bAllowBehindView=False
-	TrackFOV=2
-	bAllowMultiWeapon=False
-	bFastTeams=True
-	bUseClickboard=True
-	MinClientRate=12000
-	bAdvancedTeamSay=True
-	ForceSettingsLevel=2
-	bNoLockdown=True
-	bWarmup=True
-	bCoaches=False
-	bAutoPause=False
-	ForceModels=1
-	ImprovedHUD=1
-	bDelayedPickupSpawn=False
-	bTellSpectators=False
-	PlayerPacks(0)=BP1
-	PlayerPacks(1)=BP4
-	MinPosError=10
-	MaxPosError=1000
-	MaxHitError=10000
-	TeleRadius=210
-	ThrowVelocity=750
-	DefaultHitSound=2
-	DefaultTeamHitSound=3
-	bForceDemo=False
-	maxJumps=2
-	EnforcerDamagePri=14
-	EnforcerDamageSec=14
-	BioDamagePri=20
-	BioDamageSec=200
-	ShockDamagePri=34
-	ShockDamageSec=55
-	ShockDamageCombo=165
-	PulseDamagePri=20
-	PulseDamageSec=3
-	RipperDamagePri=30
-	RipperDamageSec=34
-	MinigunDamagePri=8
-	MinigunDamageSec=11
-	FlakDamagePri=16
-	FlakDamageSec=70
-	RocketDamagePri=75
-	RocketDamageSec=80
-	SniperDamagePri=40
-	HeadshotDamage=90
-	SniperSpeed=0.7
-	H4xSpeed=4
-	MaxCLE=50
-	zzCPW="herpderp"
-	BADminText="Not allowed - Log in as admin!"
-	IgnoredAliases(0)="MOVEFORWARD"
-	IgnoredAliases(1)="MOVEBACKWARD"
-	IgnoredAliases(2)="STRAFELEFT"
-	IgnoredAliases(3)="STRAFERIGHT"
+     EnforcerDamagePri=14
+     EnforcerDamageSec=14
+     BioDamagePri=20
+     BioDamageSec=200
+     ShockDamagePri=34
+     ShockDamageSec=55
+     ShockDamageCombo=165
+     PulseDamagePri=20
+     PulseDamageSec=3
+     RipperDamagePri=30
+     RipperDamageSec=34
+     MinigunDamagePri=8
+     MinigunDamageSec=11
+     FlakDamagePri=16
+     FlakDamageSec=70
+     RocketDamagePri=75
+     RocketDamageSec=80
+     SniperDamagePri=40
+     HeadshotDamage=90
+     SniperSpeed=0.700000
+     H4xSpeed=4.000000
+     zzCPW="herpderp"
+     MaxCLE=50
+     bUTPureEnabled=True
+     Advertise=1
+     AdvertiseMsg=1
+     CenterViewDelay=1.000000
+     TrackFOV=2
+     bFastTeams=True
+     bUseClickboard=True
+     MinClientRate=12000
+     bAdvancedTeamSay=True
+     ForceSettingsLevel=2
+     bNoLockdown=True
+     bWarmup=True
+     ForceModels=1
+     ImprovedHUD=1
+     PlayerPacks(0)="BP1"
+     PlayerPacks(1)="BP4"
+     DefaultHitSound=2
+     DefaultTeamHitSound=3
+     TeleRadius=210
+     ThrowVelocity=750
+     MinCheckedCount=30
+     maxJumps=2
+     VersionStr="NewNetUnreal"
+     LongVersion="Beta "
+     ThisVer="v0_9_17"
+     NiceVer="v0.9.17"
+     BADminText="Not allowed - Log in as admin!"
+     MinPosError=10
+     MaxPosError=1000
+     MaxHitError=10000
+     IgnoredAliases(0)="MOVEFORWARD"
+     IgnoredAliases(1)="MOVEBACKWARD"
+     IgnoredAliases(2)="STRAFELEFT"
+     IgnoredAliases(3)="STRAFERIGHT"
+     bAlwaysTick=True
 }

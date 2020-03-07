@@ -21,3 +21,7 @@ static simulated function ClientReceive(
 	P.ClientPlaySound(Default.SpreeSound[Switch],, true);
 
 }
+
+defaultproperties
+{
+}

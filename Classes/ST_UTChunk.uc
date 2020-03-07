@@ -185,6 +185,6 @@ simulated function HitWall( vector HitNormal, actor Wall )
 	bHitWall = true;
 }
 
-defaultproperties {
-    LifeSpan=2.900000
+defaultproperties
+{
 }

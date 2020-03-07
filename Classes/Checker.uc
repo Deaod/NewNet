@@ -103,6 +103,7 @@ function CLog(string Line)
     LogBuffer = LogBuffer $ Line $ chr(13) $ chr(10); // append CR, LF
 }
 
-defaultproperties {
-	CLogFile="Checker.log"
+defaultproperties
+{
+     CLogFile="Checker.log"
 }

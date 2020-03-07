@@ -1,11 +1,6 @@
 class h4x_Rifle expands TournamentWeapon;
 
-#exec AUDIO IMPORT FILE="Sounds\BLAM.wav" NAME="BLAM" GROUP="Rifle"
-#exec AUDIO IMPORT FILE="Sounds\rifleselect.wav" NAME="rifleselect" GROUP="Rifle"
-#exec TEXTURE IMPORT NAME=Rifle2A FILE=Texture\Rifle2A.pcx GROUP=Rifle
-#exec TEXTURE IMPORT NAME=Rifle2B FILE=Texture\Rifle2B.pcx GROUP=Rifle
-#exec TEXTURE IMPORT NAME=Rifle2C FILE=Texture\Rifle2C.pcx GROUP=Rifle
-#exec TEXTURE IMPORT NAME=Rifle2D FILE=Texture\Rifle2D.pcx GROUP=Rifle
+#exec AUDIO IMPORT FILE="Sounds\BLAM.WAV" NAME="BLAM" GROUP="Rifle"
 
 var ST_Mutator STM;
 var bool bNewNet;		// Self-explanatory lol
@@ -22,7 +17,7 @@ var int NumFire;
 var name FireAnims[5];
 var vector OwnerLocation;
 var float StillTime, StillStart;
-var bool bZoom;
+var bool bZoom, bFinishZooming;
 
 function PostBeginPlay()
 {
@@ -92,6 +87,7 @@ simulated event PostNetBeginPlay()
 	}
 }
 
+
 function float RateSelf( out int bUseAltMode )
 {
 	local float dist;
@@ -125,10 +121,6 @@ function setHand(float Hand)
 	else
 	{
 		Mesh = mesh'Rifle2m';
-		MultiSkins[0] = Texture'XiSRifle23.Rifle.Rifle2A';
-		MultiSkins[1] = Texture'XiSRifle23.Rifle.Rifle2B';
-		MultiSkins[2] = Texture'XiSRifle23.Rifle.Rifle2C';
-		MultiSkins[3] = Texture'XiSRifle23.Rifle.Rifle2D';
 
 	}
 }
@@ -188,8 +180,8 @@ simulated function bool ClientAltFire( float Value )
 		return Super.ClientAltFire(Value);
 	
 	bbP = bbPlayer(Owner);
-	if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
-		return false;
+	//if (bbP.ClientCannotShoot() || bbP.Weapon != Self)
+	//	return false;
 	GotoState('Zooming');
 	return true;
 }
@@ -215,9 +207,9 @@ function Fire( float Value )
 		bPointing=True;
 		bCanClientFire = true;
 		ClientFire(Value);
-		if ( Owner.IsA('Bot'))
+		if ( Owner.IsA('Bot') )
 		{
-			if ( Bot (Owner).bSniping && (FRand() <0.65) )
+			if ( Bot(Owner).bSniping && (FRand() < 0.65) )
 				AimError = AimError/FClamp(StillTime, 1.0, 8.0);
 			else if ( VSize(Owner.Location - OwnerLocation) < 6 )
 				AimError = AimError/FClamp(0.5 * StillTime, 1.0, 3.0);
@@ -226,9 +218,6 @@ function Fire( float Value )
 		}
 		if ( !bNewNet && ( bRapidFire || (FiringSpeed > 0) ))
 			Pawn(Owner).PlayRecoil(FiringSpeed);
-		if ( bInstantHit )
-		{
-			if ( (Owner.Physics != PHYS_Falling && Owner.Physics != PHYS_Swimming && Pawn(Owner).bDuck != 0)
 		TraceFire(0);
 		AimError = Default.AimError;
 		ClientFire(Value);
@@ -315,7 +304,6 @@ state Active
 
 state NormalFire
 {
-
 	function Fire(float F) 
 	{
 		if (Owner.IsA('Bot'))
@@ -390,7 +378,7 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 	local float CH;
 	
 	if (Owner.IsA('Bot'))
-	return false;
+		return false;
 
 	PawnOwner = Pawn(Owner);
 
@@ -398,9 +386,8 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 	if ( s != None ) 
 	{
 		s.DrawScale = 2.0;
-		s.Eject(((FRand()*0.3+0.4)*X + (FRand()*0.2+0.2)*Y + (FRand()*0.3+1.0) * Z)*160);
+		s.Eject(((FRand()*0.3+0.4)*X + (FRand()*0.2+0.2)*Y + (FRand()*0.3+1.0) * Z)*160);              
 	}
-
 	if (Other == Level || Other.IsA('Mover'))
 	{
 		Spawn(class'UT_HeavyWallHitEffect',,, HitLocation+HitNormal, Rotator(HitNormal));
@@ -416,11 +403,81 @@ simulated function bool NN_ProcessTraceHit(Actor Other, Vector HitLocation, Vect
 	else if ( (Other != self) && (Other != Owner) && (Other != None) )
 	{
 		if ( Other.bIsPawn )
+		{
+			if ((Other.GetAnimGroup(Other.AnimSequence) == 'Ducking') && (Other.AnimFrame > -0.03)) {
+				CH = 0.3 * Other.CollisionHeight;
+				return false; // disable crouching headshot
+			} else {
+				CH = Other.CollisionHeight;
+			}
+			
+			if (HitLocation.Z - Other.Location.Z > BodyHeight * CH)
+				return true;
+		}
+		
+		if ( !Other.bIsPawn && !Other.IsA('Carcass') )
+			spawn(class'UT_SpriteSmokePuff',,,HitLocation+HitNormal*9);	
+	}
+	return false;
+}
+
+function ProcessTraceHit(Actor Other, Vector HitLocation, Vector HitNormal, Vector X, Vector Y, Vector Z)
+{
+	local UT_Shellcase s;
+	local Pawn PawnOwner, POther;
+	local PlayerPawn PPOther;
+	local vector HeadHitLocation, HeadHitNormal;
+	local actor Head;
+	local int ArmorAmount;
+	local inventory inv;
+	local bbPlayer bbP;
+	
+	if (Owner.IsA('Bot'))
+	{
+		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X, Y, Z);
+		return;
+	}
+	
+	bbP = bbPlayer(Owner);
+	if (bbP == None || !bNewNet)
+	{
+		Super.ProcessTraceHit(Other, HitLocation, HitNormal, X,Y,Z);
+		return;
+	}
+	
+	if (bbPlayer(Owner) != None && !bbPlayer(Owner).xxConfirmFired(24))
+		return;
+
+	PawnOwner = Pawn(Owner);
+	POther = Pawn(Other);
+	PPOther = PlayerPawn(Other);
+	if (STM != None)
+		STM.PlayerFire(PawnOwner, 18);		// 18 = Sniper
+
+	if (bNewNet)
+		s = Spawn(class'NN_UT_ShellCaseOwnerHidden',Owner, '', Owner.Location + CalcDrawOffset() + 30 * X + (2.8 * FireOffset.Y+5.0) * Y - Z * 1);
+	else
+		s = Spawn(class'UT_ShellCase',, '', Owner.Location + CalcDrawOffset() + 30 * X + (2.8 * FireOffset.Y+5.0) * Y - Z * 1);
+	if ( s != None ) 
+	{
+		s.DrawScale = 2.0;
+		s.Eject(((FRand()*0.3+0.4)*X + (FRand()*0.2+0.2)*Y + (FRand()*0.3+1.0) * Z)*160);              
+	}
+	if (Other == Level)
+	{
+		if (bNewNet)
+			Spawn(class'NN_UT_HeavyWallHitEffectOwnerHidden',Owner,, HitLocation+HitNormal, Rotator(HitNormal));
+		else
+			Spawn(class'UT_HeavyWallHitEffect',,, HitLocation+HitNormal, Rotator(HitNormal));
+	}
+	else if ( (Other != self) && (Other != Owner) && (Other != None) )
+	{
+		if ( Other.bIsPawn )
 			Other.PlaySound(Sound 'ChunkHit',, 4.0,,100);
 		
-		if ( bbP.zzbNN_Special || !bNewNet &&
+		if ( (bbP.zzbNN_Special || !bNewNet &&
 			Other.bIsPawn && (HitLocation.Z - Other.Location.Z > BodyHeight * Other.CollisionHeight) 
-			&& (instigator.IsA('PlayerPawn') || (instigator.IsA('Bot') && !Bot(Instigator).bNovice))
+			&& (instigator.IsA('PlayerPawn') || (instigator.IsA('Bot') && !Bot(Instigator).bNovice)) )
 			&& !PPOther.bIsCrouching && PPOther.GetAnimGroup(PPOther.AnimSequence) != 'Ducking' )
 		{
 			if (STM != None)
@@ -506,11 +563,15 @@ simulated function NN_TraceFire(float Accuracy)
 	if (bbP == None)
 		return;
 	
-	if ( (Owner.Physics != PHYS_Falling && Owner.Physics != PHYS_Swimming && Pawn(Owner).bDuck != 0)
-	   || Owner.Velocity == 0 * Owner.Velocity )
+	if (
+		Pawn(Owner).bDuck != 0
+		|| Owner.Velocity == 0 * Owner.Velocity
+		|| Owner.Physics == PHYS_Falling
+		|| PlayerPawn(Owner).DodgeDir != Dodge_NONE && PlayerPawn(Owner).DodgeDir != Dodge_DONE
+	)
 		Accuracy = 0;
 	else
-		Accuracy = 16;
+		Accuracy = 16000;
 
 //	Owner.MakeNoise(Pawn(Owner).SoundDampening);
 	GetAxes(GV,X,Y,Z);
@@ -520,7 +581,7 @@ simulated function NN_TraceFire(float Accuracy)
 	R2 = NN_GetFRV();
 	EndTrace = StartTrace + Accuracy * (R1 - 0.5 )* Y * 1000
 		+ Accuracy * (R2 - 0.5 ) * Z * 1000;
-	EndTrace += (10000 * vector(GV));
+	EndTrace += (10000000 * vector(GV));
 	
 	ClientFRVI = bbP.zzNN_FRVI;
 	Other = bbP.NN_TraceShot(HitLocation,HitNormal,EndTrace,StartTrace,PawnOwner);
@@ -539,11 +600,15 @@ function TraceFire( float Accuracy )
 	local vector NN_HitLoc, HitLocation, HitNormal, StartTrace, EndTrace, X,Y,Z;
 	local float R1, R2;
 	
-	if ( (Owner.Physics != PHYS_Falling && Owner.Physics != PHYS_Swimming && Pawn(Owner).bDuck != 0)
-	   || Owner.Velocity == 0 * Owner.Velocity )
+	if (
+		Pawn(Owner).bDuck != 0
+		|| Owner.Velocity == 0 * Owner.Velocity
+		|| Owner.Physics == PHYS_Falling
+		|| PlayerPawn(Owner).DodgeDir != Dodge_NONE && PlayerPawn(Owner).DodgeDir != Dodge_DONE
+	)
 		Accuracy = 0;
 	else
-		Accuracy = 16;
+		Accuracy = 16000;
 	
 	if (Owner.IsA('Bot'))
 	{
@@ -572,6 +637,7 @@ function TraceFire( float Accuracy )
 	R2 = GetFRV();
 	EndTrace = StartTrace + Accuracy * (R1 - 0.5 )* Y * 1000
 		+ Accuracy * (R2 - 0.5 ) * Z * 1000;
+	EndTrace += (10000000 * vector(GV));
 	
 	if (bbP.zzNN_HitActor != None && VSize(bbP.zzNN_HitDiff) > bbP.zzNN_HitActor.CollisionRadius + bbP.zzNN_HitActor.CollisionHeight)
 		bbP.zzNN_HitDiff = vect(0,0,0);
@@ -730,6 +796,7 @@ simulated function PlaySelect()
 	if ( !IsAnimating() || (AnimSequence != 'Select') )
 		PlayAnim('Select',1.35 + float(Pawn(Owner).PlayerReplicationInfo.Ping) / 1000,0.0);
 	Owner.PlaySound(SelectSound, SLOT_Misc, Pawn(Owner).SoundDampening);
+	GoToState('Idle');
 }
 
 simulated function TweenDown()
@@ -742,64 +809,63 @@ simulated function TweenDown()
 
 defaultproperties
 {
-    FireAnims(0)=Fire
-    FireAnims(1)=Fire2
-    FireAnims(2)=Fire3
-    FireAnims(3)=Fire4
-    FireAnims(4)=Fire5
-    WeaponDescription="Modified sniper rifle for h4x"
-    AmmoName=Class'h4x_Bullets'
-    PickupAmmoCount=500
-    bInstantHit=True
-    bAltInstantHit=True
-    FiringSpeed=1.60
-    FireOffset=(X=0.00,Y=-5.00,Z=-2.00),
-    MyDamageType=shot
-    AltDamageType=Decapitated
-    shakemag=0.00
-    shaketime=0.00
-    shakevert=0.00
-    AIRating=0.54
-    RefireRate=0.99
-    AltRefireRate=0.30
-    FireSound=Sound'BLAM'
-    AltFireSound=Sound'UnrealShare.AutoMag.shot'
-    DeathMessage="%k DESTROYED %o."
-    NameColor=(R=0,G=0,B=255,A=0),
-    bDrawMuzzleFlash=True
-    MuzzleScale=1.00
-    FlashY=0.11
-    FlashO=0.01
-    FlashC=0.03
-    FlashLength=0.01
-    FlashS=256
-    AutoSwitchPriority=5
-    InventoryGroup=10
-    PickupMessage="+ h4x Rifle +"
-    ItemName="h4x Sniper Rifle"
-    PlayerViewOffset=(X=5.00,Y=-1.60,Z=-1.70),
-    PlayerViewMesh=LodMesh'Botpack.Rifle2m'
-    PlayerViewScale=2.00
-    BobDamping=0.98
-    PickupViewMesh=LodMesh'Botpack.RiflePick'
-    ThirdPersonMesh=LodMesh'Botpack.RifleHand'
-    StatusIcon=Texture'Botpack.Icons.UseRifle'
-    bMuzzleFlashParticles=True
-    MuzzleFlashStyle=STY_Translucent
-    MuzzleFlashMesh=LodMesh'Botpack.muzzsr3'
-    MuzzleFlashScale=0.10
-    MuzzleFlashTexture=Texture'Botpack.Skins.Muzzy3'
-    PickupSound=Sound'UnrealShare.Pickups.WeaponPickup'
-    Icon=Texture'Botpack.Icons.UseRifle'
-    Rotation=(Pitch=0,Yaw=0,Roll=-1536),
-    Mesh=LodMesh'Botpack.RiflePick'
-    bNoSmooth=False
-    CollisionRadius=32.00
-    CollisionHeight=8.00
-	bNewNet=True
-	Allow55="TRUE"
-	zzWin=55
-	HitDamage=45
-	HeadDamage=100
-	BodyHeight=0.62
+     bNewNet=True
+     zzWin=55
+     Allow55="TRUE"
+     hitdamage=45.000000
+     HeadDamage=100.000000
+     BodyHeight=0.620000
+     FireAnims(0)=Fire
+     FireAnims(1)=Fire2
+     FireAnims(2)=Fire3
+     FireAnims(3)=Fire4
+     FireAnims(4)=Fire5
+     WeaponDescription="Modified sniper rifle for h4x."
+     AmmoName=Class'NewNetWeaponsv0_9_17.h4x_Bullets'
+     PickupAmmoCount=500
+     bInstantHit=True
+     bAltInstantHit=True
+     FiringSpeed=1.600000
+     FireOffset=(Y=-5.000000,Z=-2.000000)
+     MyDamageType=shot
+     AltDamageType=Decapitated
+     shakemag=0.000000
+     shaketime=0.000000
+     shakevert=0.000000
+     AIRating=0.540000
+     RefireRate=0.990000
+     AltRefireRate=0.300000
+     FireSound=Sound'NewNetWeaponsv0_9_17.Rifle.BLAM'
+     AltFireSound=Sound'UnrealShare.AutoMag.shot'
+     DeathMessage="%k fucked %o up"
+     NameColor=(R=0,G=0)
+     bDrawMuzzleFlash=True
+     MuzzleScale=1.000000
+     FlashY=0.110000
+     FlashO=0.010000
+     FlashC=0.030000
+     FlashLength=0.010000
+     FlashS=256
+     AutoSwitchPriority=5
+     InventoryGroup=10
+     PickupMessage="You Picked Up A h4x Sniper Rifle."
+     ItemName="h4x Sniper Rifle"
+     PlayerViewOffset=(X=5.000000,Y=-1.600000,Z=-1.700000)
+     PlayerViewMesh=LodMesh'Botpack.Rifle2m'
+     PlayerViewScale=2.000000
+     BobDamping=0.980000
+     PickupViewMesh=LodMesh'Botpack.RiflePick'
+     ThirdPersonMesh=LodMesh'Botpack.RifleHand'
+     StatusIcon=Texture'Botpack.Icons.UseRifle'
+     bMuzzleFlashParticles=True
+     MuzzleFlashMesh=LodMesh'Botpack.muzzsr3'
+     MuzzleFlashScale=0.100000
+     MuzzleFlashTexture=Texture'Botpack.Skins.Muzzy3'
+     PickupSound=Sound'UnrealShare.Pickups.WeaponPickup'
+     Icon=Texture'Botpack.Icons.UseRifle'
+     Rotation=(Roll=-1536)
+     Mesh=LodMesh'Botpack.RiflePick'
+     bNoSmooth=False
+     CollisionRadius=32.000000
+     CollisionHeight=8.000000
 }

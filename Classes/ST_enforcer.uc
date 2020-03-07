@@ -761,7 +761,8 @@ state Active
 	}
 }
 
-defaultproperties {
-	bNewNet=True
-	Hitdamage=0
+defaultproperties
+{
+     bNewNet=True
+     hitdamage=0
 }

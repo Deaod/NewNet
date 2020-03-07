@@ -440,8 +440,9 @@ state Active
 	}
 }
 
-defaultproperties {
-	ProjectileClass=Class'ST_Razor2'
-	AltProjectileClass=Class'ST_Razor2Alt'
-	bNewNet=True
+defaultproperties
+{
+     bNewNet=True
+     ProjectileClass=Class'NewNetWeaponsv0_9_17.ST_Razor2'
+     AltProjectileClass=Class'NewNetWeaponsv0_9_17.ST_Razor2Alt'
 }

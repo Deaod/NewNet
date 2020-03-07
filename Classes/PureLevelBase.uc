@@ -28,5 +28,6 @@ var const Object zzEngine;
 var const xxURL zzURL;
 var const Object zzDemoRecDriver;
 
-defaultproperties {
+defaultproperties
+{
 }

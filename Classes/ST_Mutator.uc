@@ -842,10 +842,10 @@ function Mutate(string MutateString, PlayerPawn Sender)
 		NextMutator.Mutate(MutateString, Sender);
 }
 
-defaultproperties {
-	DefaultWeapon=class'ST_ImpactHammer'
-	ST_Log=PureStats
-	PreFix="NewNetWeapons"
-	WelcomeMessage="This server is using Pure Stats! Type 'showstats' into console to view!"
-	VecNull=(0,0,0)
+defaultproperties
+{
+     ST_Log=PureStats
+     Prefix="NewNetWeapons"
+     WelcomeMessage="This server is using Pure Stats! Type 'showstats' into console to view!"
+     DefaultWeapon=Class'NewNetWeaponsv0_9_17.ST_ImpactHammer'
 }

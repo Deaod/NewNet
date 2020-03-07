@@ -273,15 +273,16 @@ static function xxSetClass(Actor zzA)
 	}
 }
 
-defaultproperties {
-	WeaponFixes(0)=(zzWeaponClass=Class'minigun2',zzShakeMag=135.0,zzShakeTime=0.10,zzShakeVert=8.0,zzMuzzleFlashScale=0.25,zzMuzzleFlashMesh=LodMesh'Botpack.MuzzFlash3')
-	WeaponFixes(1)=(zzWeaponClass=Class'enforcer',zzShakeMag=200.0,zzShakeTime=0.10,zzShakeVert=4.0,zzMuzzleFlashScale=0.08,zzMuzzleFlashMesh=LodMesh'Botpack.muzzEF3')
-	WeaponFixes(2)=(zzWeaponClass=Class'PulseGun',zzShakeMag=135.0,zzShakeTime=0.10,zzShakeVert=8.0,zzMuzzleFlashScale=0.40,zzMuzzleFlashMesh=LodMesh'Botpack.muzzPF3')
-	WeaponFixes(3)=(zzWeaponClass=Class'ripper',zzShakeMag=120.0,zzShakeTime=0.10,zzShakeVert=5.0,zzMuzzleFlashScale=0.00,zzMuzzleFlashMesh=None)
-	WeaponFixes(4)=(zzWeaponClass=Class'ShockRifle',zzShakeMag=300.0,zzShakeTime=0.10,zzShakeVert=5.0,zzMuzzleFlashScale=0.00,zzMuzzleFlashMesh=None)
-	WeaponFixes(5)=(zzWeaponClass=Class'SniperRifle',zzShakeMag=500.0,zzShakeTime=0.15,zzShakeVert=8.0,zzMuzzleFlashScale=0.10,zzMuzzleFlashMesh=LodMesh'Botpack.muzzsr3')
-	WeaponFixes(6)=(zzWeaponClass=Class'ut_biorifle',zzShakeMag=300.0,zzShakeTime=0.10,zzShakeVert=5.0,zzMuzzleFlashScale=0.00,zzMuzzleFlashMesh=None)
-	WeaponFixes(7)=(zzWeaponClass=Class'UT_Eightball',zzShakeMag=350.0,zzShakeTime=0.20,zzShakeVert=7.5,zzMuzzleFlashScale=0.00,zzMuzzleFlashMesh=None)
-	WeaponFixes(8)=(zzWeaponClass=Class'UT_FlakCannon',zzShakeMag=350.0,zzShakeTime=0.15,zzShakeVert=8.5,zzMuzzleFlashScale=0.40,zzMuzzleFlashMesh=LodMesh'Botpack.muzzFF3')
-	WeaponFixes(9)=(zzWeaponClass=Class'ImpactHammer',zzShakeMag=300.0,zzShakeTime=0.10,zzShakeVert=5.0,zzMuzzleFlashScale=0.00,zzMuzzleFlashMesh=None)
+defaultproperties
+{
+     WeaponFixes(0)=(zzWeaponClass=Class'Botpack.minigun2',zzShakeMag=135.000000,zzShakeTime=0.100000,zzShakeVert=8.000000,zzMuzzleFlashScale=0.250000,zzMuzzleFlashMesh=LodMesh'Botpack.MuzzFlash3')
+     WeaponFixes(1)=(zzWeaponClass=Class'Botpack.enforcer',zzShakeMag=200.000000,zzShakeTime=0.100000,zzShakeVert=4.000000,zzMuzzleFlashScale=0.080000,zzMuzzleFlashMesh=LodMesh'Botpack.muzzEF3')
+     WeaponFixes(2)=(zzWeaponClass=Class'Botpack.PulseGun',zzShakeMag=135.000000,zzShakeTime=0.100000,zzShakeVert=8.000000,zzMuzzleFlashScale=0.400000,zzMuzzleFlashMesh=LodMesh'Botpack.muzzPF3')
+     WeaponFixes(3)=(zzWeaponClass=Class'Botpack.ripper',zzShakeMag=120.000000,zzShakeTime=0.100000,zzShakeVert=5.000000)
+     WeaponFixes(4)=(zzWeaponClass=Class'Botpack.ShockRifle',zzShakeMag=300.000000,zzShakeTime=0.100000,zzShakeVert=5.000000)
+     WeaponFixes(5)=(zzWeaponClass=Class'Botpack.SniperRifle',zzShakeMag=500.000000,zzShakeTime=0.150000,zzShakeVert=8.000000,zzMuzzleFlashScale=0.100000,zzMuzzleFlashMesh=LodMesh'Botpack.muzzsr3')
+     WeaponFixes(6)=(zzWeaponClass=Class'Botpack.ut_biorifle',zzShakeMag=300.000000,zzShakeTime=0.100000,zzShakeVert=5.000000)
+     WeaponFixes(7)=(zzWeaponClass=Class'Botpack.UT_Eightball',zzShakeMag=350.000000,zzShakeTime=0.200000,zzShakeVert=7.500000)
+     WeaponFixes(8)=(zzWeaponClass=Class'Botpack.UT_FlakCannon',zzShakeMag=350.000000,zzShakeTime=0.150000,zzShakeVert=8.500000,zzMuzzleFlashScale=0.400000,zzMuzzleFlashMesh=LodMesh'Botpack.muzzFF3')
+     WeaponFixes(9)=(zzWeaponClass=Class'Botpack.ImpactHammer',zzShakeMag=300.000000,zzShakeTime=0.100000,zzShakeVert=5.000000)
 }

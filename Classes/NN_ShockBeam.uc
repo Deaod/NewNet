@@ -33,5 +33,6 @@ simulated function PostBeginPlay()
 		SetTimer(0.05, false);
 }
 
-defaultproperties {
+defaultproperties
+{
 }

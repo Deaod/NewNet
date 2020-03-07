@@ -80,10 +80,9 @@ function SpawnEffect(vector Start, vector Dest)
 
 defaultproperties
 {
-    TossForce=830.00
-    MaxTossForce=830.00
-    WeaponDescription="Modified translocator for h4x."
-    PickupMessage="You got the h4x Translocator Source Module."
-    ItemName="h4x Translocator"
-	bPlayTeleportEffect=False
+     bPlayTeleportEffect=False
+     TossForce=830.000000
+     WeaponDescription="Modified translocator for h4x."
+     PickupMessage="You got the h4x Translocator Source Module."
+     ItemName="h4x Translocator"
 }

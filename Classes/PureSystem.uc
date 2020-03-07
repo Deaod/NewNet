@@ -19,5 +19,6 @@ var const xxFAlias zzAliases4[10];
 
 var const string zzKeys[255];
 
-defaultproperties {
+defaultproperties
+{
 }

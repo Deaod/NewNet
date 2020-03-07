@@ -11,3 +11,7 @@ function PlayerTakeDamage(Pawn Victim, Pawn Instigator, int Damage, name DamageT
 
 // ScoreKill doesn't register teamkills.
 function PlayerKill(Pawn Killer, Pawn Victim);
+
+defaultproperties
+{
+}

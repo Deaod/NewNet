@@ -26,7 +26,8 @@ simulated function Touch( actor Other )
 {
 }
 
-defaultProperties {
-	bStatic=false
-	bAlwaysRelevant=true
+defaultproperties
+{
+     bStatic=False
+     bAlwaysRelevant=True
 }

@@ -25,5 +25,5 @@ simulated function PostBeginPlay()
 
 defaultproperties
 {
-	bOwnerNoSee=True
+     bOwnerNoSee=True
 }

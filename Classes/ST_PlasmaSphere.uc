@@ -77,5 +77,6 @@ simulated function HitWall (vector HitNormal, actor Wall)
 	Super.HitWall(HitNormal, Wall);
 }
 
-defaultproperties {
+defaultproperties
+{
 }

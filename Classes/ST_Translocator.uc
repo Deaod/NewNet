@@ -750,7 +750,8 @@ state Active
 	}
 }
 
-defaultproperties {
-	bNewNet=True
-	bPlayTeleportEffect=True
+defaultproperties
+{
+     bNewNet=True
+     bPlayTeleportEffect=True
 }

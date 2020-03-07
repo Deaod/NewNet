@@ -451,9 +451,9 @@ function Unpause()
 	Level.Pauser = "";
 }
 
-defaultproperties {
-	bAlwaysTick=True
-	PauseTotalTime=300
-	PauseTime=60
-	Timeouts=0
+defaultproperties
+{
+     PauseTotalTime=300
+     pausetime=60
+     bAlwaysTick=True
 }

@@ -619,8 +619,9 @@ state Active
 	}
 }
 
-defaultproperties {
-	ProjectileClass=Class'ST_PlasmaSphere'
-	AltProjectileClass=Class'ST_StarterBolt'
-	bNewNet=True
+defaultproperties
+{
+     bNewNet=True
+     ProjectileClass=Class'NewNetWeaponsv0_9_17.ST_PlasmaSphere'
+     AltProjectileClass=Class'NewNetWeaponsv0_9_17.ST_StarterBolt'
 }

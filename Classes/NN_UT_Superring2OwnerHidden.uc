@@ -8,6 +8,7 @@ simulated function SpawnExtraEffects ()
 	}
 }
 
-defaultproperties {
-	bOwnerNoSee=True
+defaultproperties
+{
+     bOwnerNoSee=True
 }

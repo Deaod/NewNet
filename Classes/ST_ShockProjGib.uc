@@ -137,6 +137,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	Destroy();
 }
 
-defaultProperties {
-	MomentumTransfer=0
+defaultproperties
+{
+     MomentumTransfer=0
 }

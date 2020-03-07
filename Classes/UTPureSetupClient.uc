@@ -50,5 +50,4 @@ function LoadCurrent()
 
 defaultproperties
 {
-
 }
